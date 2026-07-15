@@ -1,10 +1,10 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
+import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { useIssuesQuery, useUpdateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import {
   useActiveTimerQuery,
@@ -41,8 +41,24 @@ import {
 export function WorkspaceExperience({ workspace }: { workspace: WorkspaceIdentity }) {
   return (
     <WorkspaceUiProvider>
-      <WorkspaceShell workspace={workspace} />
+      <WorkspaceSidebarProvider>
+        <WorkspaceShell workspace={workspace} />
+      </WorkspaceSidebarProvider>
     </WorkspaceUiProvider>
+  );
+}
+
+function WorkspaceSidebarProvider({ children }: { children: ReactNode }) {
+  const sidebarCollapsed = useWorkspaceView((state) => state.sidebarCollapsed);
+  const setSidebarCollapsed = useWorkspaceView((state) => state.setSidebarCollapsed);
+
+  return (
+    <SidebarProvider
+      open={!sidebarCollapsed}
+      onOpenChange={(open) => setSidebarCollapsed(!open)}
+    >
+      {children}
+    </SidebarProvider>
   );
 }
 
@@ -51,14 +67,13 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
   const selectedProjectId = useWorkspaceView((state) => state.selectedProjectId);
   const selectedTeamId = useWorkspaceView((state) => state.selectedTeamId);
   const focusedIssueId = useWorkspaceView((state) => state.focusedIssueId);
-  const sidebarCollapsed = useWorkspaceView((state) => state.sidebarCollapsed);
   const viewMode = useWorkspaceView((state) => state.viewMode);
   const selectClient = useWorkspaceView((state) => state.selectClient);
   const selectProject = useWorkspaceView((state) => state.selectProject);
   const selectTeam = useWorkspaceView((state) => state.selectTeam);
   const focusIssue = useWorkspaceView((state) => state.focusIssue);
   const setViewMode = useWorkspaceView((state) => state.setViewMode);
-  const toggleSidebar = useWorkspaceView((state) => state.toggleSidebar);
+  const { toggleSidebar } = useSidebar();
   const createIssueOpen = useWorkspaceOverlay((state) => state.createIssueOpen);
   const peekIssueId = useWorkspaceOverlay((state) => state.peekIssueId);
   const openCreateIssue = useWorkspaceOverlay((state) => state.openCreateIssue);
@@ -138,18 +153,10 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
         : "Workspace";
 
   return (
-    <div
-      className={cn(
-        "grid min-h-svh bg-background max-md:grid-cols-1",
-        sidebarCollapsed
-          ? "grid-cols-[54px_minmax(0,1fr)]"
-          : "grid-cols-[258px_minmax(0,1fr)] max-lg:grid-cols-[226px_minmax(0,1fr)]",
-      )}
-    >
+    <>
       <WorkspaceSidebar
         activeClientId={activeClientId}
         clients={clients}
-        collapsed={sidebarCollapsed}
         projects={projects}
         selectedProjectId={selectedProjectId}
         selectedTeamId={selectedTeamId}
@@ -158,20 +165,17 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
         onClientChange={selectClient}
         onProjectChange={selectProject}
         onTeamChange={selectTeam}
-        onToggle={toggleSidebar}
       />
 
-      <main className="min-h-svh min-w-0">
+      <SidebarInset className="min-h-svh">
         <WorkspaceHeader
           eyebrow={eyebrow}
           issueCount={issues.length}
-          sidebarCollapsed={sidebarCollapsed}
           title={title}
           viewMode={viewMode}
           onOpenCommand={() => setCommandOpen(true)}
           onOpenCreate={openCreateIssue}
           onSetView={setViewMode}
-          onToggleSidebar={toggleSidebar}
         />
 
         <section className="min-h-[calc(100svh-63px)] p-4 max-md:p-2.5" aria-live="polite">
@@ -203,7 +207,7 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
             />
           )}
         </section>
-      </main>
+      </SidebarInset>
 
       {createIssueOpen ? (
         <CreateIssueDialog
@@ -256,7 +260,7 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
         onToggleSidebar={toggleSidebar}
       />
       <TimerDock state={activeTimerQuery.data} workspaceSlug={workspace.slug} />
-    </div>
+    </>
   );
 }
 

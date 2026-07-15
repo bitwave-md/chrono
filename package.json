@@ -23,6 +23,7 @@
     "@auth/drizzle-adapter": "1.11.2",
     "@gsap/react": "2.1.2",
     "@radix-ui/react-avatar": "1.2.2",
+    "@radix-ui/react-collapsible": "1.1.16",
     "@radix-ui/react-dialog": "1.1.19",
     "@radix-ui/react-scroll-area": "1.2.14",
     "@radix-ui/react-select": "2.3.3",

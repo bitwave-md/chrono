@@ -1,10 +1,11 @@
 "use client";
 
-import { Columns3, List, Menu, Plus, Search } from "lucide-react";
+import { Columns3, List, Plus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceViewMode } from "@/modules/workspace-ui/state/workspace-view-store";
@@ -14,28 +15,16 @@ interface WorkspaceHeaderProps {
   eyebrow: string;
   viewMode: WorkspaceViewMode;
   issueCount: number;
-  sidebarCollapsed: boolean;
   onOpenCommand: () => void;
   onOpenCreate: () => void;
   onSetView: (mode: WorkspaceViewMode) => void;
-  onToggleSidebar: () => void;
 }
 
 export function WorkspaceHeader(props: WorkspaceHeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex min-h-[63px] items-center justify-between gap-4 border-b bg-background/85 px-4 py-2 backdrop-blur-xl max-md:px-2.5">
       <div className="flex min-w-0 items-center gap-2.5">
-        {props.sidebarCollapsed ? (
-          <Button
-            aria-label="Open navigation"
-            size="icon-sm"
-            variant="ghost"
-            type="button"
-            onClick={props.onToggleSidebar}
-          >
-            <Menu size={17} />
-          </Button>
-        ) : null}
+        <SidebarTrigger className="-ml-1" />
         <div className="min-w-0">
           <span className="block font-mono text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">{props.eyebrow}</span>
           <h1 className="mt-0.5 truncate text-sm font-semibold tracking-tight">{props.title}</h1>

@@ -17,6 +17,7 @@ export interface WorkspaceViewActions {
   selectTeam: (teamId: string | null) => void;
   focusIssue: (issueId: string | null) => void;
   setViewMode: (viewMode: WorkspaceViewMode) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
 }
 
@@ -43,6 +44,7 @@ export function createWorkspaceViewStore() {
       set({ selectedTeamId, focusedIssueId: null }),
     focusIssue: (focusedIssueId) => set({ focusedIssueId }),
     setViewMode: (viewMode) => set({ viewMode }),
+    setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
     toggleSidebar: () =>
       set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   }));

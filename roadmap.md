@@ -159,3 +159,21 @@ The SMTP fix was runtime-verified on 2026-07-15. The application resolved
 `smtp://mailpit:1025`, the bootstrap magic-link request increased Mailpit's
 message count from zero to one, and application logs contained neither
 `SIGNIN_EMAIL_ERROR` nor the Node `url.parse()` deprecation warning.
+
+## shadcn Sidebar migration
+
+Tracer bullet: replace the workspace's native sidebar shell with the official
+shadcn Sidebar provider, icon-collapse layout, menu primitives, inset content,
+and mobile Sheet while keeping workspace selection state authoritative in the
+existing per-workspace Zustand store.
+
+- [x] Add the owned shadcn Sidebar primitive and mobile breakpoint hook.
+- [x] Bridge controlled desktop open state to the workspace view store.
+- [x] Recompose Client, Project, Team, and account navigation as Sidebar menus.
+- [x] Re-verify keyboard toggles, icon mode, mobile drawer, and workspace flows.
+
+The Sidebar migration was completed and runtime-verified on 2026-07-15. The
+workspace now uses shadcn SidebarProvider, SidebarInset, icon collapse, rail,
+groups, menus, collapsible submenus, tooltips, and the automatic mobile Sheet.
+Authenticated browser tracers verified expanded and collapsed desktop states as
+well as closed and open mobile drawer states against the rebuilt Docker stack.

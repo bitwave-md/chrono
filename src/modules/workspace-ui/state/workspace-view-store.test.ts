@@ -30,4 +30,7 @@ test("WorkspaceViewStore keeps view controls independent", () => {
 
   assert.equal(store.getState().viewMode, "board");
   assert.equal(store.getState().sidebarCollapsed, true);
+
+  store.getState().setSidebarCollapsed(false);
+  assert.equal(store.getState().sidebarCollapsed, false);
 });
