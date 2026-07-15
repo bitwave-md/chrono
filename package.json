@@ -1,0 +1,47 @@
+{
+  "name": "chrono",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <26"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/modules/auth/domain/email-address.test.ts src/modules/workspaces/domain/workspace-slug.test.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "1.11.2",
+    "drizzle-orm": "0.45.2",
+    "next": "16.2.10",
+    "next-auth": "4.24.14",
+    "nodemailer": "7.0.13",
+    "pg": "8.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.2",
+    "@types/node": "20.19.43",
+    "@types/pg": "8.20.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "4.3.2",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "next-auth": {
+      "uuid": "11.1.1"
+    }
+  }
+}
