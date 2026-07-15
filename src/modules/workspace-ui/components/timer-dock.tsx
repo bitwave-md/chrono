@@ -2,6 +2,8 @@
 
 import { LoaderCircle, Square } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   formatElapsed,
   useElapsedSeconds,
@@ -27,18 +29,19 @@ export function TimerDock({
   }
 
   return (
-    <div className="timer-dock">
+    <Card className="timer-dock">
       <span className="timer-pulse" />
       <div className="timer-dock-issue">
         <span>{state.timer.identifier}</span>
         <strong>{state.timer.issueTitle}</strong>
       </div>
       <time>{formatElapsed(elapsed)}</time>
-      <button
+      <Button
         aria-label="Stop active timer"
         className="timer-stop-button"
         disabled={stopTimer.isPending}
-        type="button"
+        size="sm"
+        variant="destructive"
         onClick={() => stopTimer.mutate()}
       >
         {stopTimer.isPending ? (
@@ -47,7 +50,7 @@ export function TimerDock({
           <Square fill="currentColor" size={13} />
         )}
         Stop
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }

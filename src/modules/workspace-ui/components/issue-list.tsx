@@ -2,6 +2,9 @@
 
 import { Clock3, UserRound } from "lucide-react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   PriorityBadge,
   StatusBadge,
@@ -27,7 +30,7 @@ export function IssueList(props: IssueListProps) {
   }
 
   return (
-    <div className="issue-list" role="list">
+    <Card className="issue-list" role="list">
       <div className="issue-list-header" aria-hidden="true">
         <span>Issue</span>
         <span>Status</span>
@@ -35,13 +38,13 @@ export function IssueList(props: IssueListProps) {
         <span>Team</span>
       </div>
       {props.issues.map((issue) => (
-        <button
-          className="issue-row"
+        <Button
+          className="issue-row h-auto"
           data-focused={props.focusedIssueId === issue.id}
           data-optimistic={issue.optimistic}
           key={issue.id}
           role="listitem"
-          type="button"
+          variant="ghost"
           onClick={() => props.onOpen(issue.id)}
           onFocus={() => props.onFocus(issue.id)}
           onMouseEnter={() => props.onFocus(issue.id)}
@@ -58,7 +61,9 @@ export function IssueList(props: IssueListProps) {
           <span className="issue-team-cell">
             {issue.teamName ? (
               <>
-                <span className="team-avatar">{issue.teamName.slice(0, 2)}</span>
+                <Avatar className="team-avatar">
+                  <AvatarFallback>{issue.teamName.slice(0, 2)}</AvatarFallback>
+                </Avatar>
                 <span>{issue.teamName}</span>
               </>
             ) : issue.assigneeName ? (
@@ -75,8 +80,8 @@ export function IssueList(props: IssueListProps) {
               <Clock3 size={12} /> Saving
             </span>
           ) : null}
-        </button>
+        </Button>
       ))}
-    </div>
+    </Card>
   );
 }

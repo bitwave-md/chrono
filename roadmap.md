@@ -101,3 +101,24 @@ Issue, report, time-log, and contribution boundaries and were removed. Query
 profiles remained below one millisecond on the current dataset; custom-format
 backup/restore and all four migrations replayed successfully in isolated
 databases.
+
+## UI system refactor: shadcn/ui
+
+Tracer bullet: retain the existing workspace state and server-data boundaries
+while replacing native controls and direct primitive usage with an owned,
+themeable shadcn/ui component layer. Verify the complete keyboard-first flow in
+both desktop and mobile layouts before removing redundant control styling.
+
+- [x] Add shadcn/ui configuration, semantic theme tokens, and shared utilities.
+- [x] Add only the focused shadcn/ui primitives required by Chrono surfaces.
+- [x] Refactor navigation, headers, issue list/board, dialogs, sheet, and timer.
+- [x] Refactor public and access-state surfaces to use the same component system.
+- [x] Re-run static, unit, production, responsive, keyboard, and timer tracers.
+
+The shadcn/ui refactor was completed and runtime-verified on 2026-07-15. The
+owned component layer now covers buttons, inputs, textareas, selects, dialogs,
+sheets, commands, cards, badges, alerts, avatars, scrolling, tooltips, toggles,
+separators, skeletons, and keyboard hints. Authenticated Chrome tracers verified
+desktop and mobile shells, the workflow board, portalled Select menus, command
+navigation, rapid create, and the Issue detail sheet against the rebuilt Docker
+stack without changing TanStack Query, Zustand, GSAP, or API boundaries.

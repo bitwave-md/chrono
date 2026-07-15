@@ -2,6 +2,11 @@
 
 import { Columns3, List, Menu, Plus, Search } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceViewMode } from "@/modules/workspace-ui/state/workspace-view-store";
 
 interface WorkspaceHeaderProps {
@@ -21,55 +26,58 @@ export function WorkspaceHeader(props: WorkspaceHeaderProps) {
     <header className="workspace-header">
       <div className="workspace-title-group">
         {props.sidebarCollapsed ? (
-          <button
+          <Button
             aria-label="Open navigation"
             className="icon-button mobile-menu-button"
+            size="icon-sm"
+            variant="ghost"
             type="button"
             onClick={props.onToggleSidebar}
           >
             <Menu size={17} />
-          </button>
+          </Button>
         ) : null}
         <div>
           <span>{props.eyebrow}</span>
           <h1>{props.title}</h1>
         </div>
-        <span className="issue-count">{props.issueCount}</span>
+        <Badge className="issue-count" variant="outline">{props.issueCount}</Badge>
       </div>
 
       <div className="workspace-header-actions">
-        <button
-          className="command-trigger"
-          type="button"
-          onClick={props.onOpenCommand}
-        >
-          <Search size={15} />
+        <Button className="command-trigger" variant="outline" onClick={props.onOpenCommand}>
+          <Search />
           <span>Search commands</span>
-          <kbd>⌘ K</kbd>
-        </button>
-        <div className="view-toggle" role="group" aria-label="Issue view">
-          <button
-            aria-label="List view"
-            data-active={props.viewMode === "list"}
-            type="button"
-            onClick={() => props.onSetView("list")}
-          >
-            <List size={15} />
-          </button>
-          <button
-            aria-label="Board view"
-            data-active={props.viewMode === "board"}
-            type="button"
-            onClick={() => props.onSetView("board")}
-          >
-            <Columns3 size={15} />
-          </button>
-        </div>
-        <button className="primary-action" type="button" onClick={props.onOpenCreate}>
+          <Kbd>⌘ K</Kbd>
+        </Button>
+        <ToggleGroup
+          aria-label="Issue view"
+          className="view-toggle"
+          type="single"
+          value={props.viewMode}
+          variant="outline"
+          onValueChange={(value) => {
+            if (value === "list" || value === "board") props.onSetView(value);
+          }}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToggleGroupItem aria-label="List view" value="list"><List /></ToggleGroupItem>
+            </TooltipTrigger>
+            <TooltipContent>List view</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToggleGroupItem aria-label="Board view" value="board"><Columns3 /></ToggleGroupItem>
+            </TooltipTrigger>
+            <TooltipContent>Board view</TooltipContent>
+          </Tooltip>
+        </ToggleGroup>
+        <Button className="primary-action" type="button" onClick={props.onOpenCreate}>
           <Plus size={16} />
           <span>New issue</span>
-          <kbd>C</kbd>
-        </button>
+          <Kbd>C</Kbd>
+        </Button>
       </div>
     </header>
   );

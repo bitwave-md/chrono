@@ -1,5 +1,6 @@
 import { AlertCircle, Circle, Signal, SignalHigh, SignalLow } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import type { IssuePriority } from "@/modules/workspace-ui/domain/workspace-types";
 
 const priorityMetadata = {
@@ -14,18 +15,18 @@ export function PriorityBadge({ priority }: { priority: IssuePriority }) {
   const metadata = priorityMetadata[priority];
 
   return (
-    <span className="priority-badge" data-priority={priority} title={metadata.label}>
+    <Badge className="priority-badge" data-priority={priority} title={metadata.label} variant="ghost">
       <metadata.Icon size={14} />
       <span>{metadata.label}</span>
-    </span>
+    </Badge>
   );
 }
 
 export function StatusBadge({ name }: { name: string | null }) {
   return (
-    <span className="status-badge" data-empty={!name}>
+    <Badge className="status-badge" data-empty={!name} variant="ghost">
       <span className="status-dot" />
       {name ?? "No status"}
-    </span>
+    </Badge>
   );
 }

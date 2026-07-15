@@ -2,6 +2,9 @@
 
 import { GripVertical } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { PriorityBadge } from "@/modules/workspace-ui/components/issue-badges";
 import type {
   IssueRecord,
@@ -28,14 +31,15 @@ export function IssueBoard(props: IssueBoardProps) {
   }
 
   return (
-    <div className="issue-board">
+    <ScrollArea className="issue-board">
+      <div className="issue-board-track">
       {props.statuses.map((status) => {
         const columnIssues = props.issues.filter(
           (issue) => issue.statusId === status.id,
         );
 
         return (
-          <section
+          <Card
             className="board-column"
             key={status.id}
             onDragOver={(event) => event.preventDefault()}
@@ -50,21 +54,21 @@ export function IssueBoard(props: IssueBoardProps) {
               }
             }}
           >
-            <header className="board-column-header">
+            <CardHeader className="board-column-header">
               <span
                 className="board-status-dot"
                 style={{ backgroundColor: status.color ?? undefined }}
               />
               <strong>{status.name}</strong>
               <span>{columnIssues.length}</span>
-            </header>
-            <div className="board-card-list">
+            </CardHeader>
+            <CardContent className="board-card-list">
               {columnIssues.map((issue) => (
-                <button
-                  className="board-card"
+                <Button
+                  className="board-card h-auto"
                   draggable={!issue.optimistic}
                   key={issue.id}
-                  type="button"
+                  variant="outline"
                   onClick={() => props.onOpen(issue.id)}
                   onDragStart={(event) => {
                     event.dataTransfer.setData("text/issue-id", issue.id);
@@ -80,15 +84,17 @@ export function IssueBoard(props: IssueBoardProps) {
                     <PriorityBadge priority={issue.priority} />
                     <span>{issue.teamName ?? "Unassigned"}</span>
                   </span>
-                </button>
+                </Button>
               ))}
               {!columnIssues.length ? (
                 <div className="board-drop-placeholder">Drop issues here</div>
               ) : null}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         );
       })}
-    </div>
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }

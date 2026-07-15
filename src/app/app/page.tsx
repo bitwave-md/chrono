@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrincipalService } from "@/modules/authorization/application/principal-service";
 import { authOptions } from "@/modules/auth/infrastructure/auth-options";
 
@@ -18,14 +19,16 @@ export default async function WorkspaceEntryPage() {
   if (!principal) {
     return (
       <main className="shell shell-centered">
-        <section className="panel panel-compact">
+        <Card className="panel panel-compact">
+          <CardHeader className="gap-5 p-0">
           <p className="eyebrow">Access pending</p>
-          <h1>No active workspace membership</h1>
-          <p className="muted">
+          <CardTitle asChild><h1>No active workspace membership</h1></CardTitle>
+          <CardDescription className="muted">
             Ask a workspace administrator for an invitation, then request a new
             sign-in link.
-          </p>
-        </section>
+          </CardDescription>
+          </CardHeader>
+        </Card>
       </main>
     );
   }

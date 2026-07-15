@@ -11,7 +11,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProjectTree } from "@/modules/workspace-ui/components/project-tree";
+import { WorkspaceSelect } from "@/modules/workspace-ui/components/workspace-select";
 import type {
   ClientRecord,
   ProjectNode,
@@ -38,27 +45,27 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
   if (props.collapsed) {
     return (
       <aside className="workspace-sidebar workspace-sidebar-collapsed">
-        <button
-          aria-label="Expand navigation"
-          className="icon-button sidebar-logo-button"
-          type="button"
-          onClick={props.onToggle}
-        >
-          <Waves size={19} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button aria-label="Expand navigation" className="icon-button sidebar-logo-button" size="icon-sm" variant="ghost" onClick={props.onToggle}>
+              <Waves size={19} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Expand navigation</TooltipContent>
+        </Tooltip>
         <div className="collapsed-rail">
           <Building2 size={17} />
           <Inbox size={17} />
           <Users size={17} />
         </div>
-        <button
-          aria-label="Expand navigation"
-          className="icon-button sidebar-expand-button"
-          type="button"
-          onClick={props.onToggle}
-        >
-          <PanelLeftOpen size={17} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button aria-label="Expand navigation" className="icon-button sidebar-expand-button" size="icon-sm" variant="ghost" onClick={props.onToggle}>
+              <PanelLeftOpen size={17} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Expand navigation</TooltipContent>
+        </Tooltip>
       </aside>
     );
   }
@@ -73,37 +80,35 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
           <strong>{props.workspace.name}</strong>
           <span>{props.workspace.role}</span>
         </div>
-        <button
+        <Button
           aria-label="Collapse navigation"
           className="icon-button"
-          type="button"
+          size="icon-sm"
+          variant="ghost"
           onClick={props.onToggle}
         >
           <PanelLeftOpen className="collapse-icon" size={16} />
-        </button>
+        </Button>
       </div>
 
-      <div className="sidebar-scroll">
-        <label className="client-select-label" htmlFor="chrono-client-select">
+      <ScrollArea className="sidebar-scroll">
+        <div className="client-select-label">
           <span>Client</span>
-          <select
-            id="chrono-client-select"
-            value={props.activeClientId ?? ""}
-            onChange={(event) => props.onClientChange(event.target.value)}
-          >
-            {props.clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <WorkspaceSelect
+            label="Client"
+            options={props.clients.map((client) => ({ value: client.id, label: client.name }))}
+            value={props.activeClientId}
+            onValueChange={(clientId) => {
+              if (clientId) props.onClientChange(clientId);
+            }}
+          />
+        </div>
 
         <nav aria-label="Workspace navigation" className="sidebar-navigation">
-          <button
+          <Button
             className="sidebar-item"
             data-active={!props.selectedProjectId && !props.selectedTeamId}
-            type="button"
+            variant="ghost"
             onClick={() => {
               props.onProjectChange(null);
               props.onTeamChange(null);
@@ -111,12 +116,12 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
           >
             <Inbox size={16} />
             <span>All issues</span>
-          </button>
+          </Button>
 
           <div className="sidebar-section">
             <div className="sidebar-section-label">
               <span>Projects</span>
-              <span>{props.projects.length}</span>
+              <Badge variant="ghost">{props.projects.length}</Badge>
             </div>
             {props.projects.length ? (
               <ProjectTree
@@ -135,14 +140,14 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
           <div className="sidebar-section">
             <div className="sidebar-section-label">
               <span>Teams</span>
-              <span>{props.teams.length}</span>
+              <Badge variant="ghost">{props.teams.length}</Badge>
             </div>
             {props.teams.map((team) => (
-              <button
+              <Button
                 className="sidebar-item"
                 data-active={props.selectedTeamId === team.id}
                 key={team.id}
-                type="button"
+                variant="ghost"
                 onClick={() => {
                   props.onProjectChange(null);
                   props.onTeamChange(team.id);
@@ -151,22 +156,25 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
                 <CircleDot size={15} />
                 <span>{team.name}</span>
                 <span className="sidebar-key">{team.key}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </nav>
-      </div>
+      </ScrollArea>
 
-      <Link className="sidebar-account" href="/api/auth/signout">
-        <span className="account-avatar">
-          {props.workspace.userEmail.slice(0, 1).toUpperCase()}
-        </span>
-        <span>
-          <strong>{props.workspace.userEmail}</strong>
-          <small>Sign out</small>
-        </span>
-        <LogOut size={15} />
-      </Link>
+      <Separator />
+      <Button asChild className="sidebar-account" variant="ghost">
+        <Link href="/api/auth/signout">
+          <Avatar className="account-avatar">
+            <AvatarFallback>{props.workspace.userEmail.slice(0, 1).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <span>
+            <strong>{props.workspace.userEmail}</strong>
+            <small>Sign out</small>
+          </span>
+          <LogOut size={15} />
+        </Link>
+      </Button>
     </aside>
   );
 }

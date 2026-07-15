@@ -2,6 +2,8 @@
 
 import { ChevronRight, FolderKanban, Goal, Milestone } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { ProjectNode } from "@/modules/workspace-ui/domain/workspace-types";
 
 interface ProjectTreeProps {
@@ -28,9 +30,10 @@ export function ProjectTree({
 
     return (
       <div key={project.id}>
-        <button
+        <Button
           className="sidebar-item project-tree-item"
           data-active={selectedProjectId === project.id}
+          variant="ghost"
           style={{ paddingLeft: 12 + depth * 14 }}
           type="button"
           onClick={() => onSelect(project.id)}
@@ -43,9 +46,9 @@ export function ProjectTree({
           <Icon size={15} />
           <span>{project.name}</span>
           {project.kind === "sprint" ? (
-            <span className="sidebar-badge">Sprint</span>
+            <Badge className="sidebar-badge" variant="outline">Sprint</Badge>
           ) : null}
-        </button>
+        </Button>
         {project.children.length > 0 ? (
           <ProjectTree
             depth={depth + 1}

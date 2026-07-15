@@ -39,6 +39,7 @@
   color: var(--foreground);
   padding: 0 14px;
   text-align: left;
+  border-radius: 0;
 }
 
 .issue-row:last-child {
@@ -212,12 +213,16 @@
 }
 
 .issue-board {
+  width: 100%;
+  overflow: hidden;
+}
+
+.issue-board-track {
   display: grid;
   min-width: max-content;
   grid-auto-columns: minmax(260px, 1fr);
   grid-auto-flow: column;
   gap: 12px;
-  overflow-x: auto;
   padding-bottom: 10px;
 }
 

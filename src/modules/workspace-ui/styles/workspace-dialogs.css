@@ -36,6 +36,7 @@
 }
 
 .dialog-heading {
+  flex-direction: row;
   border-bottom: 1px solid var(--border);
   padding: 17px 18px;
 }
@@ -235,7 +236,10 @@
 
 .peek-scroll {
   min-height: 0;
-  overflow-y: auto;
+  flex: 1;
+}
+
+.peek-scroll-content {
   padding: 20px 22px 34px;
 }
 
@@ -285,19 +289,6 @@
 
 .peek-properties label {
   position: relative;
-}
-
-.peek-properties label > .status-badge,
-.peek-properties label > .priority-badge {
-  position: absolute;
-  right: 8px;
-  bottom: 9px;
-  pointer-events: none;
-}
-
-.peek-properties label:nth-of-type(1) select,
-.peek-properties label:nth-of-type(2) select {
-  color: transparent;
 }
 
 .issue-description {

@@ -3,6 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { useMemo } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useIssuesQuery, useUpdateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import {
   useActiveTimerQuery,
@@ -253,12 +254,10 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
 
 function WorkspaceFailure({ message }: { message: string }) {
   return (
-    <div className="workspace-failure" role="alert">
+    <Alert className="workspace-failure" variant="destructive">
       <AlertTriangle size={18} />
-      <div>
-        <strong>Chrono could not load this view.</strong>
-        <span>{message}</span>
-      </div>
-    </div>
+      <AlertTitle>Chrono could not load this view.</AlertTitle>
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>
   );
 }
