@@ -8,8 +8,8 @@ export default function Home() {
         <h1>Client work, issues, and time in one focused workspace.</h1>
         <p className="muted hero-copy">
           A lightweight, keyboard-first operating system for agency projects.
-          Phase 1 connects authentication, PostgreSQL, and workspace-level
-          authorization.
+          Navigate Client work, move Issues, and track authoritative time from
+          one focused, self-hosted surface.
         </p>
         <Link className="button" href="/app">
           Open Chrono

@@ -1,0 +1,142 @@
+@media (max-width: 980px) {
+  :root {
+    --sidebar-width: 226px;
+  }
+
+  .command-trigger span,
+  .primary-action kbd,
+  .issue-list-header {
+    display: none;
+  }
+
+  .command-trigger {
+    width: 34px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .issue-row {
+    grid-template-columns: minmax(220px, 1fr) 120px 36px;
+  }
+
+  .issue-row > .issue-team-cell {
+    display: none;
+  }
+
+  .issue-row .priority-badge span {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .chrono-workspace,
+  .chrono-workspace[data-sidebar-collapsed="true"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-sidebar {
+    position: fixed;
+    z-index: 55;
+    width: min(280px, calc(100vw - 48px));
+    box-shadow: 25px 0 70px rgb(0 0 0 / 50%);
+  }
+
+  .chrono-workspace[data-sidebar-collapsed="true"] .workspace-sidebar {
+    display: none;
+  }
+
+  .workspace-header {
+    padding-inline: 11px;
+  }
+
+  .workspace-header-actions {
+    gap: 5px;
+  }
+
+  .command-trigger kbd {
+    display: none;
+  }
+
+  .primary-action {
+    width: 34px;
+    padding: 0;
+  }
+
+  .primary-action span {
+    display: none;
+  }
+
+  .issue-workspace {
+    padding: 10px;
+  }
+
+  .issue-list {
+    border-radius: 8px;
+  }
+
+  .issue-row {
+    min-height: 56px;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .issue-row > .status-badge,
+  .issue-row > .issue-team-cell,
+  .issue-row .priority-badge span {
+    display: none;
+  }
+
+  .issue-identifier {
+    flex-basis: 48px;
+  }
+
+  .issue-peek-pane {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    border-width: 0;
+    border-radius: 0;
+  }
+
+  .peek-scroll {
+    padding-inline: 16px;
+  }
+
+  .peek-properties,
+  .issue-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .create-issue-dialog,
+  .command-menu {
+    top: 7vh;
+  }
+
+  .timer-dock {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    min-width: 0;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+  }
+
+  .timer-dock time {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .shell {
+    padding: 12px;
+  }
+
+  .panel {
+    padding: 28px 22px;
+  }
+
+  .view-toggle {
+    display: none;
+  }
+}
