@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
+import { CircleDashed, GripVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -22,17 +22,17 @@ interface IssueBoardProps {
 export function IssueBoard(props: IssueBoardProps) {
   if (!props.selectedProjectId) {
     return (
-      <div className="issue-empty-state board-empty-state">
-        <span className="empty-orbit" />
-        <h2>Select a Project or Sprint</h2>
-        <p>Board movement is scoped to one effective Project workflow.</p>
+      <div className="grid min-h-[calc(100svh-150px)] place-content-center justify-items-center text-center">
+        <CircleDashed className="mb-4 size-12 text-muted-foreground" />
+        <h2 className="text-base font-semibold">Select a Project or Sprint</h2>
+        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">Board movement is scoped to one effective Project workflow.</p>
       </div>
     );
   }
 
   return (
-    <ScrollArea className="issue-board">
-      <div className="issue-board-track">
+    <ScrollArea className="w-full">
+      <div className="grid min-w-max auto-cols-[minmax(260px,1fr)] grid-flow-col gap-3 pb-2.5">
       {props.statuses.map((status) => {
         const columnIssues = props.issues.filter(
           (issue) => issue.statusId === status.id,
@@ -40,7 +40,7 @@ export function IssueBoard(props: IssueBoardProps) {
 
         return (
           <Card
-            className="board-column"
+            className="min-h-[calc(100svh-110px)] overflow-hidden bg-card/70"
             key={status.id}
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
@@ -54,18 +54,15 @@ export function IssueBoard(props: IssueBoardProps) {
               }
             }}
           >
-            <CardHeader className="board-column-header">
-              <span
-                className="board-status-dot"
-                style={{ backgroundColor: status.color ?? undefined }}
-              />
-              <strong>{status.name}</strong>
-              <span>{columnIssues.length}</span>
+            <CardHeader className="grid min-h-11 grid-cols-[10px_1fr_auto] items-center gap-2 border-b px-3 py-0">
+              <span className="size-2 rounded-full bg-primary" />
+              <strong className="text-xs">{status.name}</strong>
+              <span className="font-mono text-xs text-muted-foreground">{columnIssues.length}</span>
             </CardHeader>
-            <CardContent className="board-card-list">
+            <CardContent className="grid gap-2 p-2">
               {columnIssues.map((issue) => (
                 <Button
-                  className="board-card h-auto"
+                  className="grid h-auto gap-2.5 whitespace-normal p-3 text-left"
                   draggable={!issue.optimistic}
                   key={issue.id}
                   variant="outline"
@@ -75,19 +72,19 @@ export function IssueBoard(props: IssueBoardProps) {
                     event.dataTransfer.effectAllowed = "move";
                   }}
                 >
-                  <span className="board-card-topline">
+                  <span className="flex min-w-0 items-center justify-between font-mono text-xs text-muted-foreground">
                     <span>{issue.identifier}</span>
                     <GripVertical size={14} />
                   </span>
-                  <strong>{issue.title}</strong>
-                  <span className="board-card-footer">
+                  <strong className="text-sm leading-5">{issue.title}</strong>
+                  <span className="flex min-w-0 items-center justify-between gap-3 text-xs text-muted-foreground [&_[data-slot=badge]>span]:hidden">
                     <PriorityBadge priority={issue.priority} />
                     <span>{issue.teamName ?? "Unassigned"}</span>
                   </span>
                 </Button>
               ))}
               {!columnIssues.length ? (
-                <div className="board-drop-placeholder">Drop issues here</div>
+                <div className="grid min-h-14 place-items-center rounded-md border border-dashed text-xs text-muted-foreground">Drop issues here</div>
               ) : null}
             </CardContent>
           </Card>

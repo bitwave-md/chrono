@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { useMemo } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 import { useIssuesQuery, useUpdateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import {
   useActiveTimerQuery,
@@ -137,7 +138,14 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
         : "Workspace";
 
   return (
-    <div className="chrono-workspace" data-sidebar-collapsed={sidebarCollapsed}>
+    <div
+      className={cn(
+        "grid min-h-svh bg-background max-md:grid-cols-1",
+        sidebarCollapsed
+          ? "grid-cols-[54px_minmax(0,1fr)]"
+          : "grid-cols-[258px_minmax(0,1fr)] max-lg:grid-cols-[226px_minmax(0,1fr)]",
+      )}
+    >
       <WorkspaceSidebar
         activeClientId={activeClientId}
         clients={clients}
@@ -153,7 +161,7 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
         onToggle={toggleSidebar}
       />
 
-      <main className="workspace-main">
+      <main className="min-h-svh min-w-0">
         <WorkspaceHeader
           eyebrow={eyebrow}
           issueCount={issues.length}
@@ -166,7 +174,7 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
           onToggleSidebar={toggleSidebar}
         />
 
-        <section className="issue-workspace" aria-live="polite">
+        <section className="min-h-[calc(100svh-63px)] p-4 max-md:p-2.5" aria-live="polite">
           {issuesQuery.isLoading || projectsQuery.isLoading || teamsQuery.isLoading ? (
             <WorkspaceLoading label="Loading issues" />
           ) : issuesQuery.error ? (
@@ -254,7 +262,7 @@ function WorkspaceShell({ workspace }: { workspace: WorkspaceIdentity }) {
 
 function WorkspaceFailure({ message }: { message: string }) {
   return (
-    <Alert className="workspace-failure" variant="destructive">
+    <Alert className="m-6 w-auto" variant="destructive">
       <AlertTriangle size={18} />
       <AlertTitle>Chrono could not load this view.</AlertTitle>
       <AlertDescription>{message}</AlertDescription>

@@ -84,7 +84,7 @@ export function CommandMenu(props: CommandMenuProps) {
 
   return (
     <CommandDialog
-      className="command-menu left-0 top-[12vh] translate-x-0 translate-y-0 gap-0 sm:max-w-[570px]"
+      className="top-[12svh] translate-y-0 gap-0 border-border p-0 shadow-2xl will-change-transform sm:max-w-xl max-md:top-[7svh]"
       open={props.open}
       onOpenChange={props.onOpenChange}
     >
@@ -114,7 +114,7 @@ export function CommandMenu(props: CommandMenuProps) {
               ) : null;
             })}
           </CommandList>
-          <footer className="command-footer">
+          <footer className="flex min-h-9 items-center gap-3 border-t px-3 font-mono text-[0.65rem] text-muted-foreground">
             <span>↑↓ navigate</span><span>↵ select</span><span>esc close</span>
           </footer>
         </Command>

@@ -81,11 +81,11 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
-        className="create-issue-dialog left-0 top-[15vh] translate-x-0 translate-y-0 gap-0 p-0 sm:max-w-[620px]"
+        className="top-[15svh] translate-y-0 gap-0 overflow-hidden p-0 shadow-2xl will-change-transform sm:max-w-xl max-md:top-[7svh]"
         ref={contentRef}
         showCloseButton={false}
       >
-        <DialogHeader className="dialog-heading">
+        <DialogHeader className="flex-row items-center justify-between border-b p-4">
           <div>
             <DialogTitle>New issue</DialogTitle>
             <DialogDescription>Capture work now; refine assignment and timing later.</DialogDescription>
@@ -96,7 +96,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
         </DialogHeader>
 
         <form
-          className="issue-create-form"
+          className="grid gap-3 p-4"
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
               event.preventDefault();
@@ -105,27 +105,27 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
           }}
           onSubmit={submit}
         >
-          <Input autoFocus className="issue-title-input" maxLength={240} placeholder="Issue title" value={title} onChange={(event) => setTitle(event.target.value)} />
+          <Input autoFocus className="border-0 bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0" maxLength={240} placeholder="Issue title" value={title} onChange={(event) => setTitle(event.target.value)} />
           <Textarea maxLength={20_000} placeholder="Add a concise description…" rows={4} value={description} onChange={(event) => setDescription(event.target.value)} />
-          <div className="issue-form-grid">
-            <label>
-              <span>Project</span>
+          <div className="grid grid-cols-3 gap-2 max-md:grid-cols-1">
+            <label className="grid gap-1.5">
+              <span className="text-xs text-muted-foreground">Project</span>
               <WorkspaceSelect label="Project" emptyLabel="Client backlog" options={props.projects.map((project) => ({ value: project.id, label: project.name }))} value={projectId} onValueChange={setProjectId} />
             </label>
-            <label>
-              <span>Team</span>
+            <label className="grid gap-1.5">
+              <span className="text-xs text-muted-foreground">Team</span>
               <WorkspaceSelect label="Team" emptyLabel="No team" options={props.teams.map((team) => ({ value: team.id, label: team.name }))} value={teamId} onValueChange={setTeamId} />
             </label>
-            <label>
-              <span>Priority</span>
+            <label className="grid gap-1.5">
+              <span className="text-xs text-muted-foreground">Priority</span>
               <WorkspaceSelect label="Priority" options={priorityOptions} value={priority} onValueChange={(value) => setPriority((value ?? "none") as IssuePriority)} />
             </label>
           </div>
-          {mutation.error ? <p className="form-error">{mutation.error.message}</p> : null}
-          <div className="dialog-footer">
-            <span><Kbd>⌘ Enter</Kbd> to create</span>
+          {mutation.error ? <p className="text-xs leading-5 text-destructive">{mutation.error.message}</p> : null}
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground"><Kbd>⌘ Enter</Kbd> to create</span>
             <Button disabled={mutation.isPending || title.trim().length < 2} type="submit">
-              {mutation.isPending ? <LoaderCircle className="spinner" /> : <Plus />}
+              {mutation.isPending ? <LoaderCircle className="animate-spin" /> : <Plus />}
               Create issue
             </Button>
           </div>

@@ -125,3 +125,23 @@ stack without changing TanStack Query, Zustand, GSAP, or API boundaries. The
 built-in NextAuth screens were also replaced with branded shadcn sign-in,
 verification, and error states, while sign-in and sign-out remain encapsulated
 as TanStack Query mutations.
+
+## Vanilla Tailwind and shadcn styling cleanup
+
+Tracer bullet: preserve the verified Chrono workflows while deleting the
+project-specific workspace stylesheet layer. Every remaining visual rule must
+be expressed through Tailwind utilities or an owned shadcn component variant,
+with only semantic theme tokens and global browser defaults left in globals.css.
+
+- [x] Replace workspace shell, navigation, list, board, dialog, sheet, and timer
+  selectors with local Tailwind composition.
+- [x] Replace public, access, and authentication legacy classes.
+- [x] Delete the custom workspace CSS files and their imports.
+- [x] Verify responsive, keyboard, portal, optimistic, and timer behavior.
+
+The cleanup was completed and runtime-verified on 2026-07-15. All four custom
+workspace stylesheets were deleted, globals.css now contains only the standard
+shadcn dark token map and Tailwind base rules, and component layout is expressed
+locally with Tailwind utilities and shadcn variants. Authenticated desktop and
+mobile tracers re-verified the list, command palette, rapid-create dialog, Issue
+sheet, responsive navigation, and production Docker build.

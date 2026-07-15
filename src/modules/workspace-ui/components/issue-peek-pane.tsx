@@ -72,15 +72,15 @@ export function IssuePeekPane(props: IssuePeekPaneProps) {
   return (
     <Sheet modal={false} open={props.open} onOpenChange={props.onOpenChange}>
       <SheetContent
-        className="issue-peek-pane sm:max-w-none"
+        className="inset-y-2 right-2 h-auto w-[min(540px,calc(100vw-20px))] gap-0 rounded-xl border shadow-2xl will-change-transform sm:max-w-none max-md:inset-0 max-md:h-full max-md:w-full max-md:rounded-none max-md:border-0"
         ref={contentRef}
         showCloseButton={false}
         showOverlay={false}
       >
         <SheetTitle className="sr-only">{issue.title}</SheetTitle>
         <SheetDescription className="sr-only">Issue details and timer controls</SheetDescription>
-        <header className="peek-header">
-          <div className="peek-breadcrumbs">
+        <header className="flex min-h-12 items-center justify-between border-b px-4">
+          <div className="flex items-center gap-1.5 font-mono text-[0.68rem] text-muted-foreground">
             <span>{issue.identifier}</span><ChevronRight size={13} /><span>{issue.projectName ?? "Client backlog"}</span>
           </div>
           <SheetClose asChild>
@@ -88,11 +88,12 @@ export function IssuePeekPane(props: IssuePeekPaneProps) {
           </SheetClose>
         </header>
 
-        <ScrollArea className="peek-scroll">
-          <div className="peek-scroll-content">
-            <form className="peek-title-form" onSubmit={submitTitle}>
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="px-5 py-5 max-md:px-4">
+            <form className="relative" onSubmit={submitTitle}>
               <Textarea
                 aria-label="Issue title"
+                className="min-h-20 resize-none border-0 bg-transparent p-0 text-xl font-semibold tracking-tight shadow-none focus-visible:ring-0"
                 maxLength={240}
                 rows={2}
                 value={title}
@@ -102,13 +103,13 @@ export function IssuePeekPane(props: IssuePeekPaneProps) {
                   if (normalized.length >= 2 && normalized !== issue.title) update({ title: normalized, optimistic: { title: normalized } });
                 }}
               />
-              {props.updatePending ? <LoaderCircle className="spinner peek-saving" /> : null}
+              {props.updatePending ? <LoaderCircle className="absolute top-1 right-0 animate-spin" /> : null}
             </form>
 
-            <section className="peek-section peek-properties">
-              <h3>Properties</h3>
-              <label>
-                <span>Status</span>
+            <section className="mt-6 grid grid-cols-2 gap-3 border-t pt-4 max-md:grid-cols-1">
+              <h3 className="col-span-full text-xs font-medium uppercase tracking-wide text-muted-foreground">Properties</h3>
+              <label className="grid gap-1.5">
+                <span className="text-xs text-muted-foreground">Status</span>
                 <WorkspaceSelect
                   disabled={!issue.projectId || statusesQuery.isLoading}
                   emptyLabel={!issue.projectId ? "No workflow" : undefined}
@@ -121,22 +122,22 @@ export function IssuePeekPane(props: IssuePeekPaneProps) {
                   }}
                 />
               </label>
-              <label>
-                <span>Priority</span>
+              <label className="grid gap-1.5">
+                <span className="text-xs text-muted-foreground">Priority</span>
                 <WorkspaceSelect label="Priority" options={priorityOptions} value={issue.priority} onValueChange={(value) => {
                   const priority = (value ?? "none") as IssuePriority;
                   update({ priority, optimistic: { priority } });
                 }} />
               </label>
-              <label>
-                <span>Project</span>
+              <label className="grid gap-1.5">
+                <span className="text-xs text-muted-foreground">Project</span>
                 <WorkspaceSelect label="Project" emptyLabel="Client backlog" options={props.projects.map((candidate) => ({ value: candidate.id, label: candidate.name }))} value={issue.projectId} onValueChange={(projectId) => {
                   const nextProject = props.projects.find((candidate) => candidate.id === projectId);
                   update({ projectId, optimistic: { projectId, projectName: nextProject?.name ?? null, ...(projectId ? {} : { statusId: null, statusName: null }) } });
                 }} />
               </label>
-              <label>
-                <span>Team</span>
+              <label className="grid gap-1.5">
+                <span className="text-xs text-muted-foreground">Team</span>
                 <WorkspaceSelect label="Team" emptyLabel="No team" options={props.teams.map((team) => ({ value: team.id, label: team.name }))} value={issue.teamId} onValueChange={(teamId) => {
                   const team = props.teams.find((candidate) => candidate.id === teamId);
                   update({ teamId, optimistic: { teamId, teamName: team?.name ?? null } });
@@ -144,28 +145,28 @@ export function IssuePeekPane(props: IssuePeekPaneProps) {
               </label>
             </section>
 
-            <section className="peek-section">
-              <h3>Description</h3>
-              <Card className="issue-description">{issue.description || "No description has been added yet."}</Card>
+            <section className="mt-6 border-t pt-4">
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</h3>
+              <Card className="min-h-20 p-3 text-sm leading-6 text-muted-foreground">{issue.description || "No description has been added yet."}</Card>
             </section>
 
-            <section className="peek-section timer-section">
-              <div><h3>Time tracking</h3><p>One authoritative timer follows you across tabs and devices.</p></div>
+            <section className="mt-6 grid gap-3 border-t pt-4">
+              <div className="flex items-start justify-between gap-4"><h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Time tracking</h3><p className="text-xs text-muted-foreground">One authoritative timer follows you across tabs and devices.</p></div>
               <WorkspaceSelect disabled={Boolean(props.activeTimer?.timer)} emptyLabel="Uncategorized" label="Time category" options={props.categories.map((category) => ({ value: category.id, label: category.name }))} value={categoryId} onValueChange={setCategoryId} />
               {activeOnIssue ? (
                 <Button disabled={stopTimer.isPending} variant="destructive" onClick={() => stopTimer.mutate()}>
-                  {stopTimer.isPending ? <LoaderCircle className="spinner" /> : <Square fill="currentColor" />}
+                  {stopTimer.isPending ? <LoaderCircle className="animate-spin" /> : <Square fill="currentColor" />}
                   Stop timer
                 </Button>
               ) : (
                 <Button disabled={anotherTimerActive || startTimer.isPending || issue.optimistic} variant="secondary" onClick={() => startTimer.mutate({ issueId: issue.id, categoryId, note: issue.title })}>
-                  {startTimer.isPending ? <LoaderCircle className="spinner" /> : <CirclePlay />}
+                  {startTimer.isPending ? <LoaderCircle className="animate-spin" /> : <CirclePlay />}
                   {anotherTimerActive ? "Another timer is active" : "Start timer"}
                 </Button>
               )}
-              {startTimer.error ? <p className="form-error">{startTimer.error.message}</p> : null}
-              {props.updateError ? <p className="form-error">{props.updateError.message}</p> : null}
-              <span className="timer-hint"><Clock3 size={13} /> Database writes happen only on start and stop.</span>
+              {startTimer.error ? <p className="text-xs leading-5 text-destructive">{startTimer.error.message}</p> : null}
+              {props.updateError ? <p className="text-xs leading-5 text-destructive">{props.updateError.message}</p> : null}
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 size={13} /> Database writes happen only on start and stop.</span>
             </section>
           </div>
         </ScrollArea>

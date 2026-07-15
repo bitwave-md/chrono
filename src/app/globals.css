@@ -1,44 +1,34 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "../modules/workspace-ui/styles/workspace-shell.css";
-@import "../modules/workspace-ui/styles/issue-workspace.css";
-@import "../modules/workspace-ui/styles/workspace-dialogs.css";
-@import "../modules/workspace-ui/styles/workspace-responsive.css";
 
 :root {
-  --background: #08090c;
-  --foreground: #f3f5f9;
-  --card: #0e1015;
-  --card-foreground: #f3f5f9;
-  --popover: #13161d;
-  --popover-foreground: #f3f5f9;
-  --primary: #7c8cff;
-  --primary-foreground: #ffffff;
-  --secondary: #171a22;
-  --secondary-foreground: #f3f5f9;
-  --muted-surface: #171a22;
-  --muted-foreground: #8b93a5;
-  --accent-surface: #1b1f29;
-  --accent-foreground: #f3f5f9;
-  --destructive: #ff6b7a;
-  --border: #242936;
-  --input: #343b4c;
-  --ring: #7c8cff;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
   --radius: 0.625rem;
-  --panel: #0e1015;
-  --panel-raised: #13161d;
-  --panel-soft: #171a22;
-  --panel-hover: #1b1f29;
-  --border-strong: #343b4c;
-  --muted: #8b93a5;
-  --muted-strong: #b0b7c5;
-  --accent: #7c8cff;
-  --accent-soft: #242b58;
-  --danger: #ff6b7a;
-  --success: #52d6a3;
-  --warning: #f5bd5f;
-  --sidebar-width: 258px;
-  --sidebar-collapsed-width: 54px;
   color-scheme: dark;
 }
 
@@ -53,14 +43,22 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted-surface);
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent-surface);
+  --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -69,177 +67,17 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 
-html,
-body {
-  min-height: 100%;
-}
+  html,
+  body {
+    @apply min-h-full;
+  }
 
-body {
-  min-height: 100vh;
-  margin: 0;
-  overflow-x: hidden;
-  background:
-    radial-gradient(circle at 70% -20%, rgb(82 98 181 / 12%), transparent 35%),
-    var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
-}
-
-button,
-input,
-textarea,
-select {
-  color: inherit;
-  font: inherit;
-}
-
-button,
-select {
-  cursor: pointer;
-}
-
-button:disabled,
-select:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-::selection {
-  background: rgb(124 140 255 / 35%);
-}
-
-:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-}
-
-.shell {
-  min-height: 100vh;
-  padding: 24px;
-}
-
-.shell-centered {
-  display: grid;
-  place-items: center;
-}
-
-.panel {
-  width: min(100%, 720px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--panel);
-  padding: 40px;
-  box-shadow: 0 28px 80px rgb(0 0 0 / 35%);
-}
-
-.panel-compact {
-  width: min(100%, 520px);
-}
-
-.hero-panel,
-.workspace-panel {
-  display: grid;
-  gap: 28px;
-}
-
-.hero-panel h1,
-.workspace-panel h1,
-.panel-compact h1 {
-  margin: 0;
-  max-width: 640px;
-  font-size: clamp(2rem, 6vw, 4.5rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.eyebrow {
-  margin: 0;
-  color: var(--muted-strong);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.muted {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.7;
-}
-
-.hero-copy {
-  max-width: 580px;
-  margin: 0;
-}
-
-.button,
-.primary-action {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-foreground);
-  padding: 0 14px;
-  font-size: 0.84rem;
-  font-weight: 650;
-}
-
-.button-secondary {
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--foreground);
-}
-
-kbd {
-  display: inline-flex;
-  min-width: 20px;
-  min-height: 19px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  background: rgb(255 255 255 / 4%);
-  color: var(--muted-strong);
-  padding: 1px 5px;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-}
-
-.spinner {
-  opacity: 0.7;
-}
-
-.form-error {
-  margin: 0;
-  color: var(--danger);
-  font-size: 0.78rem;
-  line-height: 1.5;
+  body {
+    @apply min-h-svh overflow-x-hidden bg-background text-foreground antialiased;
+  }
 }
