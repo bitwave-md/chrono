@@ -13,4 +13,10 @@ export class WorkspacePolicy {
       throw new ForbiddenError("Guest contribution requires client access.");
     }
   }
+
+  assertCanManageTeams(principal: Principal): void {
+    if (principal.role !== "owner" && principal.role !== "admin") {
+      throw new ForbiddenError("Only workspace owners and admins manage teams.");
+    }
+  }
 }

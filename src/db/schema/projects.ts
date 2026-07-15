@@ -131,6 +131,11 @@ export const issueNamespaces = pgTable(
       table.workspaceId,
       table.prefix,
     ),
+    uniqueIndex("issue_namespaces_tenant_client_id_unique").on(
+      table.workspaceId,
+      table.clientId,
+      table.id,
+    ),
     uniqueIndex("issue_namespaces_client_default_unique")
       .on(table.clientId)
       .where(sql`${table.projectId} is null`),
@@ -195,6 +200,10 @@ export const workflowStatuses = pgTable(
     uniqueIndex("workflow_statuses_workflow_slug_unique").on(
       table.workflowId,
       table.slug,
+    ),
+    uniqueIndex("workflow_statuses_workspace_id_unique").on(
+      table.workspaceId,
+      table.id,
     ),
     uniqueIndex("workflow_statuses_default_unique")
       .on(table.workflowId)

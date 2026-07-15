@@ -1,0 +1,64 @@
+import { MutationOriginPolicy } from "@/modules/auth/domain/mutation-origin-policy";
+import { ServerPrincipalResolver } from "@/modules/authorization/application/server-principal-resolver";
+import {
+  IssueService,
+  issuePriorities,
+  issueVisibilities,
+  type UpdateIssueInput,
+} from "@/modules/issues/application/issue-service";
+import { EntityId } from "@/modules/shared/domain/entity-id";
+import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
+import { JsonInput } from "@/modules/shared/infrastructure/json-input";
+
+export const runtime = "nodejs";
+
+const issueService = new IssueService();
+const mutationOriginPolicy = new MutationOriginPolicy();
+const principalResolver = new ServerPrincipalResolver();
+
+interface IssueRouteContext {
+  params: Promise<{ workspaceSlug: string; issueId: string }>;
+}
+
+export async function PATCH(
+  request: Request,
+  context: IssueRouteContext,
+): Promise<Response> {
+  try {
+    mutationOriginPolicy.assertTrusted(request);
+    const { workspaceSlug, issueId: issueIdInput } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const issueId = new EntityId(issueIdInput, "issueId").value;
+    const input = new JsonInput(await request.json());
+    const update: UpdateIssueInput = {
+      expectedVersion: input.requiredInteger("expectedVersion", 1),
+      ...(input.has("projectId")
+        ? { projectId: input.optionalUuid("projectId") }
+        : {}),
+      ...(input.has("teamId")
+        ? { teamId: input.optionalUuid("teamId") }
+        : {}),
+      ...(input.has("assigneeId")
+        ? { assigneeId: input.optionalUuid("assigneeId") }
+        : {}),
+      ...(input.has("statusId")
+        ? { statusId: input.optionalUuid("statusId") }
+        : {}),
+      ...(input.has("title")
+        ? { title: input.requiredString("title", 240) }
+        : {}),
+      ...(input.has("priority")
+        ? { priority: input.requiredEnum("priority", issuePriorities) }
+        : {}),
+      ...(input.has("visibility")
+        ? { visibility: input.requiredEnum("visibility", issueVisibilities) }
+        : {}),
+    };
+
+    const issue = await issueService.update(principal, issueId, update);
+
+    return Response.json({ data: issue });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}

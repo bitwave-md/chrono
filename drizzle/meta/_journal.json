@@ -15,6 +15,13 @@
       "when": 1784135106103,
       "tag": "0001_clients_projects_workflows",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784136333096,
+      "tag": "0002_teams_flexible_issues",
+      "breakpoints": true
     }
   ]
 }
