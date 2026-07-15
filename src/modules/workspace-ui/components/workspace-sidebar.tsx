@@ -4,19 +4,19 @@ import {
   Building2,
   CircleDot,
   Inbox,
+  LoaderCircle,
   LogOut,
   PanelLeftOpen,
   Users,
   Waves,
 } from "lucide-react";
-import Link from "next/link";
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSignOutMutation } from "@/modules/auth/presentation/use-auth-mutations";
 import { ProjectTree } from "@/modules/workspace-ui/components/project-tree";
 import { WorkspaceSelect } from "@/modules/workspace-ui/components/workspace-select";
 import type {
@@ -42,6 +42,8 @@ interface WorkspaceSidebarProps {
 }
 
 export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
+  const signOut = useSignOutMutation();
+
   if (props.collapsed) {
     return (
       <aside className="workspace-sidebar workspace-sidebar-collapsed">
@@ -163,8 +165,12 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
       </ScrollArea>
 
       <Separator />
-      <Button asChild className="sidebar-account" variant="ghost">
-        <Link href="/api/auth/signout">
+      <Button
+        className="sidebar-account"
+        disabled={signOut.isPending}
+        variant="ghost"
+        onClick={() => signOut.mutate()}
+      >
           <Avatar className="account-avatar">
             <AvatarFallback>{props.workspace.userEmail.slice(0, 1).toUpperCase()}</AvatarFallback>
           </Avatar>
@@ -172,8 +178,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
             <strong>{props.workspace.userEmail}</strong>
             <small>Sign out</small>
           </span>
-          <LogOut size={15} />
-        </Link>
+          {signOut.isPending ? <LoaderCircle className="animate-spin" /> : <LogOut size={15} />}
       </Button>
     </aside>
   );

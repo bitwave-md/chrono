@@ -39,6 +39,11 @@ export const authOptions: NextAuthOptions = {
       maxAge: 15 * 60,
     }),
   ],
+  pages: {
+    signIn: "/auth/signin",
+    verifyRequest: "/auth/verify-request",
+    error: "/auth/error",
+  },
   callbacks: {
     async signIn({ user }) {
       if (!user.email) {

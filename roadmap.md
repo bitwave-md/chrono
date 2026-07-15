@@ -121,4 +121,7 @@ sheets, commands, cards, badges, alerts, avatars, scrolling, tooltips, toggles,
 separators, skeletons, and keyboard hints. Authenticated Chrome tracers verified
 desktop and mobile shells, the workflow board, portalled Select menus, command
 navigation, rapid create, and the Issue detail sheet against the rebuilt Docker
-stack without changing TanStack Query, Zustand, GSAP, or API boundaries.
+stack without changing TanStack Query, Zustand, GSAP, or API boundaries. The
+built-in NextAuth screens were also replaced with branded shadcn sign-in,
+verification, and error states, while sign-in and sign-out remain encapsulated
+as TanStack Query mutations.
