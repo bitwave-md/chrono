@@ -13,8 +13,13 @@ Workspace membership, and render a protected workspace page.
 - [x] Add owner bootstrap and tenant-aware principal resolution.
 - [x] Add Docker production build, migration service, and health checks.
 - [x] Add foundational domain tests and static tenant-scope verification.
-- [ ] Run the migration and magic-link tracer bullet against PostgreSQL.
-- [ ] Validate the complete Compose stack on a host with Docker available.
+- [x] Run the migration and magic-link tracer bullet against PostgreSQL.
+- [x] Validate the complete Compose stack on a Docker/Colima host.
+
+Phase 1 runtime verification completed on 2026-07-15 with PostgreSQL 17,
+Colima, Docker Compose, Mailpit, and the PostgreSQL 18 client. The tracer created
+the Bitwave owner membership, persisted a database session, and rendered the
+tenant-protected workspace page.
 
 ## Phase 2: Clients and nested projects
 
