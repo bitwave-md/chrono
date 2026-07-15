@@ -156,3 +156,102 @@ when both Projects use the same effective workflow; otherwise it is mapped by
 workflow category or falls back to the destination default. Moving to the
 Client backlog clears the status. Team-only changes never alter workflow state.
 A stale `expectedVersion` returns `409 conflict`.
+
+## Time categories
+
+### List categories
+
+`GET /api/workspaces/:workspaceSlug/time-categories`
+
+Returns active Workspace categories.
+
+### Create a category
+
+`POST /api/workspaces/:workspaceSlug/time-categories`
+
+Owner or admin only.
+
+```json
+{
+  "name": "Development",
+  "key": "development",
+  "color": "#5E6AD2",
+  "defaultBillable": true
+}
+```
+
+## Active timer
+
+### Read the current timer
+
+`GET /api/workspaces/:workspaceSlug/timers/active`
+
+Returns the current user's active timer or `null`, plus `serverNow`. Clients
+render elapsed time from `startedAt` and the server clock offset without sending
+per-tick writes.
+
+### Start a timer
+
+`POST /api/workspaces/:workspaceSlug/timers/active`
+
+```json
+{
+  "issueId": "uuid",
+  "categoryId": "uuid",
+  "note": "Implement partner API client",
+  "billable": true
+}
+```
+
+`categoryId`, `note`, and `billable` are optional. When `billable` is omitted,
+the category default is snapshotted. A partial unique index permits only one
+active timer per user across Workspaces and devices; another start returns
+`409 conflict`.
+
+### Stop the current timer
+
+`DELETE /api/workspaces/:workspaceSlug/timers/active`
+
+Atomically stops the timer and creates one finalized TimeLog containing the
+timer's original attribution snapshots.
+
+## Time logs
+
+### List logs
+
+`GET /api/workspaces/:workspaceSlug/time-logs`
+
+Optional filters are `issueId`, `clientId`, `projectId`, `teamId`, `categoryId`,
+`workerUserId`, `from`, and `to`. Owners and admins may view Workspace logs;
+members and guests are restricted to their own worker dimension.
+
+### Create a manual log
+
+`POST /api/workspaces/:workspaceSlug/time-logs`
+
+```json
+{
+  "issueId": "uuid",
+  "categoryId": "uuid",
+  "startedAt": "2026-07-15T17:00:00.000Z",
+  "durationSeconds": 3600,
+  "note": "Manual implementation work",
+  "billable": true
+}
+```
+
+Manual entries must end in the past and may contain at most 31 days. Client,
+Project, root Project, Team, and worker dimensions are captured from the Issue
+and authenticated principal when the log is created.
+
+## Time reports
+
+`GET /api/workspaces/:workspaceSlug/time-reports?groupBy=:dimension`
+
+Owner or admin only. `groupBy` accepts `issue`, `project`, `root_project`,
+`client`, `team`, `category`, or `worker`. Each row returns total seconds,
+billable seconds, and entry count.
+
+The endpoint accepts the TimeLog filters plus `rootProjectId` and
+`projectScopeId`. `projectScopeId` recursively includes the selected Project and
+its descendants; `rootProjectId` uses the immutable root Project snapshot.

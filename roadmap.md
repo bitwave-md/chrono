@@ -56,11 +56,25 @@ conflicts.
 
 ## Phase 4: Time tracking and reporting foundations
 
-- Add timer sessions, manual time logs, and time categories.
-- Enforce one active timer per user.
-- Snapshot Client, Project, root Project, Team, and worker dimensions.
-- Aggregate time by Issue, Project subtree, Client, Team, category, and worker.
-- Synchronize timers across tabs and devices without per-tick database writes.
+Tracer bullet: create a work category, start one authoritative timer on an
+Issue, retrieve it from a separate request, stop it into a finalized time log,
+add a manual log, and aggregate both entries through snapshotted dimensions.
+
+- [x] Add customizable time categories.
+- [x] Add authoritative timer sessions and manual time logs.
+- [x] Enforce one active timer per user at the database boundary.
+- [x] Snapshot Client, exact Project, root Project, Team, and worker dimensions.
+- [x] Aggregate time by Issue, Project subtree, Client, Team, category, and
+  worker.
+- [x] Provide authoritative timer epochs and server clock values for cross-tab
+  and multi-device synchronization without per-tick database writes.
+
+Phase 4 runtime verification completed on 2026-07-15. The authenticated tracer
+created a billable Development category, started and retrieved an API-1 timer,
+rejected a concurrent second timer, stopped it into a finalized log, and added a
+manual Client-backlog log. Reports returned correct totals for Issue, exact
+Project, root Project, recursive Project subtree, Client, Team, category, and
+worker dimensions.
 
 ## Phase 5: Keyboard UX and production hardening
 

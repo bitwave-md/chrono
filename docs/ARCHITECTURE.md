@@ -133,6 +133,28 @@ who recorded the time, not necessarily the current Issue assignee.
 
 These snapshots preserve historical reports when an Issue is later moved.
 
+`TimerSession` is the authoritative running-clock record. It stores one raw
+`startedAt` epoch and is read with a server-clock value; browser clients derive
+the visual elapsed time locally and never write database ticks. A partial unique
+index on the worker user ID enforces one active timer across all Workspaces and
+devices. Starting a second timer returns a conflict.
+
+Stopping a timer atomically stamps `stoppedAt` and creates exactly one
+`TimeLog`. The finalized duration is derived from the stored start and stop
+epochs. A unique TimerSession relation prevents duplicate finalization. Manual
+logs use the same snapshot resolver and reporting table, so reports do not need
+separate timer/manual query paths.
+
+`TimeCategory` belongs to a Workspace and provides a stable reporting key,
+display name, color, and default billable flag. A time entry may remain
+uncategorized; its billable value is always snapshotted on the session/log.
+
+Workspace owners and admins can aggregate finalized logs by Issue, exact
+Project, snapshotted root Project, current recursive Project subtree, Client,
+Team, category, or worker. Members and guests can list only their own time logs.
+Guests can start or manually log time only on Client-shared or directly assigned
+Issues where their ClientMembership grants contribution.
+
 ## Authorization boundary
 
 WorkspaceMembership is the tenant principal. An Issue assignee must be an
