@@ -106,4 +106,29 @@ export class JsonInput {
 
     return value as number;
   }
+
+  optionalBoolean(key: string): boolean | null {
+    const value = this.#value[key];
+
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (typeof value !== "boolean") {
+      throw new ValidationError(`${key} must be a boolean.`);
+    }
+
+    return value;
+  }
+
+  requiredDateTime(key: string): Date {
+    const value = this.requiredString(key, 64);
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new ValidationError(`${key} must be a valid ISO date-time.`);
+    }
+
+    return date;
+  }
 }

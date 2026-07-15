@@ -19,4 +19,20 @@ export class WorkspacePolicy {
       throw new ForbiddenError("Only workspace owners and admins manage teams.");
     }
   }
+
+  assertCanManageTimeCategories(principal: Principal): void {
+    if (principal.role !== "owner" && principal.role !== "admin") {
+      throw new ForbiddenError(
+        "Only workspace owners and admins manage time categories.",
+      );
+    }
+  }
+
+  assertCanViewTimeReports(principal: Principal): void {
+    if (principal.role !== "owner" && principal.role !== "admin") {
+      throw new ForbiddenError(
+        "Only workspace owners and admins view workspace time reports.",
+      );
+    }
+  }
 }

@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/db/postgres-error.test.ts src/modules/auth/domain/email-address.test.ts src/modules/workspaces/domain/workspace-slug.test.ts src/modules/projects/domain/project-tree-builder.test.ts src/modules/shared/domain/uppercase-code.test.ts",
+    "test": "node --experimental-strip-types --test src/db/postgres-error.test.ts src/modules/auth/domain/email-address.test.ts src/modules/workspaces/domain/workspace-slug.test.ts src/modules/projects/domain/project-tree-builder.test.ts src/modules/shared/domain/uppercase-code.test.ts src/modules/time-tracking/domain/time-category-key.test.ts src/modules/time-tracking/application/time-entry-validator.test.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
