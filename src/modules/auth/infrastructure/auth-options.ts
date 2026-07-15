@@ -13,6 +13,7 @@ import {
 } from "@/db/schema";
 import { AuthAccessService } from "@/modules/auth/application/auth-access-service";
 import { MembershipProvisioningService } from "@/modules/auth/application/membership-provisioning-service";
+import { EmailServerConfiguration } from "@/modules/auth/infrastructure/email-server-configuration";
 
 const authAccessService = new AuthAccessService();
 const membershipProvisioningService = new MembershipProvisioningService();
@@ -34,7 +35,9 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     EmailProvider({
-      server: process.env.EMAIL_SERVER ?? "smtp://localhost:1025",
+      server: EmailServerConfiguration.from(
+        process.env.EMAIL_SERVER ?? "smtp://localhost:1025",
+      ).toTransportOptions(),
       from: process.env.EMAIL_FROM ?? "Chrono <chrono@localhost>",
       maxAge: 15 * 60,
     }),

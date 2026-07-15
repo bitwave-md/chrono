@@ -31,6 +31,17 @@ native issue tracking, time tracking, and reporting.
 4. Open `http://localhost:3000/app`, request a link for the configured bootstrap
    email, and read the message at `http://localhost:8025`.
 
+For the complete application in Docker, use the local override so the app
+resolves SMTP through the `mailpit` service:
+
+```sh
+npm run stack:up
+```
+
+Do not use the production-only Compose command with
+`EMAIL_SERVER=smtp://localhost:1025`; inside a container, `localhost` refers to
+that container rather than Mailpit.
+
 The first successful bootstrap login creates the configured workspace and owner
 membership. Other addresses require an active membership or unexpired invite.
 

@@ -145,3 +145,17 @@ shadcn dark token map and Tailwind base rules, and component layout is expressed
 locally with Tailwind utilities and shadcn variants. Authenticated desktop and
 mobile tracers re-verified the list, command palette, rapid-create dialog, Issue
 sheet, responsive navigation, and production Docker build.
+
+## Authentication SMTP maintenance
+
+- [x] Parse `EMAIL_SERVER` with the WHATWG URL API before creating the
+  Nodemailer transport.
+- [x] Publish Mailpit SMTP for host development and retain `mailpit:1025` for
+  the Docker application network.
+- [x] Add explicit local stack commands and document the loopback boundary.
+- [x] Re-run the magic-link tracer and confirm delivery in Mailpit.
+
+The SMTP fix was runtime-verified on 2026-07-15. The application resolved
+`smtp://mailpit:1025`, the bootstrap magic-link request increased Mailpit's
+message count from zero to one, and application logs contained neither
+`SIGNIN_EMAIL_ERROR` nor the Node `url.parse()` deprecation warning.

@@ -9,7 +9,9 @@ docker compose -f compose.yaml -f compose.dev.yaml up --build -d
 ```
 
 The application is available at `http://localhost:3000`; Mailpit is available
-at `http://localhost:8025`.
+at `http://localhost:8025`. Mailpit SMTP is published at
+`127.0.0.1:1025` for a host-run Next.js process, while the Docker application
+uses the internal `mailpit:1025` service address.
 
 ## Backup
 
