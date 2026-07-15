@@ -10,6 +10,10 @@ The application is designed as a modular monolith: one Next.js application,
 one PostgreSQL database, and independently testable domain modules behind thin
 transport boundaries.
 
+Phase 1 pins stable NextAuth 4 with its compatible Drizzle adapter. Auth.js v5
+remains published under a beta tag, so it is not the production baseline. The
+initial provider is email magic-link authentication backed by database sessions.
+
 ## Approved hierarchy
 
 ```text

@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chrono}
+      POSTGRES_USER: ${POSTGRES_USER:-chrono}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chrono}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - chrono_postgres_data:/var/lib/postgresql/data
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
+      EMAIL_SERVER: ${EMAIL_SERVER:?EMAIL_SERVER is required}
+      EMAIL_FROM: ${EMAIL_FROM:-Chrono <chrono@localhost>}
+      AUTH_BOOTSTRAP_EMAIL: ${AUTH_BOOTSTRAP_EMAIL:?AUTH_BOOTSTRAP_EMAIL is required}
+      AUTH_BOOTSTRAP_WORKSPACE_NAME: ${AUTH_BOOTSTRAP_WORKSPACE_NAME:-Bitwave}
+      AUTH_BOOTSTRAP_WORKSPACE_SLUG: ${AUTH_BOOTSTRAP_WORKSPACE_SLUG:-bitwave}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  chrono_postgres_data:

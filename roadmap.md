@@ -5,14 +5,16 @@
 Tracer bullet: boot the Docker stack, authenticate an owner, create or load a
 Workspace membership, and render a protected workspace page.
 
-- Scaffold the Next.js App Router application.
-- Configure PostgreSQL, Drizzle ORM, and committed migrations.
-- Configure Auth.js with database sessions and the Drizzle adapter.
-- Model User, Account, AuthSession, VerificationToken, Workspace,
+- [x] Scaffold the Next.js App Router application.
+- [x] Configure PostgreSQL, Drizzle ORM, and a committed initial migration.
+- [x] Configure stable NextAuth with database sessions and the Drizzle adapter.
+- [x] Model User, Account, AuthSession, VerificationToken, Workspace,
   WorkspaceMembership, and Invitation.
-- Add owner bootstrap and tenant-aware principal resolution.
-- Add Docker production build, migration service, and health checks.
-- Add authentication and tenant-isolation tests.
+- [x] Add owner bootstrap and tenant-aware principal resolution.
+- [x] Add Docker production build, migration service, and health checks.
+- [x] Add foundational domain tests and static tenant-scope verification.
+- [ ] Run the migration and magic-link tracer bullet against PostgreSQL.
+- [ ] Validate the complete Compose stack on a host with Docker available.
 
 ## Phase 2: Clients and nested projects
 
