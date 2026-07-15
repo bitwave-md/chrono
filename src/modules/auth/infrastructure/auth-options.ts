@@ -45,13 +45,7 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
 
-      const isAllowed = await authAccessService.canRequestMagicLink(user.email);
-
-      if (isAllowed && user.id) {
-        await membershipProvisioningService.provision(user.id, user.email);
-      }
-
-      return isAllowed;
+      return authAccessService.canRequestMagicLink(user.email);
     },
     async session({ session, user }) {
       if (session.user) {
@@ -63,6 +57,11 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async createUser({ user }) {
+      if (user.email) {
+        await membershipProvisioningService.provision(user.id, user.email);
+      }
+    },
+    async signIn({ user }) {
       if (user.email) {
         await membershipProvisioningService.provision(user.id, user.email);
       }
