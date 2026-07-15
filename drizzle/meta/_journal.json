@@ -8,6 +8,13 @@
       "when": 1784132090553,
       "tag": "0000_phase_1_auth_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784135106103,
+      "tag": "0001_clients_projects_workflows",
+      "breakpoints": true
     }
   ]
 }

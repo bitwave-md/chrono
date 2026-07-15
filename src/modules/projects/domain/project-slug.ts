@@ -1,7 +1,7 @@
 import { Slug } from "../../shared/domain/slug.ts";
 
-export class WorkspaceSlug extends Slug {
+export class ProjectSlug extends Slug {
   constructor(input: string) {
-    super(input, "Workspace slug");
+    super(input, "Project slug");
   }
 }

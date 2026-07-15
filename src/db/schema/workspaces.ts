@@ -73,6 +73,10 @@ export const workspaceMemberships = pgTable(
       table.workspaceId,
       table.userId,
     ),
+    uniqueIndex("workspace_memberships_workspace_id_unique").on(
+      table.workspaceId,
+      table.id,
+    ),
     index("workspace_memberships_user_status_idx").on(
       table.userId,
       table.status,
