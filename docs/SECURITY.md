@@ -13,8 +13,11 @@ session alone does not grant tenant access.
 
 ## Dependency advisory review
 
-Reviewed on 2026-07-15. `npm audit` reports advisories that currently have no
-compatible non-breaking resolution in the selected stable stack.
+Reviewed again after Phase 5 on 2026-07-15. `npm audit --omit=dev` reports six
+production advisories (five moderate and one high); the full audit reports ten
+(nine moderate and one high). The Phase 5 TanStack Query, Zustand, GSAP, Radix,
+and Lucide dependencies add no advisory chain. Existing advisories currently
+have no compatible non-breaking resolution in the selected stable stack.
 
 ### Nodemailer
 
@@ -51,3 +54,26 @@ development server. It is not included in the final application runner image.
 - Do not expose PostgreSQL publicly.
 - Back up PostgreSQL outside the Docker volume and test restores.
 - Re-run production and full dependency audits during each dependency upgrade.
+
+## Phase 5 authorization probes
+
+An isolated guest session and hidden Client fixture verified that Guests:
+
+- Receive only Clients linked through their ClientMembership.
+- Receive only Client-shared or directly assigned Issues.
+- Do not receive internal Projects.
+- Receive only their own TimeLogs.
+- Cannot access Workspace reports.
+- Cannot create Issues or timers without contribution permission.
+
+The fixtures were removed after verification. Tenant-safe foreign keys and
+server-side principal resolution remain the enforcement boundary; UI hiding is
+not treated as authorization.
+
+## Upgrade review
+
+React and React DOM were advanced to the current compatible 19.2.7 patch, and
+Node type definitions now match the Node 24 runtime. Next.js and the new UI
+dependencies are current. ESLint 10 and TypeScript 7 are deferred as major
+toolchain upgrades pending Next.js compatibility review. Nodemailer 9 remains
+incompatible with stable NextAuth's supported peer range.

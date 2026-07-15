@@ -78,8 +78,26 @@ worker dimensions.
 
 ## Phase 5: Keyboard UX and production hardening
 
-- Add command menu and contextual shortcut registry.
-- Add project tree, list, board, and issue peek-pane experiences.
-- Complete guest/client visibility and audit coverage.
-- Profile hierarchy and reporting queries before adding derived structures.
-- Validate backups, restores, upgrades, security, and container operations.
+Tracer bullet: open the authenticated Workspace shell, select a Client and
+Project from the tree, create and optimistically update an Issue in list/board
+views, inspect it in an animated peek pane, and start/stop its authoritative
+timer through keyboard-first controls.
+
+- [x] Add TanStack Query server-state and per-workspace Zustand UI-state
+  providers.
+- [x] Add command menu and contextual shortcut registry.
+- [x] Add collapsible navigation, Client/Project tree, issue list, and board.
+- [x] Add rapid issue creation, optimistic movement, and issue peek pane.
+- [x] Add visual timer controls backed by authoritative Phase 4 epochs.
+- [x] Complete guest/client visibility and audit coverage.
+- [x] Profile hierarchy and reporting queries before adding derived structures.
+- [x] Validate backups, restores, upgrades, security, and container operations.
+
+Phase 5 runtime verification completed on 2026-07-15. Authenticated desktop and
+mobile browser tracers exercised the nested tree, list/board switching, command
+menu, rapid-create dialog, optimistic status movement, animated Issue pane, and
+visual timer start/stop. Temporary guest fixtures verified Client, Project,
+Issue, report, time-log, and contribution boundaries and were removed. Query
+profiles remained below one millisecond on the current dataset; custom-format
+backup/restore and all four migrations replayed successfully in isolated
+databases.

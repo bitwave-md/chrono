@@ -171,6 +171,21 @@ TanStack Query owns asynchronous server state, cache invalidation, and
 optimistic mutations. Zustand owns synchronous UI state such as the sidebar,
 command menu, and peek pane, and is consumed through selectors.
 
+The root App Router layout creates one browser QueryClient with bounded stale
+and garbage-collection windows. Feature-specific hooks encapsulate every query
+and mutation; components never fetch through effects. Issue creation and updates
+cancel the active list query, snapshot it, apply an optimistic record or patch,
+roll back on failure, and invalidate the Workspace Issue prefix on settlement.
+
+Each authenticated Workspace shell creates separate vanilla Zustand stores for
+navigation/view state, overlays, and the command menu. React providers scope the
+stores to the rendered Workspace request, and components always subscribe with
+selectors. Server records are never copied into a store.
+
+Active timer state remains in TanStack Query. Mutations notify other tabs with a
+BroadcastChannel and every tab invalidates the authoritative timer query. The
+visual clock derives elapsed seconds from `startedAt` and `serverNow` locally.
+
 Animations use GSAP through `@gsap/react` and `useGSAP`. Only compositor-friendly
 properties are animated.
 

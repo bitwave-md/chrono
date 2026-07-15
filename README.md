@@ -51,5 +51,8 @@ backups separately.
 
 - `docs/ARCHITECTURE.md`
 - `docs/API.md`
+- `docs/OPERATIONS.md`
+- `docs/PERFORMANCE.md`
 - `docs/SECURITY.md`
+- `docs/UX.md`
 - `roadmap.md`

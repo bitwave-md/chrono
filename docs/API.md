@@ -157,6 +157,13 @@ workflow category or falls back to the destination default. Moving to the
 Client backlog clears the status. Team-only changes never alter workflow state.
 A stale `expectedVersion` returns `409 conflict`.
 
+### List workflow statuses
+
+`GET /api/workspaces/:workspaceSlug/workflows/:workflowId/statuses`
+
+Returns active statuses ordered by position for a tenant-accessible effective
+Project workflow. The board uses these IDs for optimistic movement.
+
 ## Time categories
 
 ### List categories
