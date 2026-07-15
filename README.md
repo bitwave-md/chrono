@@ -50,5 +50,6 @@ backups separately.
 ## Documentation
 
 - `docs/ARCHITECTURE.md`
+- `docs/API.md`
 - `docs/SECURITY.md`
 - `roadmap.md`

@@ -23,22 +23,36 @@ tenant-protected workspace page.
 
 ## Phase 2: Clients and nested projects
 
-- Add Client and ClientMembership.
-- Add Project with a nullable self-referencing parent.
-- Add Project kinds for project, subproject, and sprint.
-- Add Client-owned and Project-owned IssueNamespace records.
-- Add Project-owned workflows and workflow statuses.
-- Support inherited and custom child-project workflows.
-- Add cycle-safe hierarchy commands and access policies.
+- [x] Add Client and ClientMembership.
+- [x] Add Project with a nullable self-referencing parent.
+- [x] Add Project kinds for project, subproject, and sprint.
+- [x] Add Client-owned and Project-owned IssueNamespace records.
+- [x] Add Project-owned workflows and workflow statuses.
+- [x] Support inherited and custom child-project workflows.
+- [x] Add cycle-safe hierarchy commands and access policies.
+
+Phase 2 runtime verification completed on 2026-07-15. The authenticated tracer
+created DaCredit, Main CRM, a nested API subproject, and a nested sprint. It
+verified inherited and overridden issue namespaces, inherited and owned
+workflows, default workflow statuses, mutation-origin protection, duplicate-key
+conflicts, and transactional cycle rejection.
 
 ## Phase 3: Flexible issue engine
 
-- Add Issue with required Workspace and Client relations.
-- Keep Project, Team, and assignee relations nullable and independent.
-- Allocate stable issue keys from the effective Client or Project namespace.
-- Require workflow status only when a Project is assigned.
-- Add workspace, client, project, team, and assignee views.
-- Add optimistic issue mutations with version conflict handling.
+- [x] Add Issue with required Workspace and Client relations.
+- [x] Keep Project, Team, and assignee relations nullable and independent.
+- [x] Allocate stable issue keys from the effective Client or Project namespace.
+- [x] Require workflow status only when a Project is assigned.
+- [x] Add workspace-scoped Client issue lists with Project, Team, and assignee
+  filters.
+- [x] Add optimistic issue mutations with version conflict handling.
+
+Phase 3 runtime verification completed on 2026-07-15. The authenticated tracer
+created Team-assigned, individually assigned, combined, and unassigned issues.
+It verified atomic namespace counters, stable issue keys, Project workflow
+defaults, Client-backlog status clearing, cross-workflow category mapping,
+Team/workflow independence, guest visibility boundaries, and stale-version
+conflicts.
 
 ## Phase 4: Time tracking and reporting foundations
 

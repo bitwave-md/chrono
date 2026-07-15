@@ -76,6 +76,12 @@ Project commands must reject self-parenting and descendant cycles inside a
 transaction. Recursive PostgreSQL queries provide breadcrumbs and subtree
 queries. A closure table is deferred until measurements justify it.
 
+The implemented PostgreSQL model uses composite foreign keys so a child Project
+cannot reference a parent from another Workspace or Client. Root nodes must use
+the `project` kind and own a Workflow; child nodes use `subproject` or `sprint`
+and may own or inherit a Workflow. Cyclic moves are rejected inside a serializable
+transaction using a recursive descendant query.
+
 ## Workflows
 
 Workspace and Team do not own workflow statuses.
@@ -94,6 +100,29 @@ Project atomically assigns that Project's default status. Removing it from a
 Project clears its workflow status.
 
 Team changes never affect workflow status.
+
+Each owned Workflow is created with Backlog, Todo, In Progress, Done, and
+Canceled statuses. A partial unique index enforces one active default status per
+Workflow. An inherited Project stores no duplicate Workflow or statuses.
+
+## Flexible issue engine
+
+An Issue always stores its Workspace and Client. Project, Team, and assignee are
+independent nullable relations, allowing Project backlog items, functional-Team
+work, direct individual assignments, combined Team/individual assignments, and
+unassigned Client backlog items without parallel issue models.
+
+Issue creation runs in a serializable transaction. It resolves the effective
+namespace and workflow, atomically advances the namespace counter, and persists
+the allocated namespace and number on the Issue. Concurrent creation therefore
+cannot allocate the same human-readable key.
+
+Issue updates use an integer `version`. Callers submit the version they loaded;
+the update predicate matches both Issue ID and version, then increments the
+version atomically. A missing match returns a controlled conflict instead of
+overwriting another user's mutation. Project moves preserve the allocated issue
+key. Moving between different effective workflows maps status by semantic
+category, while moves inside the same workflow preserve the exact status.
 
 ## Time attribution
 
