@@ -3,8 +3,8 @@
 ## Product boundary
 
 Chrono is a self-hosted agency workspace. A Workspace represents the operating
-company, Clients represent customers, and work is organized through nested
-Projects, Subprojects, Sprints, and Issues.
+company, Clients represent customers, and work is organized through Projects
+and Issues. Every Project is a direct child of one Client.
 
 The system is a modular monolith: one Next.js App Router application, one
 PostgreSQL database, and independently testable domain services behind thin API
@@ -19,9 +19,9 @@ Workspace
 └── Clients
     ├── Default issue namespace
     └── Projects
-        ├── Optional parent Project
         ├── Optional issue namespace override
-        ├── Owned or inherited workflow
+        ├── Owned workflow
+        ├── Branches
         ├── User assignees
         ├── Updates, activity, resources, and milestones
         └── Issues
@@ -32,26 +32,29 @@ Workspace
 ```
 
 An Issue always belongs to a Workspace and Client. Its Project is nullable, so
-unprojected Issues live in the Client backlog. User responsibility is modeled
+unprojected Issues live in the Client backlog. Project Issues live on virtual
+Main when `branchId` is null or on one named Project Branch. User responsibility is modeled
 through `issue_assignees` and `project_assignees`, allowing zero, one, or many
 active Workspace members without duplicating columns on the work item.
 
 ## Identity and workflows
 
 Workspace-level issue prefixes are prohibited. Every Client owns one default
-`IssueNamespace`; a Project node may override it. Issues inherit the nearest
-Project namespace and fall back to the Client namespace. The allocated
+`IssueNamespace`; a Project may override it. Issues use their Project namespace
+when present and otherwise fall back to the Client namespace. The allocated
 namespace and number remain stable when an Issue moves.
 
-Workflows are owned only by Projects. Root Projects own a workflow. Child
-Projects may own one or inherit the nearest ancestor workflow. A Project Issue
-must use a status from its effective workflow. A Client-backlog Issue has
+Workflows are owned only by Projects, and every Project owns exactly one. A
+Project Issue must use a status from that Project's workflow. A Client-backlog Issue has
 `statusId = null` and is presented as Backlog in the UI.
 
-Project moves and Issue creation run in serializable transactions. Recursive
-queries reject hierarchy cycles and resolve inherited workflow and namespace
-metadata. Issue updates require `expectedVersion`, increment the stored version
-atomically, and return a controlled conflict for stale mutations.
+Branches are one-level Project workstreams, not nested Projects or version-control
+forks. Feature, sprint, refactor, release, and other Branches share their
+Project's workflow, issue namespace, visibility, permissions, and assignees.
+
+Project and Issue creation run in serializable transactions. Issue updates
+require `expectedVersion`, increment the stored version atomically, and return
+a controlled conflict for stale mutations.
 
 ## Project and Issue activity
 
@@ -74,9 +77,10 @@ visual tick. A partial unique index permits one active timer per user across
 devices.
 
 Stopping a timer creates one finalized `TimeLog`. Timer and manual entries
-snapshot Client, exact Project, root Project, worker, category, and billable
-dimensions. Reports aggregate by Issue, Project, Project subtree, Client,
-category, or worker while remaining historically stable after Issue movement.
+snapshot Client, Project, worker, category, and billable dimensions. Reports
+also snapshot the Branch active when work begins. Reports aggregate by Issue,
+Project, Branch, Client, category, or worker while remaining
+historically stable after Issue movement.
 
 ## Authorization
 

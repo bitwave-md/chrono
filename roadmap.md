@@ -1,5 +1,26 @@
 # Chrono Roadmap
 
+## Project Branches model
+
+Tracer bullet: keep Projects as direct Client children, introduce project-local
+Branches for features, sprints, refactors, and releases, then verify Main and
+named Branch issue flows with historically stable time attribution.
+
+- [x] Remove disposable nested Project fixtures.
+- [x] Remove Project parent, kind, and workflow-inheritance fields.
+- [x] Add Branch schema, services, APIs, Issue assignment, and reports.
+- [x] Add Main, named Branch, and All-Issues Project views.
+- [x] Add Branch creation, lifecycle controls, and Issue property triggers.
+- [x] Update documentation, runtime fixtures, and migration coverage.
+- [x] Re-run static checks, unit tests, production build, and Docker verification.
+
+The Project Branches model was completed and runtime-verified on 2026-07-16.
+Clean migration replay produced flat Client-owned Projects and tenant-safe
+feature, sprint, refactor, release, and other Branches. Authenticated tracers
+verified multiple active Branches, Main/named/All issue scopes, cross-Project
+rejection, automatic Branch clearing on Project moves, Branch time snapshots,
+Main reporting fallback, and desktop route rendering.
+
 ## Phase 1: Database and authentication setup
 
 Tracer bullet: boot the Docker stack, authenticate an owner, create or load a
@@ -21,21 +42,19 @@ Colima, Docker Compose, Mailpit, and the PostgreSQL 18 client. The tracer create
 the Bitwave owner membership, persisted a database session, and rendered the
 tenant-protected workspace page.
 
-## Phase 2: Clients and nested projects
+## Phase 2: Clients and projects
 
 - [x] Add Client and ClientMembership.
-- [x] Add Project with a nullable self-referencing parent.
-- [x] Add Project kinds for project, subproject, and sprint.
+- [x] Add flat Client-owned Projects.
 - [x] Add Client-owned and Project-owned IssueNamespace records.
 - [x] Add Project-owned workflows and workflow statuses.
-- [x] Support inherited and custom child-project workflows.
-- [x] Add cycle-safe hierarchy commands and access policies.
+- [x] Give every Project an independent workflow.
+- [x] Add tenant-safe Project access policies.
 
 Phase 2 runtime verification completed on 2026-07-15. The authenticated tracer
-created DaCredit, Main CRM, a nested API subproject, and a nested sprint. It
-verified inherited and overridden issue namespaces, inherited and owned
-workflows, default workflow statuses, mutation-origin protection, duplicate-key
-conflicts, and transactional cycle rejection.
+created DaCredit and multiple Projects. It verified Client and Project issue
+namespaces, Project-owned workflows, default workflow statuses,
+mutation-origin protection, and duplicate-key conflicts.
 
 ## Phase 3: Flexible issue engine
 
@@ -62,17 +81,16 @@ add a manual log, and aggregate both entries through snapshotted dimensions.
 - [x] Add customizable time categories.
 - [x] Add authoritative timer sessions and manual time logs.
 - [x] Enforce one active timer per user at the database boundary.
-- [x] Snapshot Client, exact Project, root Project, and worker dimensions.
-- [x] Aggregate time by Issue, Project subtree, Client, category, and worker.
+- [x] Snapshot Client, Project, and worker dimensions.
+- [x] Aggregate time by Issue, Project, Client, category, and worker.
 - [x] Provide authoritative timer epochs and server clock values for cross-tab
   and multi-device synchronization without per-tick database writes.
 
 Phase 4 runtime verification completed on 2026-07-15. The authenticated tracer
 created a billable Development category, started and retrieved an API-1 timer,
 rejected a concurrent second timer, stopped it into a finalized log, and added a
-manual Client-backlog log. Reports returned correct totals for Issue, exact
-Project, root Project, recursive Project subtree, Client, category, and
-worker dimensions.
+manual Client-backlog log. Reports returned correct totals for Issue, Project,
+Client, category, and worker dimensions.
 
 ## Phase 5: Keyboard UX and production hardening
 
@@ -84,15 +102,15 @@ timer through keyboard-first controls.
 - [x] Add TanStack Query server-state and per-workspace Zustand UI-state
   providers.
 - [x] Add command menu and contextual shortcut registry.
-- [x] Add collapsible navigation, Client/Project tree, issue list, and board.
+- [x] Add collapsible navigation, Client/Project lists, issue list, and board.
 - [x] Add rapid issue creation, optimistic movement, and issue peek pane.
 - [x] Add visual timer controls backed by authoritative Phase 4 epochs.
 - [x] Complete guest/client visibility and audit coverage.
-- [x] Profile hierarchy and reporting queries before adding derived structures.
+- [x] Profile Project and reporting queries before adding derived structures.
 - [x] Validate backups, restores, upgrades, security, and container operations.
 
 Phase 5 runtime verification completed on 2026-07-15. Authenticated desktop and
-mobile browser tracers exercised the nested tree, list/board switching, command
+mobile browser tracers exercised Project navigation, list/board switching, command
 menu, rapid-create dialog, optimistic status movement, animated Issue pane, and
 visual timer start/stop. Temporary guest fixtures verified Client, Project,
 Issue, report, time-log, and contribution boundaries and were removed. Query

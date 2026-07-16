@@ -14,11 +14,13 @@ database session, an accessible Workspace membership, and a trusted `Origin`.
 ## Projects
 
 - `GET /api/workspaces/:workspaceSlug/projects?clientId=:clientId` returns the
-  nested Project tree with effective namespace and workflow IDs.
-- `POST /api/workspaces/:workspaceSlug/projects` creates a root Project,
-  Subproject, or Sprint.
-- `POST /api/workspaces/:workspaceSlug/projects/:projectId/move` moves a node
-  while rejecting cycles and cross-Client parents.
+  Client's flat Project list with namespace and workflow IDs.
+- `POST /api/workspaces/:workspaceSlug/projects` creates a Project directly
+  under its Client and provisions its workflow.
+- `GET|POST /api/workspaces/:workspaceSlug/projects/:projectId/branches` lists
+  or creates feature, sprint, refactor, release, and other Branches.
+- `PATCH /api/workspaces/:workspaceSlug/projects/:projectId/branches/:branchId`
+  updates or archives a Branch. Branches never fork or merge data.
 - `GET /api/workspaces/:workspaceSlug/projects/:projectId` returns Project
   overview data, assignees, progress, latest update, resources, and milestones.
 - `PATCH /api/workspaces/:workspaceSlug/projects/:projectId` updates state,
@@ -42,7 +44,7 @@ Project assignees are supplied as membership IDs:
 
 - `GET /api/workspaces/:workspaceSlug/issues` lists accessible Issues across
   Clients. Optional filters are `clientId`, `projectId`,
-  `assigneeMembershipId`, and `mine=true`.
+  `branchId`, `branch=main`, `assigneeMembershipId`, and `mine=true`.
 - `POST /api/workspaces/:workspaceSlug/issues` creates an Issue.
 - `GET /api/workspaces/:workspaceSlug/issues/:issueId` returns full Issue
   detail, including assignees and labels.
@@ -61,6 +63,7 @@ Create example:
 {
   "clientId": "uuid",
   "projectId": "uuid",
+  "branchId": "uuid-or-null",
   "assigneeMembershipIds": ["membership-uuid"],
   "statusId": null,
   "parentIssueId": null,
@@ -71,10 +74,12 @@ Create example:
 }
 ```
 
-A Project Issue receives its effective workflow default when `statusId` is
+A Project Issue receives its Project workflow default when `statusId` is
 omitted. A Client-backlog Issue uses `projectId: null` and has no persisted
 workflow status. Moving between workflows maps status by category. Moving to
-the Client backlog clears status. A stale version returns `409 conflict`.
+the Client backlog clears status and Branch. Moving to another Project clears
+Branch unless a valid destination `branchId` is supplied. A stale version
+returns `409 conflict`.
 
 ## Workflow statuses
 
@@ -93,6 +98,6 @@ active statuses ordered by position for an accessible Project workflow.
   aggregates for owners and admins.
 
 Time-log filters are `issueId`, `clientId`, `projectId`, `categoryId`,
-`workerUserId`, `from`, and `to`. Report grouping accepts `issue`, `project`,
-`root_project`, `client`, `category`, or `worker`; `projectScopeId` includes a
-recursive Project subtree.
+`branchId`, `workerUserId`, `from`, and `to`. Report grouping accepts `issue`,
+`project`, `branch`, `client`, `category`, or `worker`; null Branch attribution
+is returned as `Main`.
