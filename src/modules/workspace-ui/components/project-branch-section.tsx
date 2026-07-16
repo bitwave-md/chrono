@@ -13,6 +13,7 @@ import {
   useUpdateProjectBranchMutation,
 } from "@/modules/workspace-ui/application/use-project-branch-queries";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
+import { projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import type {
   ProjectBranchKind,
   ProjectBranchState,
@@ -22,12 +23,9 @@ const kindOptions = ["feature", "sprint", "refactor", "release", "other"].map(
   (value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }),
 );
 
-const stateOptions = [
-  { value: "planned", label: "Planned", color: "#94a3b8" },
-  { value: "active", label: "Active", color: "#60a5fa" },
-  { value: "completed", label: "Completed", color: "#22c55e" },
-  { value: "canceled", label: "Canceled", color: "#71717a" },
-];
+const stateOptions = projectStateOptions
+  .filter((option) => option.value !== "paused")
+  .map((option) => option.value === "active" ? { ...option, label: "Active" } : option);
 
 export function ProjectBranchSection({
   workspaceSlug,

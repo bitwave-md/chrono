@@ -11,12 +11,13 @@ interface PropertyTriggerProps {
   label: string;
   value: ReactNode;
   color?: string | null;
+  iconClassName?: string;
   disabled?: boolean;
   className?: string;
   onClick?: () => void;
 }
 
-export function PropertyTrigger({ icon: Icon, label, value, color, ...props }: PropertyTriggerProps) {
+export function PropertyTrigger({ icon: Icon, label, value, color, iconClassName, ...props }: PropertyTriggerProps) {
   return (
     <Button
       aria-label={`${label}: ${typeof value === "string" ? value : "selected"}`}
@@ -26,7 +27,7 @@ export function PropertyTrigger({ icon: Icon, label, value, color, ...props }: P
       variant="ghost"
       onClick={props.onClick}
     >
-      <Icon className="size-3.5" style={color ? { color } : undefined} />
+      <Icon className={cn("size-3.5", iconClassName)} style={color ? { color } : undefined} />
       <span className="truncate">{value}</span>
     </Button>
   );

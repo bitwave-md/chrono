@@ -1,5 +1,17 @@
 # Chrono Roadmap
 
+## Unified semantic property pickers
+
+Tracer bullet: change status and priority from an Issue row, full Issue page,
+create dialog, Project overview, or Project directory and always see the same
+semantic icon, color, option order, and searchable picker behavior.
+
+- [x] Make Issue-list priority and workflow icon metadata authoritative.
+- [x] Teach the shared property picker to render option-specific Lucide icons.
+- [x] Replace legacy Issue detail and creation priority/status options.
+- [x] Align Project and Branch state and priority controls.
+- [x] Verify type safety, lint rules, tests, build, and file-size limits.
+
 ## Linear-style Client workspace
 
 Tracer bullet: open a Client through one persistent Overview, Issues, Projects,

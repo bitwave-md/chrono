@@ -2,10 +2,10 @@
 
 import {
   Activity,
+  Circle,
   CircleDashed,
   FolderKanban,
   Gauge,
-  Signal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { KeyboardEvent, MouseEvent } from "react";
@@ -118,7 +118,7 @@ function ProjectDirectoryRow({
       <PropertyCell>
         <OptionProperty
           disabled={update.isPending}
-          icon={Signal}
+          icon={Circle}
           label="Priority"
           options={projectPriorityOptions}
           placeholder="No priority"

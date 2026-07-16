@@ -3,6 +3,7 @@
 import {
   CalendarDays,
   CheckCircle2,
+  Circle,
   CircleDashed,
   Eye,
   FolderKanban,
@@ -10,7 +11,6 @@ import {
   LoaderCircle,
   MessageSquareText,
   Plus,
-  Signal,
 } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
@@ -94,7 +94,7 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
         }} />
         <div className="mt-3 flex flex-wrap items-center gap-1 border-y py-2">
           <OptionProperty icon={CircleDashed} label="Status" options={projectStateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
-          <OptionProperty icon={Signal} label="Priority" options={projectPriorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
+          <OptionProperty icon={Circle} label="Priority" options={projectPriorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
           <MemberProperty label="Lead" members={membersQuery.data ?? []} value={project.lead} onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })} />
           <AssigneeProperty members={membersQuery.data ?? []} value={project.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
           <OptionProperty icon={Eye} label="Visibility" options={visibilityOptions} placeholder="Internal" value={project.visibility} onChange={(value) => value && patch({ visibility: value }, { visibility: value as ProjectDetailRecord["visibility"] })} />

@@ -11,12 +11,15 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 
 export interface PropertyOption {
   value: string;
   label: string;
   color?: string | null;
+  icon?: LucideIcon;
+  iconClassName?: string;
 }
 
 interface OptionPropertyProps {
@@ -24,7 +27,7 @@ interface OptionPropertyProps {
   label: string;
   placeholder: string;
   value: string | null;
-  options: PropertyOption[];
+  options: readonly PropertyOption[];
   allowEmpty?: boolean;
   disabled?: boolean;
   onChange: (value: string | null) => void;
@@ -32,6 +35,7 @@ interface OptionPropertyProps {
 
 export function OptionProperty(props: OptionPropertyProps) {
   const selected = props.options.find((option) => option.value === props.value);
+  const SelectedIcon = selected?.icon ?? props.icon;
 
   return (
     <Popover>
@@ -40,7 +44,8 @@ export function OptionProperty(props: OptionPropertyProps) {
           <PropertyTrigger
             color={selected?.color}
             disabled={props.disabled}
-            icon={props.icon}
+            icon={SelectedIcon}
+            iconClassName={selected?.iconClassName}
             label={props.label}
             value={selected?.label ?? props.placeholder}
           />
@@ -59,13 +64,26 @@ export function OptionProperty(props: OptionPropertyProps) {
                   {!props.value ? <Check className="size-4" /> : null}
                 </CommandItem>
               ) : null}
-              {props.options.map((option) => (
-                <CommandItem key={option.value} value={option.label} onSelect={() => props.onChange(option.value)}>
-                  <span className="size-2.5 rounded-full" style={{ backgroundColor: option.color ?? "currentColor" }} />
-                  <span className="flex-1">{option.label}</span>
-                  {props.value === option.value ? <Check className="size-4" /> : null}
-                </CommandItem>
-              ))}
+              {props.options.map((option) => {
+                const OptionIcon = option.icon;
+                return (
+                  <CommandItem key={option.value} value={option.label} onSelect={() => props.onChange(option.value)}>
+                    {OptionIcon ? (
+                      <OptionIcon
+                        className={cn("size-4", option.iconClassName)}
+                        style={option.color ? { color: option.color } : undefined}
+                      />
+                    ) : (
+                      <span
+                        className="size-2.5 rounded-full"
+                        style={{ backgroundColor: option.color ?? "currentColor" }}
+                      />
+                    )}
+                    <span className="flex-1">{option.label}</span>
+                    {props.value === option.value ? <Check className="size-4" /> : null}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>

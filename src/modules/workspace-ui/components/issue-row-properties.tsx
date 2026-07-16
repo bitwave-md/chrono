@@ -2,11 +2,7 @@
 
 import {
   Check,
-  CheckCircle2,
-  Circle,
   CircleDashed,
-  CircleX,
-  LoaderCircle,
   Tags,
   UserRound,
 } from "lucide-react";
@@ -25,15 +21,17 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { issuePriorityMetadata } from "@/modules/workspace-ui/components/issue-badges";
+import {
+  issuePriorityMetadata,
+  issuePriorityOptions,
+  workflowStatusIcons,
+} from "@/modules/workspace-ui/components/issue-property-metadata";
 import type {
   IssuePriority,
   IssueRecord,
   MemberRecord,
   WorkflowStatusRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
-
-const priorities = ["none", "urgent", "high", "medium", "low"] as const;
 
 export function IssuePriorityTrigger({
   value,
@@ -45,19 +43,20 @@ export function IssuePriorityTrigger({
   onChange: (priority: IssuePriority) => void;
 }) {
   const selected = issuePriorityMetadata[value];
+  const SelectedIcon = selected.icon;
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           aria-label={`Priority: ${selected.label}`}
-          className={cn("size-7 text-muted-foreground", priorityClass(value))}
+          className={cn("size-7", selected.iconClassName)}
           disabled={disabled}
           size="icon-sm"
           title={selected.label}
           variant="ghost"
           onClick={stopRowClick}
         >
-          <selected.Icon className="size-4" />
+          <SelectedIcon className="size-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-0" onClick={stopPopoverClick}>
@@ -65,13 +64,14 @@ export function IssuePriorityTrigger({
           <CommandInput placeholder="Change priority..." />
           <CommandList>
             <CommandGroup>
-              {priorities.map((priority) => {
-                const metadata = issuePriorityMetadata[priority];
+              {issuePriorityOptions.map((option) => {
+                const metadata = issuePriorityMetadata[option.value];
+                const OptionIcon = metadata.icon;
                 return (
-                  <CommandItem key={priority} onSelect={() => onChange(priority)}>
-                    <metadata.Icon className={cn("size-4", priorityClass(priority))} />
+                  <CommandItem key={option.value} onSelect={() => onChange(option.value)}>
+                    <OptionIcon className={cn("size-4", metadata.iconClassName)} />
                     <span className="flex-1">{metadata.label}</span>
-                    {priority === value ? <Check className="size-4" /> : null}
+                    {option.value === value ? <Check className="size-4" /> : null}
                   </CommandItem>
                 );
               })}
@@ -255,15 +255,7 @@ export function WorkflowStatusIcon({
   color?: string | null;
   className?: string;
 }) {
-  const Icon = category === "completed"
-    ? CheckCircle2
-    : category === "canceled"
-      ? CircleX
-      : category === "started"
-        ? LoaderCircle
-        : category === "unstarted"
-          ? Circle
-          : CircleDashed;
+  const Icon = category ? workflowStatusIcons[category] : CircleDashed;
   return <Icon className={cn("size-4", className)} style={color ? { color } : undefined} />;
 }
 
@@ -275,14 +267,6 @@ function MemberAvatar({ member }: { member: MemberRecord }) {
       <AvatarFallback className="text-[0.55rem]">{label.slice(0, 2).toUpperCase()}</AvatarFallback>
     </Avatar>
   );
-}
-
-function priorityClass(priority: IssuePriority) {
-  if (priority === "urgent") return "text-destructive";
-  if (priority === "high") return "text-amber-400";
-  if (priority === "medium") return "text-foreground/75";
-  if (priority === "low") return "text-blue-400";
-  return "text-muted-foreground";
 }
 
 function stopRowClick(event: MouseEvent<HTMLButtonElement>) {

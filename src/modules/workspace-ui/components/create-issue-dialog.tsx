@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, GitBranch, LoaderCircle, Plus, Signal, X } from "lucide-react";
+import { Circle, FolderKanban, GitBranch, LoaderCircle, Plus, X } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useCreateIssueMutation } from "@/modules/workspace-ui/application/use-i
 import { useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
+import { issuePriorityOptions } from "@/modules/workspace-ui/components/issue-property-metadata";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import type { IssuePriority, MemberRecord, ProjectBranchRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
@@ -28,14 +29,6 @@ interface CreateIssueDialogProps {
   filters: IssueQueryFilters;
   onOpenChange: (open: boolean) => void;
 }
-
-const priorityOptions = [
-  { value: "none", label: "No priority", color: "#6b7280" },
-  { value: "urgent", label: "Urgent", color: "#ef4444" },
-  { value: "high", label: "High", color: "#f97316" },
-  { value: "medium", label: "Medium", color: "#eab308" },
-  { value: "low", label: "Low", color: "#60a5fa" },
-];
 
 export function CreateIssueDialog(props: CreateIssueDialogProps) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -103,7 +96,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
           <div className="flex flex-wrap items-center gap-1 border-y py-2">
             <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={projectId} onChange={(value) => { setProjectId(value); if (value !== props.selectedProjectId) setBranchId(null); }} />
             {projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={props.branches.map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={branchId} onChange={setBranchId} /> : null}
-            <OptionProperty icon={Signal} label="Priority" options={priorityOptions} placeholder="No priority" value={priority} onChange={(value) => setPriority((value ?? "none") as IssuePriority)} />
+            <OptionProperty icon={Circle} label="Priority" options={issuePriorityOptions} placeholder="No priority" value={priority} onChange={(value) => setPriority((value ?? "none") as IssuePriority)} />
             <AssigneeProperty members={props.members} value={assignees} onChange={setAssignees} />
           </div>
           {mutation.error ? <p className="text-xs leading-5 text-destructive">{mutation.error.message}</p> : null}
