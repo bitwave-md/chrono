@@ -3,6 +3,7 @@ import { ServerPrincipalResolver } from "@/modules/authorization/application/ser
 import { MutationOriginPolicy } from "@/modules/auth/domain/mutation-origin-policy";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
 import { JsonInput } from "@/modules/shared/infrastructure/json-input";
+import { clientIconTypes } from "@/modules/clients/domain/client-icon";
 
 export const runtime = "nodejs";
 
@@ -43,6 +44,9 @@ export async function POST(
       key: input.requiredString("key", 12),
       issuePrefix: input.requiredString("issuePrefix", 10),
       description: input.optionalString("description"),
+      iconType: input.optionalEnum("iconType", clientIconTypes) ?? "icon",
+      iconKey: input.optionalString("iconKey", 80) ?? "hash",
+      iconColor: input.optionalString("iconColor", 7) ?? "#6366f1",
     });
 
     return Response.json({ data: client }, { status: 201 });
