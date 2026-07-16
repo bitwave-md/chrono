@@ -2,9 +2,9 @@ import { ServerPrincipalResolver } from "@/modules/authorization/application/ser
 import { MutationOriginPolicy } from "@/modules/auth/domain/mutation-origin-policy";
 import {
   ProjectService,
+  projectPriorities,
   projectVisibilities,
 } from "@/modules/projects/application/project-service";
-import { ValidationError } from "@/modules/shared/application/application-error";
 import { EntityId } from "@/modules/shared/domain/entity-id";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
 import { JsonInput } from "@/modules/shared/infrastructure/json-input";
@@ -28,11 +28,9 @@ export async function GET(
     const principal = await principalResolver.requireWorkspace(workspaceSlug);
     const clientIdInput = new URL(request.url).searchParams.get("clientId");
 
-    if (!clientIdInput) {
-      throw new ValidationError("clientId is required.");
-    }
-
-    const clientId = new EntityId(clientIdInput, "clientId").value;
+    const clientId = clientIdInput
+      ? new EntityId(clientIdInput, "clientId").value
+      : null;
     const projects = await projectService.list(principal, clientId);
 
     return Response.json({ data: projects });
@@ -54,6 +52,8 @@ export async function POST(
       clientId: input.requiredUuid("clientId"),
       visibility:
         input.optionalEnum("visibility", projectVisibilities) ?? "internal",
+      priority: input.optionalEnum("priority", projectPriorities) ?? "none",
+      leadMembershipId: input.optionalUuid("leadMembershipId"),
       name: input.requiredString("name", 160),
       slug: input.requiredString("slug", 63),
       description: input.optionalString("description"),

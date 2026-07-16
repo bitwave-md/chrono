@@ -132,7 +132,11 @@ export class ClientService {
             prefix: issueNamespaces.prefix,
           });
 
-        return { ...client, issueNamespace: namespace };
+        return {
+          ...client,
+          issuePrefix: namespace.prefix,
+          permission: null,
+        };
       });
     } catch (error) {
       if (isUniqueViolation(error)) {

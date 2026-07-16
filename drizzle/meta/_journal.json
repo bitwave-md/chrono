@@ -43,6 +43,13 @@
       "when": 1784182261870,
       "tag": "0005_flashy_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784216716295,
+      "tag": "0006_blue_dagger",
+      "breakpoints": true
     }
   ]
 }

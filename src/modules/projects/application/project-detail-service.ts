@@ -17,6 +17,7 @@ import {
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
+import type { ProjectPriority } from "@/modules/projects/application/project-service";
 import {
   NotFoundError,
   ValidationError,
@@ -33,6 +34,8 @@ type MilestoneState = (typeof milestoneStates)[number];
 
 export interface UpdateProjectInput {
   state?: ProjectState;
+  priority?: ProjectPriority;
+  leadMembershipId?: string | null;
   summary?: string | null;
   description?: string | null;
   visibility?: "internal" | "client_shared" | "restricted";
@@ -131,11 +134,22 @@ export class ProjectDetailService {
       if (input.assigneeMembershipIds) {
         await this.#memberService.assertActive(transaction, principal, input.assigneeMembershipIds);
       }
+      if (input.leadMembershipId) {
+        await this.#memberService.assertActive(
+          transaction,
+          principal,
+          [input.leadMembershipId],
+        );
+      }
 
       const [updated] = await transaction
         .update(projects)
         .set({
           ...(input.state !== undefined ? { state: input.state } : {}),
+          ...(input.priority !== undefined ? { priority: input.priority } : {}),
+          ...(input.leadMembershipId !== undefined
+            ? { leadMembershipId: input.leadMembershipId }
+            : {}),
           ...(input.summary !== undefined ? { summary: input.summary } : {}),
           ...(input.description !== undefined ? { description: input.description } : {}),
           ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
@@ -245,12 +259,26 @@ export class ProjectDetailService {
         summary: projects.summary,
         description: projects.description,
         state: projects.state,
+        priority: projects.priority,
+        leadMembershipId: projects.leadMembershipId,
+        leadUserId: users.id,
+        leadName: users.name,
+        leadEmail: users.email,
+        leadAvatarUrl: users.image,
         visibility: projects.visibility,
         startDate: projects.startDate,
         targetDate: projects.targetDate,
       })
       .from(projects)
       .innerJoin(clients, eq(clients.id, projects.clientId))
+      .leftJoin(
+        workspaceMemberships,
+        and(
+          eq(workspaceMemberships.id, projects.leadMembershipId),
+          eq(workspaceMemberships.workspaceId, projects.workspaceId),
+        ),
+      )
+      .leftJoin(users, eq(users.id, workspaceMemberships.userId))
       .where(and(
         eq(projects.id, projectId),
         eq(projects.workspaceId, principal.workspaceId),
@@ -261,7 +289,16 @@ export class ProjectDetailService {
 
     if (!project) throw new NotFoundError("Project not found.");
     await this.#clientAccess.assertCanRead(principal, project.clientId);
-    return project;
+    return {
+      ...project,
+      lead: project.leadMembershipId ? {
+        membershipId: project.leadMembershipId,
+        userId: project.leadUserId!,
+        displayName: project.leadName,
+        email: project.leadEmail!,
+        avatarUrl: project.leadAvatarUrl,
+      } : null,
+    };
   }
 
   async #assignees(workspaceId: string, projectId: string) {

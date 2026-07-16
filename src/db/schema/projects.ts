@@ -31,6 +31,14 @@ export const projectState = pgEnum("project_state", [
   "canceled",
 ]);
 
+export const projectPriority = pgEnum("project_priority", [
+  "none",
+  "urgent",
+  "high",
+  "medium",
+  "low",
+]);
+
 export const projectBranchKind = pgEnum("project_branch_kind", [
   "feature",
   "sprint",
@@ -77,6 +85,8 @@ export const projects = pgTable(
     clientId: uuid("client_id").notNull(),
     visibility: projectVisibility("visibility").default("internal").notNull(),
     state: projectState("state").default("planned").notNull(),
+    priority: projectPriority("priority").default("none").notNull(),
+    leadMembershipId: uuid("lead_membership_id"),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     summary: text("summary"),
@@ -101,6 +111,11 @@ export const projects = pgTable(
       columns: [table.workspaceId, table.clientId],
       foreignColumns: [clients.workspaceId, clients.id],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "projects_lead_membership_tenant_fk",
+      columns: [table.workspaceId, table.leadMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
     uniqueIndex("projects_workspace_id_unique").on(table.workspaceId, table.id),
     uniqueIndex("projects_tenant_client_id_unique").on(
       table.workspaceId,
@@ -109,6 +124,10 @@ export const projects = pgTable(
     ),
     uniqueIndex("projects_client_slug_unique").on(table.clientId, table.slug),
     index("projects_client_position_idx").on(table.clientId, table.position),
+    index("projects_lead_membership_idx").on(
+      table.workspaceId,
+      table.leadMembershipId,
+    ),
   ],
 );
 

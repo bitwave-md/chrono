@@ -4,7 +4,10 @@ import {
   ProjectDetailService,
   projectStates,
 } from "@/modules/projects/application/project-detail-service";
-import { projectVisibilities } from "@/modules/projects/application/project-service";
+import {
+  projectPriorities,
+  projectVisibilities,
+} from "@/modules/projects/application/project-service";
 import { EntityId } from "@/modules/shared/domain/entity-id";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
 import { JsonInput } from "@/modules/shared/infrastructure/json-input";
@@ -41,6 +44,8 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
       new EntityId(value, "projectId").value,
       {
         ...(input.has("state") ? { state: input.requiredEnum("state", projectStates) } : {}),
+        ...(input.has("priority") ? { priority: input.requiredEnum("priority", projectPriorities) } : {}),
+        ...(input.has("leadMembershipId") ? { leadMembershipId: input.optionalUuid("leadMembershipId") } : {}),
         ...(input.has("summary") ? { summary: input.optionalString("summary", 500) } : {}),
         ...(input.has("description") ? { description: input.optionalString("description", 20_000) } : {}),
         ...(input.has("visibility") ? { visibility: input.requiredEnum("visibility", projectVisibilities) } : {}),
