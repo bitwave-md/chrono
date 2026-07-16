@@ -70,30 +70,20 @@ export class ProjectDetailService {
         eq(projectMilestones.workspaceId, principal.workspaceId),
         eq(projectMilestones.projectId, projectId),
       )).orderBy(asc(projectMilestones.position)),
-      db.execute<{ workflow_id: string }>(sql`
-        with recursive ancestry as (
-          select ${projects.id}, ${projects.parentId}, 0 as depth
-          from ${projects}
-          where ${projects.id} = ${projectId}
-            and ${projects.workspaceId} = ${principal.workspaceId}
-          union all
-          select parent.${sql.identifier("id")}, parent.${sql.identifier("parent_id")}, child.depth + 1
-          from ${projects} parent
-          inner join ancestry child on parent.${sql.identifier("id")} = child.${sql.identifier("parent_id")}
-          where parent.${sql.identifier("workspace_id")} = ${principal.workspaceId}
-        )
-        select workflow.${sql.identifier("id")} as workflow_id
-        from ancestry
-        inner join ${workflows} workflow on workflow.${sql.identifier("project_id")} = ancestry.${sql.identifier("id")}
-        order by ancestry.depth
-        limit 1
-      `),
+      db
+        .select({ workflowId: workflows.id })
+        .from(workflows)
+        .where(and(
+          eq(workflows.workspaceId, principal.workspaceId),
+          eq(workflows.projectId, projectId),
+        ))
+        .limit(1),
     ]);
 
     const progress = progressRows[0] ?? { total: 0, completed: 0 };
     return {
       ...project,
-      effectiveWorkflowId: workflowRows.rows[0]?.workflow_id ?? null,
+      workflowId: workflowRows[0]?.workflowId ?? null,
       assignees,
       progress: {
         total: progress.total,
@@ -250,8 +240,6 @@ export class ProjectDetailService {
         workspaceId: projects.workspaceId,
         clientId: projects.clientId,
         clientName: clients.name,
-        parentId: projects.parentId,
-        kind: projects.kind,
         name: projects.name,
         slug: projects.slug,
         summary: projects.summary,
@@ -260,7 +248,6 @@ export class ProjectDetailService {
         visibility: projects.visibility,
         startDate: projects.startDate,
         targetDate: projects.targetDate,
-        workflowMode: projects.workflowMode,
       })
       .from(projects)
       .innerJoin(clients, eq(clients.id, projects.clientId))

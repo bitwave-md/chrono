@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { issues } from "./issues";
-import { projects } from "./projects";
+import { projectBranches, projects } from "./projects";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
 export const timeLogSource = pgEnum("time_log_source", ["timer", "manual"]);
@@ -71,7 +71,7 @@ export const timerSessions = pgTable(
     workerUserId: text("worker_user_id").notNull(),
     clientId: uuid("client_id").notNull(),
     projectId: uuid("project_id"),
-    rootProjectId: uuid("root_project_id"),
+    branchId: uuid("branch_id"),
     categoryId: uuid("category_id"),
     note: text("note"),
     billable: boolean("billable").default(false).notNull(),
@@ -98,9 +98,19 @@ export const timerSessions = pgTable(
       foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
     }).onDelete("restrict"),
     foreignKey({
-      name: "timer_sessions_root_project_tenant_client_fk",
-      columns: [table.workspaceId, table.clientId, table.rootProjectId],
-      foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
+      name: "timer_sessions_branch_tenant_project_fk",
+      columns: [
+        table.workspaceId,
+        table.clientId,
+        table.projectId,
+        table.branchId,
+      ],
+      foreignColumns: [
+        projectBranches.workspaceId,
+        projectBranches.clientId,
+        projectBranches.projectId,
+        projectBranches.id,
+      ],
     }).onDelete("restrict"),
     foreignKey({
       name: "timer_sessions_category_tenant_fk",
@@ -152,7 +162,7 @@ export const timeLogs = pgTable(
     workerUserId: text("worker_user_id").notNull(),
     clientId: uuid("client_id").notNull(),
     projectId: uuid("project_id"),
-    rootProjectId: uuid("root_project_id"),
+    branchId: uuid("branch_id"),
     categoryId: uuid("category_id"),
     source: timeLogSource("source").notNull(),
     note: text("note"),
@@ -191,9 +201,19 @@ export const timeLogs = pgTable(
       foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
     }).onDelete("restrict"),
     foreignKey({
-      name: "time_logs_root_project_tenant_client_fk",
-      columns: [table.workspaceId, table.clientId, table.rootProjectId],
-      foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
+      name: "time_logs_branch_tenant_project_fk",
+      columns: [
+        table.workspaceId,
+        table.clientId,
+        table.projectId,
+        table.branchId,
+      ],
+      foreignColumns: [
+        projectBranches.workspaceId,
+        projectBranches.clientId,
+        projectBranches.projectId,
+        projectBranches.id,
+      ],
     }).onDelete("restrict"),
     foreignKey({
       name: "time_logs_category_tenant_fk",
@@ -225,10 +245,7 @@ export const timeLogs = pgTable(
       table.projectId,
       table.startedAt,
     ),
-    index("time_logs_root_project_started_idx").on(
-      table.rootProjectId,
-      table.startedAt,
-    ),
+    index("time_logs_branch_started_idx").on(table.branchId, table.startedAt),
     index("time_logs_worker_started_idx").on(
       table.workerUserId,
       table.startedAt,

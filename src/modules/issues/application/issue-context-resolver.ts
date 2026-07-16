@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
 import {
@@ -104,68 +104,56 @@ export class IssueContextResolver {
       throw new NotFoundError("Project not found.");
     }
 
-    const resolved = await transaction.execute<ResolvedIssueContext>(sql`
-      with recursive ancestry as (
-        select ${projects.id}, ${projects.parentId}, 0 as depth
-        from ${projects}
-        where ${projects.id} = ${projectId}
-          and ${projects.workspaceId} = ${principal.workspaceId}
-          and ${projects.clientId} = ${clientId}
-        union all
-        select parent.${sql.identifier("id")}, parent.${sql.identifier("parent_id")}, child.depth + 1
-        from ${projects} parent
-        inner join ancestry child
-          on parent.${sql.identifier("id")} = child.parent_id
-        where parent.${sql.identifier("workspace_id")} = ${principal.workspaceId}
-          and parent.${sql.identifier("client_id")} = ${clientId}
-      )
-      select
-        coalesce(
-          (
-            select namespace.${sql.identifier("id")}
-            from ancestry node
-            inner join ${issueNamespaces} namespace
-              on namespace.${sql.identifier("project_id")} = node.id
-            order by node.depth
-            limit 1
-          ),
-          client_namespace.${sql.identifier("id")}
-        ) as namespace_id,
-        coalesce(
-          (
-            select namespace.${sql.identifier("prefix")}
-            from ancestry node
-            inner join ${issueNamespaces} namespace
-              on namespace.${sql.identifier("project_id")} = node.id
-            order by node.depth
-            limit 1
-          ),
-          client_namespace.${sql.identifier("prefix")}
-        ) as prefix,
-        (
-          select workflow.${sql.identifier("id")}
-          from ancestry node
-          inner join ${workflows} workflow
-            on workflow.${sql.identifier("project_id")} = node.id
-          order by node.depth
-          limit 1
-        ) as workflow_id
-      from ${issueNamespaces} client_namespace
-      where client_namespace.${sql.identifier("workspace_id")} = ${principal.workspaceId}
-        and client_namespace.${sql.identifier("client_id")} = ${clientId}
-        and client_namespace.${sql.identifier("project_id")} is null
-      limit 1
-    `);
+    const [projectNamespaceRows, clientNamespaceRows, workflowRows] =
+      await Promise.all([
+        transaction
+          .select({
+            namespace_id: issueNamespaces.id,
+            prefix: issueNamespaces.prefix,
+          })
+          .from(issueNamespaces)
+          .where(
+            and(
+              eq(issueNamespaces.workspaceId, principal.workspaceId),
+              eq(issueNamespaces.clientId, clientId),
+              eq(issueNamespaces.projectId, projectId),
+            ),
+          )
+          .limit(1),
+        transaction
+          .select({
+            namespace_id: issueNamespaces.id,
+            prefix: issueNamespaces.prefix,
+          })
+          .from(issueNamespaces)
+          .where(
+            and(
+              eq(issueNamespaces.workspaceId, principal.workspaceId),
+              eq(issueNamespaces.clientId, clientId),
+              isNull(issueNamespaces.projectId),
+            ),
+          )
+          .limit(1),
+        transaction
+          .select({ workflow_id: workflows.id })
+          .from(workflows)
+          .where(
+            and(
+              eq(workflows.workspaceId, principal.workspaceId),
+              eq(workflows.projectId, projectId),
+            ),
+          )
+          .limit(1),
+      ]);
 
-    const context = resolved.rows[0];
+    const namespace = projectNamespaceRows[0] ?? clientNamespaceRows[0];
+    const workflow = workflowRows[0];
 
-    if (!context?.namespace_id || !context.workflow_id) {
-      throw new ConflictError(
-        "The project has no effective namespace or workflow.",
-      );
+    if (!namespace || !workflow) {
+      throw new ConflictError("The project has no namespace or workflow.");
     }
 
-    return context;
+    return { ...namespace, workflow_id: workflow.workflow_id };
   }
 
   async #resolveClientNamespace(

@@ -10,6 +10,7 @@ import {
   issues,
   issueTypes,
   labels,
+  projectBranches,
   projects,
   users,
   workflowStatuses,
@@ -35,6 +36,7 @@ export type IssueVisibility = (typeof issueVisibilities)[number];
 export interface CreateIssueInput {
   clientId: string;
   projectId: string | null;
+  branchId: string | null;
   assigneeMembershipIds: string[];
   statusId: string | null;
   parentIssueId: string | null;
@@ -47,6 +49,8 @@ export interface CreateIssueInput {
 export interface IssueFilters {
   issueId?: string;
   projectId?: string;
+  branchId?: string;
+  mainBranch?: boolean;
   assigneeMembershipId?: string;
   mine?: boolean;
 }
@@ -54,6 +58,7 @@ export interface IssueFilters {
 export interface UpdateIssueInput {
   expectedVersion: number;
   projectId?: string | null;
+  branchId?: string | null;
   assigneeMembershipIds?: string[];
   statusId?: string | null;
   issueTypeId?: string | null;
@@ -88,6 +93,8 @@ export class IssueService {
     if (clientId) conditions.push(eq(issues.clientId, clientId));
     if (filters.issueId) conditions.push(eq(issues.id, filters.issueId));
     if (filters.projectId) conditions.push(eq(issues.projectId, filters.projectId));
+    if (filters.branchId) conditions.push(eq(issues.branchId, filters.branchId));
+    if (filters.mainBranch) conditions.push(isNull(issues.branchId));
 
     const assigneeMembershipId = filters.mine
       ? principal.membershipId
@@ -151,6 +158,8 @@ export class IssueService {
         visibility: issues.visibility,
         projectId: issues.projectId,
         projectName: projects.name,
+        branchId: issues.branchId,
+        branchName: projectBranches.name,
         issueTypeId: issues.issueTypeId,
         issueTypeName: issueTypes.name,
         issueTypeColor: issueTypes.color,
@@ -167,6 +176,7 @@ export class IssueService {
       .innerJoin(clients, eq(clients.id, issues.clientId))
       .innerJoin(issueNamespaces, eq(issueNamespaces.id, issues.issueNamespaceId))
       .leftJoin(projects, eq(projects.id, issues.projectId))
+      .leftJoin(projectBranches, eq(projectBranches.id, issues.branchId))
       .leftJoin(issueTypes, eq(issueTypes.id, issues.issueTypeId))
       .leftJoin(workflowStatuses, eq(workflowStatuses.id, issues.statusId))
       .where(and(...conditions))
@@ -209,6 +219,13 @@ export class IssueService {
         input.clientId,
         input.parentIssueId,
       );
+      await this.#relationValidator.assertBranch(
+        transaction,
+        principal,
+        input.clientId,
+        input.projectId,
+        input.branchId,
+      );
 
       const context = await this.#contextResolver.resolve(
         transaction,
@@ -236,6 +253,7 @@ export class IssueService {
           workspaceId: principal.workspaceId,
           clientId: input.clientId,
           projectId: input.projectId,
+          branchId: input.branchId,
           statusId,
           issueNamespaceId: context.namespace_id,
           number,
@@ -297,7 +315,20 @@ export class IssueService {
 
       const projectId = input.projectId === undefined ? current.projectId : input.projectId;
       const projectChanged = projectId !== current.projectId;
+      const branchId = input.branchId !== undefined
+        ? input.branchId
+        : projectChanged
+          ? null
+          : current.branchId;
       let statusId = current.statusId;
+
+      await this.#relationValidator.assertBranch(
+        transaction,
+        principal,
+        current.clientId,
+        projectId,
+        branchId,
+      );
 
       if (projectChanged || input.statusId !== undefined) {
         const context = await this.#contextResolver.resolve(
@@ -330,6 +361,7 @@ export class IssueService {
         .update(issues)
         .set({
           projectId,
+          branchId,
           statusId,
           ...(input.issueTypeId !== undefined ? { issueTypeId: input.issueTypeId } : {}),
           ...(input.title !== undefined ? { title: this.#title(input.title) } : {}),

@@ -35,6 +35,9 @@ export async function PATCH(
       ...(input.has("projectId")
         ? { projectId: input.optionalUuid("projectId") }
         : {}),
+      ...(input.has("branchId")
+        ? { branchId: input.optionalUuid("branchId") }
+        : {}),
       ...(input.has("assigneeMembershipIds")
         ? { assigneeMembershipIds: input.uuidArray("assigneeMembershipIds", 20) }
         : {}),

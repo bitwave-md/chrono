@@ -13,7 +13,12 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { clients } from "./clients";
-import { issueNamespaces, projects, workflowStatuses } from "./projects";
+import {
+  issueNamespaces,
+  projectBranches,
+  projects,
+  workflowStatuses,
+} from "./projects";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
 export const issuePriority = pgEnum("issue_priority", [
@@ -87,6 +92,7 @@ export const issues = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
     clientId: uuid("client_id").notNull(),
     projectId: uuid("project_id"),
+    branchId: uuid("branch_id"),
     issueTypeId: uuid("issue_type_id"),
     statusId: uuid("status_id"),
     issueNamespaceId: uuid("issue_namespace_id").notNull(),
@@ -126,6 +132,21 @@ export const issues = pgTable(
       name: "issues_project_tenant_client_fk",
       columns: [table.workspaceId, table.clientId, table.projectId],
       foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "issues_branch_tenant_project_fk",
+      columns: [
+        table.workspaceId,
+        table.clientId,
+        table.projectId,
+        table.branchId,
+      ],
+      foreignColumns: [
+        projectBranches.workspaceId,
+        projectBranches.clientId,
+        projectBranches.projectId,
+        projectBranches.id,
+      ],
     }).onDelete("restrict"),
     foreignKey({
       name: "issues_type_tenant_fk",
@@ -178,10 +199,15 @@ export const issues = pgTable(
       table.createdAt,
     ),
     index("issues_project_rank_idx").on(table.projectId, table.rank),
+    index("issues_branch_rank_idx").on(table.branchId, table.rank),
     index("issues_type_idx").on(table.issueTypeId, table.updatedAt),
     check(
       "issues_project_status_check",
       sql`(${table.projectId} is null and ${table.statusId} is null) or (${table.projectId} is not null and ${table.statusId} is not null)`,
+    ),
+    check(
+      "issues_branch_project_check",
+      sql`${table.branchId} is null or ${table.projectId} is not null`,
     ),
     check("issues_number_check", sql`${table.number} > 0`),
     check("issues_version_check", sql`${table.version} > 0`),

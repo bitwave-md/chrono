@@ -31,6 +31,7 @@ export interface TimeLogFilters {
   issueId?: string;
   clientId?: string;
   projectId?: string;
+  branchId?: string;
   categoryId?: string;
   workerUserId?: string;
   from?: Date;
@@ -53,6 +54,7 @@ export class TimeLogService {
       [timeLogs.issueId, filters.issueId],
       [timeLogs.clientId, filters.clientId],
       [timeLogs.projectId, filters.projectId],
+      [timeLogs.branchId, filters.branchId],
       [timeLogs.categoryId, filters.categoryId],
       [timeLogs.workerUserId, workerUserId],
     ] as const;
@@ -85,7 +87,7 @@ export class TimeLogService {
         clientName: clients.name,
         projectId: timeLogs.projectId,
         projectName: projects.name,
-        rootProjectId: timeLogs.rootProjectId,
+        branchId: timeLogs.branchId,
         categoryId: timeLogs.categoryId,
         categoryName: timeCategories.name,
         workerUserId: timeLogs.workerUserId,

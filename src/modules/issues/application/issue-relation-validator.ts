@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
-import { issues } from "@/db/schema";
+import { issues, projectBranches } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import {
   NotFoundError,
@@ -53,6 +53,37 @@ export class IssueRelationValidator {
 
     if (!parentIssue) {
       throw new NotFoundError("Parent issue not found.");
+    }
+  }
+
+  async assertBranch(
+    transaction: DatabaseTransaction,
+    principal: Principal,
+    clientId: string,
+    projectId: string | null,
+    branchId: string | null,
+  ): Promise<void> {
+    if (!branchId) return;
+    if (!projectId) {
+      throw new ValidationError("Client-backlog Issues cannot belong to a Branch.");
+    }
+
+    const [branch] = await transaction
+      .select({ id: projectBranches.id })
+      .from(projectBranches)
+      .where(
+        and(
+          eq(projectBranches.id, branchId),
+          eq(projectBranches.workspaceId, principal.workspaceId),
+          eq(projectBranches.clientId, clientId),
+          eq(projectBranches.projectId, projectId),
+          isNull(projectBranches.archivedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!branch) {
+      throw new NotFoundError("Branch not found in the selected Project.");
     }
   }
 }

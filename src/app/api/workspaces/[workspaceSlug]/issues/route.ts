@@ -39,6 +39,8 @@ export async function GET(
       clientIdInput ? new EntityId(clientIdInput, "clientId").value : null,
       {
         projectId: optionalId("projectId"),
+        branchId: optionalId("branchId"),
+        mainBranch: parameters.get("branch") === "main",
         assigneeMembershipId: optionalId("assigneeMembershipId"),
         mine: parameters.get("mine") === "true",
       },
@@ -62,6 +64,7 @@ export async function POST(
     const issue = await issueService.create(principal, {
       clientId: input.requiredUuid("clientId"),
       projectId: input.optionalUuid("projectId"),
+      branchId: input.optionalUuid("branchId"),
       assigneeMembershipIds: input.uuidArray("assigneeMembershipIds", 20),
       statusId: input.optionalUuid("statusId"),
       parentIssueId: input.optionalUuid("parentIssueId"),

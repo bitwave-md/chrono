@@ -2,9 +2,7 @@ import { ServerPrincipalResolver } from "@/modules/authorization/application/ser
 import { MutationOriginPolicy } from "@/modules/auth/domain/mutation-origin-policy";
 import {
   ProjectService,
-  projectKinds,
   projectVisibilities,
-  workflowModes,
 } from "@/modules/projects/application/project-service";
 import { ValidationError } from "@/modules/shared/application/application-error";
 import { EntityId } from "@/modules/shared/domain/entity-id";
@@ -35,9 +33,9 @@ export async function GET(
     }
 
     const clientId = new EntityId(clientIdInput, "clientId").value;
-    const tree = await projectService.listTree(principal, clientId);
+    const projects = await projectService.list(principal, clientId);
 
-    return Response.json({ data: tree });
+    return Response.json({ data: projects });
   } catch (error) {
     return ApiErrorResponse.from(error);
   }
@@ -52,16 +50,8 @@ export async function POST(
     const { workspaceSlug } = await context.params;
     const principal = await principalResolver.requireWorkspace(workspaceSlug);
     const input = new JsonInput(await request.json());
-    const parentId = input.optionalUuid("parentId");
     const project = await projectService.create(principal, {
       clientId: input.requiredUuid("clientId"),
-      parentId,
-      kind:
-        input.optionalEnum("kind", projectKinds) ??
-        (parentId ? "subproject" : "project"),
-      workflowMode:
-        input.optionalEnum("workflowMode", workflowModes) ??
-        (parentId ? "inherit" : "own"),
       visibility:
         input.optionalEnum("visibility", projectVisibilities) ?? "internal",
       name: input.requiredString("name", 160),

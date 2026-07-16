@@ -5,6 +5,7 @@ import {
   clients,
   issues,
   projects,
+  projectBranches,
   timeCategories,
   timeLogs,
   users,
@@ -16,7 +17,7 @@ import { ValidationError } from "@/modules/shared/application/application-error"
 export const timeReportGroups = [
   "issue",
   "project",
-  "root_project",
+  "branch",
   "client",
   "category",
   "worker",
@@ -28,8 +29,7 @@ export interface TimeReportFilters {
   issueId?: string;
   clientId?: string;
   projectId?: string;
-  projectScopeId?: string;
-  rootProjectId?: string;
+  branchId?: string;
   categoryId?: string;
   workerUserId?: string;
   from?: Date;
@@ -61,10 +61,10 @@ const reportDimensions: Record<TimeReportGroup, ReportDimension> = {
     label: sql.raw("project_dimension.name"),
     fallback: "Client backlog",
   },
-  root_project: {
-    id: sql.raw("logs.root_project_id"),
-    label: sql.raw("root_project_dimension.name"),
-    fallback: "Client backlog",
+  branch: {
+    id: sql.raw("logs.branch_id"),
+    label: sql.raw("branch_dimension.name"),
+    fallback: "Main",
   },
   client: {
     id: sql.raw("logs.client_id"),
@@ -114,9 +114,9 @@ export class TimeReportService {
       left join ${projects} project_dimension
         on project_dimension.${sql.identifier("id")} = logs.project_id
         and project_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
-      left join ${projects} root_project_dimension
-        on root_project_dimension.${sql.identifier("id")} = logs.root_project_id
-        and root_project_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
+      left join ${projectBranches} branch_dimension
+        on branch_dimension.${sql.identifier("id")} = logs.branch_id
+        and branch_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
       left join ${clients} client_dimension
         on client_dimension.${sql.identifier("id")} = logs.client_id
         and client_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
@@ -148,7 +148,7 @@ export class TimeReportService {
       ["issue_id", filters.issueId],
       ["client_id", filters.clientId],
       ["project_id", filters.projectId],
-      ["root_project_id", filters.rootProjectId],
+      ["branch_id", filters.branchId],
       ["category_id", filters.categoryId],
       ["worker_user_id", filters.workerUserId],
     ] as const;
@@ -169,32 +169,7 @@ export class TimeReportService {
       conditions.push(sql`logs.started_at < ${filters.to}`);
     }
 
-    if (filters.projectScopeId) {
-      conditions.push(this.#projectScopeCondition(principal, filters));
-    }
-
     return conditions;
-  }
-
-  #projectScopeCondition(
-    principal: Principal,
-    filters: TimeReportFilters,
-  ): SQL {
-    return sql`logs.project_id in (
-      with recursive subtree as (
-        select project.${sql.identifier("id")}
-        from ${projects} project
-        where project.${sql.identifier("id")} = ${filters.projectScopeId}
-          and project.${sql.identifier("workspace_id")} = ${principal.workspaceId}
-        union all
-        select child.${sql.identifier("id")}
-        from ${projects} child
-        inner join subtree parent
-          on child.${sql.identifier("parent_id")} = parent.${sql.identifier("id")}
-        where child.${sql.identifier("workspace_id")} = ${principal.workspaceId}
-      )
-      select ${sql.identifier("id")} from subtree
-    )`;
   }
 
   #assertDateRange(from?: Date, to?: Date): void {

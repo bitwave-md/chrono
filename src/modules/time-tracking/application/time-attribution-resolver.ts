@@ -6,29 +6,21 @@ import {
   clients,
   issueAssignees,
   issues,
-  projects,
   timeCategories,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
-import {
-  ConflictError,
-  NotFoundError,
-} from "@/modules/shared/application/application-error";
+import { NotFoundError } from "@/modules/shared/application/application-error";
 
 export interface TimeAttribution {
   issueId: string;
   clientId: string;
   projectId: string | null;
-  rootProjectId: string | null;
+  branchId: string | null;
 }
 
 export interface ResolvedTimeCategory {
   id: string;
   defaultBillable: boolean;
-}
-
-interface RootProjectRow extends Record<string, unknown> {
-  root_project_id: string;
 }
 
 export class TimeAttributionResolver {
@@ -43,20 +35,11 @@ export class TimeAttributionResolver {
       throw new NotFoundError("Issue not found or unavailable for time entry.");
     }
 
-    const rootProjectId = issue.projectId
-      ? await this.#rootProjectId(
-          transaction,
-          principal,
-          issue.clientId,
-          issue.projectId,
-        )
-      : null;
-
     return {
       issueId: issue.id,
       clientId: issue.clientId,
       projectId: issue.projectId,
-      rootProjectId,
+      branchId: issue.branchId,
     };
   }
 
@@ -107,6 +90,7 @@ export class TimeAttributionResolver {
       id: issues.id,
       clientId: issues.clientId,
       projectId: issues.projectId,
+      branchId: issues.branchId,
     };
 
     if (principal.role !== "guest") {
@@ -166,39 +150,4 @@ export class TimeAttributionResolver {
     return issue;
   }
 
-  async #rootProjectId(
-    transaction: DatabaseTransaction,
-    principal: Principal,
-    clientId: string,
-    projectId: string,
-  ): Promise<string> {
-    const result = await transaction.execute<RootProjectRow>(sql`
-      with recursive ancestry as (
-        select ${projects.id}, ${projects.parentId}
-        from ${projects}
-        where ${projects.id} = ${projectId}
-          and ${projects.workspaceId} = ${principal.workspaceId}
-          and ${projects.clientId} = ${clientId}
-        union all
-        select parent.${sql.identifier("id")}, parent.${sql.identifier("parent_id")}
-        from ${projects} parent
-        inner join ancestry child
-          on parent.${sql.identifier("id")} = child.parent_id
-        where parent.${sql.identifier("workspace_id")} = ${principal.workspaceId}
-          and parent.${sql.identifier("client_id")} = ${clientId}
-      )
-      select ${sql.identifier("id")} as root_project_id
-      from ancestry
-      where ${sql.identifier("parent_id")} is null
-      limit 1
-    `);
-
-    const rootProjectId = result.rows[0]?.root_project_id;
-
-    if (!rootProjectId) {
-      throw new ConflictError("The Issue's Project hierarchy has no root.");
-    }
-
-    return rootProjectId;
-  }
 }

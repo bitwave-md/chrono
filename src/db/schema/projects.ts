@@ -17,17 +17,6 @@ import {
 import { clients } from "./clients";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
-export const projectKind = pgEnum("project_kind", [
-  "project",
-  "subproject",
-  "sprint",
-]);
-
-export const projectWorkflowMode = pgEnum("project_workflow_mode", [
-  "own",
-  "inherit",
-]);
-
 export const projectVisibility = pgEnum("project_visibility", [
   "internal",
   "client_shared",
@@ -38,6 +27,21 @@ export const projectState = pgEnum("project_state", [
   "planned",
   "active",
   "paused",
+  "completed",
+  "canceled",
+]);
+
+export const projectBranchKind = pgEnum("project_branch_kind", [
+  "feature",
+  "sprint",
+  "refactor",
+  "release",
+  "other",
+]);
+
+export const projectBranchState = pgEnum("project_branch_state", [
+  "planned",
+  "active",
   "completed",
   "canceled",
 ]);
@@ -71,9 +75,6 @@ export const projects = pgTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
     clientId: uuid("client_id").notNull(),
-    parentId: uuid("parent_id"),
-    kind: projectKind("kind").notNull(),
-    workflowMode: projectWorkflowMode("workflow_mode").notNull(),
     visibility: projectVisibility("visibility").default("internal").notNull(),
     state: projectState("state").default("planned").notNull(),
     name: text("name").notNull(),
@@ -100,11 +101,6 @@ export const projects = pgTable(
       columns: [table.workspaceId, table.clientId],
       foreignColumns: [clients.workspaceId, clients.id],
     }).onDelete("cascade"),
-    foreignKey({
-      name: "projects_parent_tenant_client_fk",
-      columns: [table.workspaceId, table.clientId, table.parentId],
-      foreignColumns: [table.workspaceId, table.clientId, table.id],
-    }).onDelete("cascade"),
     uniqueIndex("projects_workspace_id_unique").on(table.workspaceId, table.id),
     uniqueIndex("projects_tenant_client_id_unique").on(
       table.workspaceId,
@@ -112,14 +108,57 @@ export const projects = pgTable(
       table.id,
     ),
     uniqueIndex("projects_client_slug_unique").on(table.clientId, table.slug),
-    index("projects_parent_position_idx").on(table.parentId, table.position),
-    check(
-      "projects_root_kind_check",
-      sql`(${table.parentId} is null and ${table.kind} = 'project') or (${table.parentId} is not null and ${table.kind} <> 'project')`,
+    index("projects_client_position_idx").on(table.clientId, table.position),
+  ],
+);
+
+export const projectBranches = pgTable(
+  "project_branches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    clientId: uuid("client_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    kind: projectBranchKind("kind").default("feature").notNull(),
+    state: projectBranchState("state").default("planned").notNull(),
+    summary: text("summary"),
+    description: text("description"),
+    position: integer("position").default(0).notNull(),
+    startDate: timestamp("start_date", { mode: "date", withTimezone: true }),
+    targetDate: timestamp("target_date", { mode: "date", withTimezone: true }),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: "project_branches_project_tenant_client_fk",
+      columns: [table.workspaceId, table.clientId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
+    }).onDelete("cascade"),
+    uniqueIndex("project_branches_workspace_id_unique").on(
+      table.workspaceId,
+      table.id,
     ),
-    check(
-      "projects_root_workflow_check",
-      sql`${table.parentId} is not null or ${table.workflowMode} = 'own'`,
+    uniqueIndex("project_branches_tenant_project_id_unique").on(
+      table.workspaceId,
+      table.clientId,
+      table.projectId,
+      table.id,
+    ),
+    uniqueIndex("project_branches_project_slug_unique").on(
+      table.projectId,
+      table.slug,
+    ),
+    index("project_branches_project_position_idx").on(
+      table.projectId,
+      table.position,
     ),
   ],
 );
