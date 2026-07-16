@@ -2,33 +2,25 @@
 
 import {
   Activity,
-  CalendarDays,
-  CheckCircle2,
   CircleDashed,
   FolderKanban,
   Gauge,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
+  Signal,
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { KeyboardEvent, MouseEvent } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
+import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
+import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
+import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import type {
-  ProjectPriority,
+  MemberRecord,
+  ProjectDetailRecord,
   ProjectRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
-
-const priorityMetadata: Record<
-  ProjectPriority,
-  { label: string; Icon: typeof SignalHigh; className: string }
-> = {
-  none: { label: "No priority", Icon: SignalLow, className: "text-muted-foreground" },
-  urgent: { label: "Urgent", Icon: SignalHigh, className: "text-destructive" },
-  high: { label: "High", Icon: SignalHigh, className: "text-amber-400" },
-  medium: { label: "Medium", Icon: SignalMedium, className: "text-foreground/75" },
-  low: { label: "Low", Icon: SignalLow, className: "text-blue-400" },
-};
 
 const healthMetadata = {
   on_track: { label: "On track", className: "text-emerald-500" },
@@ -45,16 +37,15 @@ export function ProjectDirectoryTable({
   workspaceSlug: string;
   showClient: boolean;
 }) {
+  const membersQuery = useMembersQuery(workspaceSlug);
   const gridTemplateColumns = showClient
-    ? "minmax(260px, 1fr) 150px 140px 120px 170px 150px 80px 100px"
-    : "minmax(280px, 1fr) 140px 120px 170px 150px 80px 100px";
-  const gridStyle = {
-    gridTemplateColumns,
-  };
+    ? "minmax(250px, 1fr) 140px 140px 150px 180px 170px 70px 190px"
+    : "minmax(270px, 1fr) 140px 150px 180px 170px 70px 190px";
+  const gridStyle = { gridTemplateColumns };
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-[980px] items-center gap-3 px-5 py-3 text-xs text-muted-foreground" style={gridStyle}>
+      <div className="grid min-w-[1050px] items-center gap-2 px-5 py-3 text-xs text-muted-foreground" style={gridStyle}>
         <span>Name</span>
         {showClient ? <span>Client</span> : null}
         <span>Health</span><span>Priority</span><span>Lead</span>
@@ -62,30 +53,14 @@ export function ProjectDirectoryTable({
       </div>
       <div>
         {projects.map((project) => (
-          <Link
-            className="grid min-h-14 min-w-[980px] items-center gap-3 border-t px-5 text-sm hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
-            href={`/app/${workspaceSlug}/projects/${project.id}/overview`}
+          <ProjectDirectoryRow
+            gridStyle={gridStyle}
             key={project.id}
-            style={gridStyle}
-          >
-            <span className="flex min-w-0 items-center gap-3 font-medium">
-              <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">{project.name}</span>
-            </span>
-            {showClient ? <span className="truncate text-muted-foreground">{project.clientName}</span> : null}
-            <ProjectHealth project={project} />
-            <ProjectPriorityCell priority={project.priority} />
-            <ProjectLead project={project} />
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <CalendarDays className="size-4" />
-              {project.targetDate ? new Date(project.targetDate).toLocaleDateString() : "No target"}
-            </span>
-            <span className="tabular-nums text-muted-foreground">{project.issueCount}</span>
-            <span className="flex items-center gap-2 tabular-nums">
-              {project.state === "completed" ? <CheckCircle2 className="size-4 text-blue-400" /> : <CircleDashed className="size-4 text-amber-400" />}
-              {project.progressPercentage}%
-            </span>
-          </Link>
+            members={membersQuery.data ?? []}
+            project={project}
+            showClient={showClient}
+            workspaceSlug={workspaceSlug}
+          />
         ))}
         {!projects.length ? (
           <div className="flex min-h-24 items-center gap-2 border-t px-5 text-sm text-muted-foreground">
@@ -95,6 +70,110 @@ export function ProjectDirectoryTable({
       </div>
     </div>
   );
+}
+
+function ProjectDirectoryRow({
+  project,
+  workspaceSlug,
+  showClient,
+  members,
+  gridStyle,
+}: {
+  project: ProjectRecord;
+  workspaceSlug: string;
+  showClient: boolean;
+  members: MemberRecord[];
+  gridStyle: { gridTemplateColumns: string };
+}) {
+  const router = useRouter();
+  const update = useUpdateProjectMutation(workspaceSlug, project.id);
+  const href = `/app/${workspaceSlug}/projects/${project.id}/overview`;
+  const patch = (
+    request: Record<string, unknown>,
+    optimistic: Partial<ProjectDetailRecord> & Partial<ProjectRecord>,
+  ) => update.mutate({ request, optimistic });
+  const openWithKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      router.push(href);
+    }
+  };
+
+  return (
+    <div
+      className="grid min-h-14 min-w-[1050px] cursor-pointer items-center gap-2 border-t px-5 text-sm hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
+      role="link"
+      style={gridStyle}
+      tabIndex={0}
+      onClick={() => router.push(href)}
+      onKeyDown={openWithKeyboard}
+    >
+      <span className="flex min-w-0 items-center gap-3 font-medium">
+        <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{project.name}</span>
+      </span>
+      {showClient ? <span className="truncate text-muted-foreground">{project.clientName}</span> : null}
+      <ProjectHealth project={project} />
+      <PropertyCell>
+        <OptionProperty
+          disabled={update.isPending}
+          icon={Signal}
+          label="Priority"
+          options={projectPriorityOptions}
+          placeholder="No priority"
+          value={project.priority}
+          onChange={(priority) => priority && patch(
+            { priority },
+            { priority: priority as ProjectRecord["priority"] },
+          )}
+        />
+      </PropertyCell>
+      <PropertyCell>
+        <MemberProperty
+          disabled={update.isPending}
+          label="Lead"
+          members={members}
+          value={project.lead}
+          onChange={(lead) => patch(
+            { leadMembershipId: lead?.membershipId ?? null },
+            { lead },
+          )}
+        />
+      </PropertyCell>
+      <PropertyCell>
+        <DateProperty
+          label="Target date"
+          value={project.targetDate}
+          onChange={(targetDate) => patch({ targetDate }, { targetDate })}
+        />
+      </PropertyCell>
+      <span className="tabular-nums text-muted-foreground">{project.issueCount}</span>
+      <PropertyCell>
+        <div className="flex min-w-0 items-center gap-1">
+          <OptionProperty
+            disabled={update.isPending}
+            icon={CircleDashed}
+            label="Status"
+            options={projectStateOptions}
+            placeholder="Planned"
+            value={project.state}
+            onChange={(state) => state && patch(
+              { state },
+              { state: state as ProjectRecord["state"] },
+            )}
+          />
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {project.progressPercentage}%
+          </span>
+        </div>
+      </PropertyCell>
+    </div>
+  );
+}
+
+function PropertyCell({ children }: { children: React.ReactNode }) {
+  return <span className="min-w-0" onClick={stopRowClick}>{children}</span>;
 }
 
 function ProjectHealth({ project }: { project: ProjectRecord }) {
@@ -111,20 +190,13 @@ function ProjectHealth({ project }: { project: ProjectRecord }) {
   );
 }
 
-function ProjectPriorityCell({ priority }: { priority: ProjectPriority }) {
-  const metadata = priorityMetadata[priority];
-  return <span className={`flex items-center gap-2 ${metadata.className}`} title={metadata.label}><metadata.Icon className="size-4" /><span>{metadata.label}</span></span>;
-}
-
-function ProjectLead({ project }: { project: ProjectRecord }) {
-  if (!project.lead) return <span className="text-muted-foreground">No lead</span>;
-  const label = project.lead.displayName ?? project.lead.email;
-  return <span className="flex min-w-0 items-center gap-2"><Avatar className="size-5"><AvatarImage alt="" src={project.lead.avatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{label.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><span className="truncate">{label}</span></span>;
-}
-
 function relativeAge(value: string) {
   const days = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000));
   if (days < 1) return "today";
   if (days < 7) return `${days}d`;
   return `${Math.floor(days / 7)}w`;
+}
+
+function stopRowClick(event: MouseEvent<HTMLSpanElement>) {
+  event.stopPropagation();
 }

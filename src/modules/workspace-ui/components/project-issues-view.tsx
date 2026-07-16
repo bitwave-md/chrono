@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GitBranch, Plus } from "lucide-react";
@@ -11,7 +10,9 @@ import { useIssuesQuery } from "@/modules/workspace-ui/application/use-issue-que
 import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
 import { useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { CreateIssueDialog } from "@/modules/workspace-ui/components/create-issue-dialog";
-import type { IssueRecord, ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import { IssueList } from "@/modules/workspace-ui/components/issue-list";
+import type { ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import { useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 export function ProjectIssuesView({
   project,
@@ -35,6 +36,8 @@ export function ProjectIssuesView({
   const statusesQuery = useWorkflowStatusesQuery(workspaceSlug, project.workflowId);
   const membersQuery = useMembersQuery(workspaceSlug);
   const projectsQuery = useProjectsQuery(workspaceSlug, project.clientId);
+  const focusedIssueId = useWorkspaceView((state) => state.focusedIssueId);
+  const focusIssue = useWorkspaceView((state) => state.focusIssue);
   const [creating, setCreating] = useState(false);
   const filters = {
     projectId: project.id,
@@ -79,13 +82,22 @@ export function ProjectIssuesView({
         </Select>
         <Button className="ml-auto shrink-0" size="sm" onClick={() => setCreating(true)}><Plus />New issue</Button>
       </div>
-      {(statusesQuery.data ?? []).map((status) => {
-        const items = issues.filter((issue) => issue.statusId === status.id);
-        return <IssueGroup color={status.color} issues={items} key={status.id} name={status.name} onOpen={(issue) => router.push(`/app/${workspaceSlug}/projects/${project.id}/issues/${issue.id}`)} />;
-      })}
-      {!issuesQuery.isLoading && !issues.length ? (
-        <div className="mx-5 mt-4 flex min-h-14 items-center gap-2 border-y text-sm text-muted-foreground"><GitBranch className="size-4" />No issues in this scope.</div>
-      ) : null}
+      {issuesQuery.isLoading ? (
+        <div className="p-6 text-sm text-muted-foreground">Loading issues...</div>
+      ) : issuesQuery.error ? (
+        <div className="p-6 text-sm text-destructive">{issuesQuery.error.message}</div>
+      ) : (
+        <IssueList
+          clientId={project.clientId}
+          filters={filters}
+          focusedIssueId={focusedIssueId}
+          issues={issues}
+          statuses={statusesQuery.data ?? []}
+          workspaceSlug={workspaceSlug}
+          onFocus={focusIssue}
+          onOpen={(issueId) => router.push(`/app/${workspaceSlug}/projects/${project.id}/issues/${issueId}`)}
+        />
+      )}
       {creating ? (
         <CreateIssueDialog
           branches={branches}
@@ -102,8 +114,4 @@ export function ProjectIssuesView({
       ) : null}
     </div>
   );
-}
-
-function IssueGroup({ name, color, issues, onOpen }: { name: string; color: string | null; issues: IssueRecord[]; onOpen: (issue: IssueRecord) => void }) {
-  return <section className="border-b"><header className="flex h-9 items-center gap-2 px-5 text-xs font-medium"><span className="size-2 rounded-full" style={{ backgroundColor: color ?? "#71717a" }} />{name}<span className="text-muted-foreground">{issues.length}</span></header>{issues.map((issue) => <button className="flex min-h-10 w-full items-center gap-3 border-t px-5 text-left text-sm hover:bg-accent" key={issue.id} onClick={() => onOpen(issue)}><span className="w-16 font-mono text-xs text-muted-foreground">{issue.identifier}</span><span className="min-w-0 flex-1 truncate">{issue.title}</span><span className="text-xs text-muted-foreground">{issue.branchName ?? "Main"}</span><span className="text-xs capitalize text-muted-foreground">{issue.priority}</span>{issue.assignees.slice(0, 1).map((assignee) => <Avatar className="size-5" key={assignee.membershipId}><AvatarFallback className="text-[0.55rem]">{(assignee.displayName ?? assignee.email).slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>)}</button>)}</section>;
 }

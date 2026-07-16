@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { IssuePriority } from "@/modules/workspace-ui/domain/workspace-types";
 
-const priorityMetadata = {
+export const issuePriorityMetadata = {
   none: { label: "No priority", Icon: Circle },
   urgent: { label: "Urgent", Icon: AlertCircle },
   high: { label: "High", Icon: SignalHigh },
@@ -13,7 +13,7 @@ const priorityMetadata = {
 };
 
 export function PriorityBadge({ priority }: { priority: IssuePriority }) {
-  const metadata = priorityMetadata[priority];
+  const metadata = issuePriorityMetadata[priority];
 
   return (
     <Badge

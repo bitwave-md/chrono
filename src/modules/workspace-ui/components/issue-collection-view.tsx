@@ -84,7 +84,16 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
             />
           </div>
         ) : (
-          <IssueList focusedIssueId={focusedIssueId} issues={issues} onFocus={focusIssue} onOpen={openIssue} />
+          <IssueList
+            clientId={props.clientId ?? null}
+            filters={filters}
+            focusedIssueId={focusedIssueId}
+            issues={issues}
+            statuses={statusesQuery.data ?? []}
+            workspaceSlug={props.workspaceSlug}
+            onFocus={focusIssue}
+            onOpen={openIssue}
+          />
         )}
       </section>
     </>

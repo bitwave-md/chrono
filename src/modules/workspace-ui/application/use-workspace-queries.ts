@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
 import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
@@ -66,4 +66,22 @@ export function useWorkflowStatusesQuery(
       new WorkspaceApiClient(workspaceSlug).listWorkflowStatuses(workflowId!),
     enabled: Boolean(workflowId),
   });
+}
+
+export function useWorkflowStatusMapsQuery(
+  workspaceSlug: string,
+  workflowIds: string[],
+) {
+  const uniqueIds = [...new Set(workflowIds)].sort();
+  const results = useQueries({
+    queries: uniqueIds.map((workflowId) => ({
+      queryKey: workspaceQueryKeys.statuses(workspaceSlug, workflowId),
+      queryFn: () => new WorkspaceApiClient(workspaceSlug).listWorkflowStatuses(workflowId),
+    })),
+  });
+
+  return new Map(uniqueIds.map((workflowId, index) => [
+    workflowId,
+    results[index]?.data ?? [],
+  ]));
 }

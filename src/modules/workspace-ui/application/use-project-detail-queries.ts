@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
-import type { ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { WorkspaceApiClient } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
 
 export function useProjectQuery(workspaceSlug: string, projectId: string) {
@@ -23,25 +23,43 @@ export function useProjectActivityQuery(workspaceSlug: string, projectId: string
 export function useUpdateProjectMutation(workspaceSlug: string, projectId: string) {
   const queryClient = useQueryClient();
   const queryKey = workspaceQueryKeys.project(workspaceSlug, projectId);
+  const listQueryKey = workspaceQueryKeys.projectsRoot(workspaceSlug);
 
   return useMutation({
-    mutationFn: (variables: { request: Record<string, unknown>; optimistic: Partial<ProjectDetailRecord> }) =>
+    mutationFn: (variables: {
+      request: Record<string, unknown>;
+      optimistic: Partial<ProjectDetailRecord> & Partial<ProjectRecord>;
+    }) =>
       new WorkspaceApiClient(workspaceSlug).updateProject(projectId, variables.request),
     onMutate: async (variables) => {
-      await queryClient.cancelQueries({ queryKey });
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        queryClient.cancelQueries({ queryKey: listQueryKey }),
+      ]);
       const previous = queryClient.getQueryData<ProjectDetailRecord>(queryKey);
+      const previousLists = queryClient.getQueriesData<ProjectRecord[]>({
+        queryKey: listQueryKey,
+      });
       queryClient.setQueryData<ProjectDetailRecord>(queryKey, (current) =>
         current ? { ...current, ...variables.optimistic } : current,
       );
-      return { previous };
+      queryClient.setQueriesData<ProjectRecord[]>({ queryKey: listQueryKey }, (current = []) =>
+        current.map((project) => project.id === projectId
+          ? { ...project, ...variables.optimistic }
+          : project),
+      );
+      return { previous, previousLists };
     },
-    onError: (_error, _variables, context) => queryClient.setQueryData(queryKey, context?.previous),
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      for (const [listKey, data] of context?.previousLists ?? []) {
+        queryClient.setQueryData(listKey, data);
+      }
+    },
     onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey }),
-        queryClient.invalidateQueries({
-          queryKey: workspaceQueryKeys.projectsRoot(workspaceSlug),
-        }),
+        queryClient.invalidateQueries({ queryKey: listQueryKey }),
       ]);
     },
   });

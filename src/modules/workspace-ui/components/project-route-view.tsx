@@ -29,29 +29,16 @@ import { MemberProperty } from "@/modules/workspace-ui/components/member-propert
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { ProjectBranchSection } from "@/modules/workspace-ui/components/project-branch-section";
 import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
+import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
-import type { ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 type ProjectTab = "overview" | "activity" | "issues";
 
-const stateOptions = [
-  { value: "planned", label: "Planned", color: "#94a3b8" },
-  { value: "active", label: "In progress", color: "#60a5fa" },
-  { value: "paused", label: "Paused", color: "#f59e0b" },
-  { value: "completed", label: "Completed", color: "#22c55e" },
-  { value: "canceled", label: "Canceled", color: "#71717a" },
-];
 const visibilityOptions = [
   { value: "internal", label: "Internal", color: "#94a3b8" },
   { value: "client_shared", label: "Client shared", color: "#22c55e" },
   { value: "restricted", label: "Restricted", color: "#f59e0b" },
-];
-const priorityOptions = [
-  { value: "none", label: "No priority", color: "#71717a" },
-  { value: "urgent", label: "Urgent", color: "#ef4444" },
-  { value: "high", label: "High", color: "#f59e0b" },
-  { value: "medium", label: "Medium", color: "#eab308" },
-  { value: "low", label: "Low", color: "#60a5fa" },
 ];
 const healthOptions = [
   { value: "on_track", label: "On track", color: "#22c55e" },
@@ -94,7 +81,10 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
   const update = useUpdateProjectMutation(workspaceSlug, project.id);
   const addResource = useAddProjectResourceMutation(workspaceSlug, project.id);
   const addMilestone = useAddProjectMilestoneMutation(workspaceSlug, project.id);
-  const patch = (request: Record<string, unknown>, optimistic: Partial<ProjectDetailRecord>) => update.mutate({ request, optimistic });
+  const patch = (
+    request: Record<string, unknown>,
+    optimistic: Partial<ProjectDetailRecord> & Partial<ProjectRecord>,
+  ) => update.mutate({ request, optimistic });
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-7">
       <section>
@@ -103,8 +93,8 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
           if (summary !== project.summary) patch({ summary }, { summary });
         }} />
         <div className="mt-3 flex flex-wrap items-center gap-1 border-y py-2">
-          <OptionProperty icon={CircleDashed} label="Status" options={stateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
-          <OptionProperty icon={Signal} label="Priority" options={priorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
+          <OptionProperty icon={CircleDashed} label="Status" options={projectStateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
+          <OptionProperty icon={Signal} label="Priority" options={projectPriorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
           <MemberProperty label="Lead" members={membersQuery.data ?? []} value={project.lead} onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })} />
           <AssigneeProperty members={membersQuery.data ?? []} value={project.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
           <OptionProperty icon={Eye} label="Visibility" options={visibilityOptions} placeholder="Internal" value={project.visibility} onChange={(value) => value && patch({ visibility: value }, { visibility: value as ProjectDetailRecord["visibility"] })} />
