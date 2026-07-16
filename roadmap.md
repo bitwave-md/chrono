@@ -177,3 +177,27 @@ workspace now uses shadcn SidebarProvider, SidebarInset, icon collapse, rail,
 groups, menus, collapsible submenus, tooltips, and the automatic mobile Sheet.
 Authenticated browser tracers verified expanded and collapsed desktop states as
 well as closed and open mobile drawer states against the rebuilt Docker stack.
+
+## Linear-inspired workspace navigation and work items
+
+Tracer bullet: replace the selection-driven workspace shell with canonical
+Workspace, Client, Project, and Issue routes; preserve an existing Issue's user
+assignment through a multi-assignee migration; and navigate from the exact
+approved sidebar hierarchy into a Project overview and full Issue page.
+
+- [ ] Remove the Team domain, schema, API, filters, reporting dimensions, and UI.
+- [ ] Replace single Issue assignees with tenant-safe Issue and Project assignee
+  collections.
+- [ ] Add the Workspace switcher and exact Inbox, My Issues, Workspace, and Your
+  clients sidebar hierarchy.
+- [ ] Add canonical Workspace, Client, Project, and Issue routes.
+- [ ] Add Linear-style Project Overview, Activity, and Issues surfaces.
+- [ ] Add compact property triggers, multi-user assignment, labels, types,
+  resources, milestones, updates, audit events, and Issue comments.
+- [ ] Re-run migrations, static checks, unit tests, production build, and
+  authenticated desktop/mobile browser tracers.
+
+Server data and mutations remain encapsulated in TanStack Query hooks. Zustand
+is limited to sidebar disclosure, overlays, filters, and focus state. Shared
+domain services own authorization and tenant invariants, and UI modules remain
+below 500 lines.
