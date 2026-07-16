@@ -115,6 +115,12 @@ effects.
 
 Project and Issue properties are compact icon/value triggers. Each trigger
 opens an appropriate shadcn/Radix popover or command list only after activation.
+Every Issue list route uses one shared Linear-style row implementation grouped
+by non-empty workflow status. Priority, status, labels, and assignees mutate
+inline with optimistic TanStack Query updates; aggregate views resolve status
+options through deduplicated queries for each represented Project workflow.
+Project directory rows expose the same inline model for priority, lead, target
+date, and Project state while preserving row-level keyboard navigation.
 The workspace and Client Project directories use one flat Linear-style table
 with latest-update health, priority, lead, target date, Issue count, and derived
 completion progress. Project Issue Branch scope is URL-backed: no query means

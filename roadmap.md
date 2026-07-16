@@ -1,5 +1,26 @@
 # Chrono Roadmap
 
+## Interactive Linear-style work-item lists
+
+Tracer bullet: change an Issue's priority, workflow status, labels, and
+assignees directly from one grouped Linear-style row, reuse that row in every
+Issue list route, and edit Project priority, lead, target date, and state from
+the Project directory without opening the detail page.
+
+- [x] Build one shared status-grouped Issue list with no empty groups.
+- [x] Add compact clickable priority, status, label, and assignee triggers.
+- [x] Reuse the shared list across Project, Client, Inbox, and My Issues views.
+- [x] Add inline Project directory property triggers.
+- [x] Verify optimistic rollback, row navigation, keyboard behavior, and build.
+
+The shared list was completed and runtime-verified on 2026-07-16 against the
+supplied Linear Issues reference (`03.26.42`). Its rounded inset status groups,
+borderless dense rows, property order, right-aligned labels, and assignee
+control now define every Issue list surface. Authenticated tracers edited and
+restored Issue priority, status, labels, and assignees plus Project priority,
+lead, target date, and state. All four list routes, 19 unit tests, the production
+build, and the rebuilt Docker stack passed.
+
 ## Navigation and Project directory refinement
 
 Tracer bullet: create a Client from the sidebar, follow clickable breadcrumbs,
