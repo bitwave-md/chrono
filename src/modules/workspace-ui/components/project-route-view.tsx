@@ -55,7 +55,7 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
   return (
     <>
       <RouteHeader breadcrumbs={[
-        { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/home` },
+        { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/overview` },
         { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
       ]} title={project.name} />
       <div className="border-b px-5 pt-4">

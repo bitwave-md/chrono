@@ -13,8 +13,30 @@ export interface ClientRecord {
   name: string;
   key: string;
   description: string | null;
+  iconType: "icon" | "emoji";
+  iconKey: string;
+  iconColor: string;
   issuePrefix: string;
   permission: "view" | "comment" | "contribute" | null;
+  canEdit: boolean;
+  canManage: boolean;
+}
+
+export interface ClientResourceRecord {
+  id: string;
+  clientId: string;
+  title: string;
+  url: string;
+  description: string | null;
+  iconKey: string | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientMemberRecord extends MemberRecord {
+  role: WorkspaceIdentity["role"];
+  permission: "view" | "comment" | "contribute";
 }
 
 export interface ProjectRecord {

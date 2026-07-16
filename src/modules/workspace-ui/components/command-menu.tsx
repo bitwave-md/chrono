@@ -38,7 +38,7 @@ export function CommandMenu(props: CommandMenuProps) {
     { id: "toggle-sidebar", label: "Toggle navigation", group: "Actions", keywords: "sidebar collapse", shortcut: "[", Icon: PanelLeft, action: props.onToggleSidebar },
     { id: "inbox", label: "Inbox", group: "Navigation", keywords: "inbox", Icon: Inbox, action: () => props.onNavigate(`${props.workspaceRoot}/inbox`) },
     { id: "my-issues", label: "My Issues", group: "Navigation", keywords: "assigned issues", Icon: ListTodo, action: () => props.onNavigate(`${props.workspaceRoot}/my-issues`) },
-    ...props.clients.map((client) => ({ id: `client-${client.id}`, label: client.name, group: "Clients" as const, keywords: `${client.key} client`, Icon: Building2, action: () => props.onNavigate(`${props.workspaceRoot}/clients/${client.id}/home`) })),
+    ...props.clients.map((client) => ({ id: `client-${client.id}`, label: client.name, group: "Clients" as const, keywords: `${client.key} client`, Icon: Building2, action: () => props.onNavigate(`${props.workspaceRoot}/clients/${client.id}/overview`) })),
     ...props.projects.map((project) => ({ id: `project-${project.id}`, label: project.name, group: "Projects" as const, keywords: project.slug, Icon: FolderKanban, action: () => props.onNavigate(`${props.workspaceRoot}/projects/${project.id}/overview`) })),
   ], [props]);
 

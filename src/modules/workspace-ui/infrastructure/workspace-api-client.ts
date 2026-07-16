@@ -1,6 +1,8 @@
 import type {
   ActiveTimerState,
   ClientRecord,
+  ClientMemberRecord,
+  ClientResourceRecord,
   IssuePriority,
   IssueRecord,
   IssueCommentRecord,
@@ -105,6 +107,66 @@ export class WorkspaceApiClient {
       method: "POST",
       body: JSON.stringify(input),
     });
+  }
+
+  updateClient(clientId: string, input: Record<string, unknown>): Promise<unknown> {
+    return this.#request(`/clients/${encodeURIComponent(clientId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  listClientResources(clientId: string): Promise<ClientResourceRecord[]> {
+    return this.#get(`/clients/${encodeURIComponent(clientId)}/resources`);
+  }
+
+  createClientResource(
+    clientId: string,
+    input: { title: string; url: string; description: string | null; iconKey: string | null },
+  ): Promise<ClientResourceRecord> {
+    return this.#request(`/clients/${encodeURIComponent(clientId)}/resources`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  deleteClientResource(clientId: string, resourceId: string): Promise<unknown> {
+    return this.#request(
+      `/clients/${encodeURIComponent(clientId)}/resources/${encodeURIComponent(resourceId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  listClientMembers(clientId: string): Promise<ClientMemberRecord[]> {
+    return this.#get(`/clients/${encodeURIComponent(clientId)}/members`);
+  }
+
+  addClientMember(
+    clientId: string,
+    input: { membershipId: string; permission: ClientMemberRecord["permission"] },
+  ): Promise<ClientMemberRecord> {
+    return this.#request(`/clients/${encodeURIComponent(clientId)}/members`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  removeClientMember(clientId: string, membershipId: string): Promise<unknown> {
+    return this.#request(
+      `/clients/${encodeURIComponent(clientId)}/members/${encodeURIComponent(membershipId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  updateClientMember(
+    clientId: string,
+    membershipId: string,
+    permission: ClientMemberRecord["permission"],
+  ): Promise<ClientMemberRecord> {
+    return this.#request(
+      `/clients/${encodeURIComponent(clientId)}/members/${encodeURIComponent(membershipId)}`,
+      { method: "PATCH", body: JSON.stringify({ permission }) },
+    );
   }
 
   listMembers(): Promise<MemberRecord[]> {

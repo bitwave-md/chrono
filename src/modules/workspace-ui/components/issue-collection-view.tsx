@@ -20,6 +20,7 @@ interface IssueCollectionViewProps {
   clientId?: string | null;
   projectId?: string | null;
   mine?: boolean;
+  embedded?: boolean;
 }
 
 export function IssueCollectionView(props: IssueCollectionViewProps) {
@@ -48,21 +49,25 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
       : `/app/${props.workspaceSlug}/issues/${issueId}`;
     router.push(path);
   };
+  const viewActions = (
+    <>
+      <Button aria-label="List view" size="icon-sm" variant={viewMode === "list" ? "secondary" : "ghost"} onClick={() => setViewMode("list")}><List /></Button>
+      {props.projectId ? <Button aria-label="Board view" size="icon-sm" variant={viewMode === "board" ? "secondary" : "ghost"} onClick={() => setViewMode("board")}><Columns3 /></Button> : null}
+    </>
+  );
 
   return (
     <>
-      <RouteHeader
-        actions={(
-          <>
-            <Button aria-label="List view" size="icon-sm" variant={viewMode === "list" ? "secondary" : "ghost"} onClick={() => setViewMode("list")}><List /></Button>
-            {props.projectId ? <Button aria-label="Board view" size="icon-sm" variant={viewMode === "board" ? "secondary" : "ghost"} onClick={() => setViewMode("board")}><Columns3 /></Button> : null}
-            <Button size="sm" onClick={openCreateIssue}><Plus />New issue</Button>
-          </>
-        )}
-        breadcrumbs={props.breadcrumbs}
-        description={props.description}
-        title={props.title}
-      />
+      {props.embedded ? (
+        <div className="flex h-11 items-center justify-end gap-1 border-b px-4">{viewActions}</div>
+      ) : (
+        <RouteHeader
+          actions={<>{viewActions}<Button size="sm" onClick={openCreateIssue}><Plus />New issue</Button></>}
+          breadcrumbs={props.breadcrumbs}
+          description={props.description}
+          title={props.title}
+        />
+      )}
       <section className="min-h-0 flex-1 py-3" aria-live="polite">
         {issuesQuery.isLoading ? (
           <div className="p-6 text-sm text-muted-foreground">Loading issues...</div>

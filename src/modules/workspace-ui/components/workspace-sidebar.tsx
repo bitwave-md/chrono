@@ -172,7 +172,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
                           <CollapsibleContent>
                             <SidebarMenuSub>
                               {[
-                                ["Home", "home"],
+                                ["Home", "overview"],
                                 ["Issues", "issues"],
                                 ["Projects", "projects"],
                               ].map(([label, segment]) => {
@@ -204,7 +204,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
           workspaceSlug={workspace.slug}
           onCreated={(client) => {
             setClientExpanded(client.id, true);
-            router.push(`${root}/clients/${client.id}/home`);
+            router.push(`${root}/clients/${client.id}/overview`);
           }}
           onOpenChange={setCreateClientOpen}
         />
