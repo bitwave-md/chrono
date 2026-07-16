@@ -7,6 +7,7 @@ create dialog, Project overview, or Project directory and always see the same
 semantic icon, color, option order, and searchable picker behavior.
 
 - [x] Share the exact Issue-list priority and status picker content everywhere.
+- [x] Match grouped-list headers to row status icons and add status-tinted gradients.
 - [x] Teach the shared property picker to render option-specific Lucide icons.
 - [x] Replace legacy Issue detail and creation priority/status options.
 - [x] Align Project and Branch state and priority controls.

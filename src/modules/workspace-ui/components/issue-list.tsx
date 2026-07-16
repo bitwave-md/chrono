@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight, CircleDashed, Clock3 } from "lucide-react";
-import { type KeyboardEvent, useMemo, useState } from "react";
+import { type KeyboardEvent, useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
@@ -53,10 +53,12 @@ export function IssueList(props: IssueListProps) {
       return workflowId ? [workflowId] : [];
     }),
   );
-  const groups = useMemo(
-    () => buildIssueGroups(props.issues, props.statuses),
-    [props.issues, props.statuses],
+  const statusById = new Map(
+    [...workflowStatuses.values()]
+      .flat()
+      .map((status) => [status.id, status] as const),
   );
+  const groups = buildIssueGroups(props.issues, props.statuses, statusById);
 
   if (!props.issues.length) {
     return (
@@ -137,18 +139,41 @@ function IssueGroup({
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <button className="mx-2 mt-2 flex h-10 w-[calc(100%-1rem)] items-center gap-2 rounded-md bg-muted/50 px-4 text-left text-xs font-medium hover:bg-muted/80" type="button">
+        <button
+          className="mx-2 mt-2 flex h-10 w-[calc(100%-1rem)] items-center gap-2 rounded-md bg-muted/40 px-4 text-left text-xs font-medium transition-colors hover:bg-muted/70"
+          style={issueGroupHeaderStyle(group.color)}
+          type="button"
+        >
           <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-90")} />
           <WorkflowStatusIcon category={group.category} color={group.color} />
           <span>{group.name}</span>
           <span className="text-muted-foreground">{group.issues.length}</span>
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent>
+      <CollapsibleContent className="px-2">
         {group.issues.map(renderIssue)}
       </CollapsibleContent>
     </Collapsible>
   );
+}
+
+function issueGroupHeaderStyle(color: string | null): React.CSSProperties | undefined {
+  const rgb = parseHexColor(color);
+  if (!rgb) return undefined;
+  const [red, green, blue] = rgb;
+  return {
+    backgroundImage: `linear-gradient(90deg, rgba(${red}, ${green}, ${blue}, 0.11), rgba(${red}, ${green}, ${blue}, 0.035) 46%, transparent 100%)`,
+  };
+}
+
+function parseHexColor(color: string | null) {
+  const match = color?.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+  if (!match) return null;
+  return [
+    Number.parseInt(match[1], 16),
+    Number.parseInt(match[2], 16),
+    Number.parseInt(match[3], 16),
+  ] as const;
 }
 
 interface IssueRowProps {
@@ -178,9 +203,7 @@ function IssueRow(props: IssueRowProps) {
   return (
     <div
       className={cn(
-        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_76px_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center gap-1 px-10 text-sm hover:bg-accent/45 focus-visible:bg-accent/60 focus-visible:outline-none max-md:grid-cols-[28px_64px_28px_minmax(0,1fr)_32px] max-md:px-3",
-        props.focused && "bg-accent/70",
-        props.issue.optimistic && "opacity-60",
+        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_76px_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center gap-1 px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_64px_28px_minmax(0,1fr)_32px] max-md:px-3",
       )}
       role="link"
       tabIndex={0}

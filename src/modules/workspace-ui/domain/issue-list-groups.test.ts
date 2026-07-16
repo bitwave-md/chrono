@@ -21,16 +21,23 @@ test("Issue list groups follow workflow order and omit empty statuses", () => {
 });
 
 test("aggregate Issue lists merge same-named statuses across Projects", () => {
+  const projectStatuses = new Map<string, WorkflowStatusRecord>([
+    ["project-a-done", { ...statuses[1], id: "project-a-done" }],
+    ["project-b-done", { ...statuses[1], id: "project-b-done" }],
+  ]);
   const groups = buildIssueGroups([
     issue("one", "project-a-done", "Done"),
     issue("two", "project-b-done", "Done"),
     issue("three", null, null),
-  ]);
+  ], [], projectStatuses);
 
   assert.deepEqual(groups.map((group) => [group.name, group.issues.length]), [
     ["Backlog", 1],
     ["Done", 2],
   ]);
+  assert.equal(groups[0].category, "backlog");
+  assert.equal(groups[1].category, "completed");
+  assert.equal(groups[1].color, "#0f0");
 });
 
 function issue(id: string, statusId: string | null, statusName: string | null): IssueRecord {

@@ -11,6 +11,7 @@ export interface IssueGroupRecord {
 export function buildIssueGroups(
   issues: IssueRecord[],
   statuses: WorkflowStatusRecord[] = [],
+  statusById: ReadonlyMap<string, WorkflowStatusRecord> = new Map(),
 ): IssueGroupRecord[] {
   if (statuses.length) {
     const backlog = issues.filter((issue) => !issue.statusId);
@@ -36,27 +37,45 @@ export function buildIssueGroups(
   for (const issue of issues) {
     const name = issue.statusName ?? "Backlog";
     const key = name.toLowerCase();
+    const status = issue.statusId ? statusById.get(issue.statusId) : undefined;
     const group = groups.get(key) ?? {
       key,
       name,
-      color: issue.statusColor,
+      color: issue.statusColor ?? status?.color ?? null,
+      category: status?.category ?? inferStatusCategory(name, Boolean(issue.statusId)),
       issues: [],
     };
+    group.color ??= issue.statusColor ?? status?.color ?? null;
+    group.category ??= status?.category ?? inferStatusCategory(name, Boolean(issue.statusId));
     group.issues.push(issue);
     groups.set(key, group);
   }
 
   return [...groups.values()].sort((left, right) =>
-    statusRank(left.name) - statusRank(right.name) || left.name.localeCompare(right.name),
+    statusRank(left) - statusRank(right) || left.name.localeCompare(right.name),
   );
 }
 
-function statusRank(name: string) {
+function inferStatusCategory(
+  name: string,
+  hasStatus: boolean,
+): WorkflowStatusRecord["category"] | undefined {
+  if (!hasStatus) return "backlog";
   const value = name.toLowerCase();
-  if (value.includes("backlog")) return 0;
-  if (value.includes("todo") || value.includes("planned")) return 1;
-  if (value.includes("progress") || value.includes("started")) return 2;
-  if (value.includes("done") || value.includes("complete")) return 3;
-  if (value.includes("cancel")) return 4;
+  if (value.includes("backlog")) return "backlog";
+  if (value.includes("todo") || value.includes("planned") || value.includes("open")) return "unstarted";
+  if (value.includes("progress") || value.includes("started") || value.includes("review")) return "started";
+  if (value.includes("done") || value.includes("complete")) return "completed";
+  if (value.includes("cancel")) return "canceled";
+  return undefined;
+}
+
+function statusRank(group: IssueGroupRecord) {
+  const category = group.category ?? inferStatusCategory(group.name, true);
+  if (category === "backlog") return 0;
+  if (category === "unstarted") return 1;
+  if (category === "started") return 2;
+  if (category === "completed") return 3;
+  if (category === "canceled") return 4;
   return 2;
 }
