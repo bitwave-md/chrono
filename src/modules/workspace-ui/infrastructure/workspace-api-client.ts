@@ -8,8 +8,11 @@ import type {
   IssueVisibility,
   MemberRecord,
   ProjectActivityRecord,
+  ProjectBranchKind,
+  ProjectBranchRecord,
+  ProjectBranchState,
   ProjectDetailRecord,
-  ProjectNode,
+  ProjectRecord,
   TimeCategoryRecord,
   WorkflowStatusRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
@@ -24,6 +27,8 @@ interface ApiErrorEnvelope {
 
 export interface IssueQueryFilters {
   projectId?: string;
+  branchId?: string;
+  mainBranch?: boolean;
   assigneeMembershipId?: string;
   mine?: boolean;
 }
@@ -31,6 +36,7 @@ export interface IssueQueryFilters {
 export interface CreateIssueRequest {
   clientId: string;
   projectId: string | null;
+  branchId: string | null;
   assigneeMembershipIds: string[];
   title: string;
   description: string | null;
@@ -42,6 +48,7 @@ export interface UpdateIssueRequest {
   issueId: string;
   expectedVersion: number;
   projectId?: string | null;
+  branchId?: string | null;
   assigneeMembershipIds?: string[];
   statusId?: string | null;
   issueTypeId?: string | null;
@@ -82,7 +89,7 @@ export class WorkspaceApiClient {
     return this.#get("/clients");
   }
 
-  listProjects(clientId: string): Promise<ProjectNode[]> {
+  listProjects(clientId: string): Promise<ProjectRecord[]> {
     return this.#get(`/projects?clientId=${encodeURIComponent(clientId)}`);
   }
 
@@ -111,6 +118,9 @@ export class WorkspaceApiClient {
     if (filters.projectId) {
       parameters.set("projectId", filters.projectId);
     }
+
+    if (filters.branchId) parameters.set("branchId", filters.branchId);
+    if (filters.mainBranch) parameters.set("branch", "main");
 
     if (filters.assigneeMembershipId) parameters.set("assigneeMembershipId", filters.assigneeMembershipId);
     if (filters.mine) parameters.set("mine", "true");
@@ -165,6 +175,40 @@ export class WorkspaceApiClient {
 
   getProject(projectId: string): Promise<ProjectDetailRecord> {
     return this.#get(`/projects/${encodeURIComponent(projectId)}`);
+  }
+
+  listProjectBranches(projectId: string): Promise<ProjectBranchRecord[]> {
+    return this.#get(`/projects/${encodeURIComponent(projectId)}/branches`);
+  }
+
+  createProjectBranch(
+    projectId: string,
+    input: {
+      name: string;
+      slug: string;
+      kind: ProjectBranchKind;
+      state: ProjectBranchState;
+      summary: string | null;
+      description: string | null;
+      startDate: string | null;
+      targetDate: string | null;
+    },
+  ): Promise<ProjectBranchRecord> {
+    return this.#request(`/projects/${encodeURIComponent(projectId)}/branches`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  updateProjectBranch(
+    projectId: string,
+    branchId: string,
+    input: Record<string, unknown>,
+  ): Promise<ProjectBranchRecord> {
+    return this.#request(
+      `/projects/${encodeURIComponent(projectId)}/branches/${encodeURIComponent(branchId)}`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    );
   }
 
   updateProject(projectId: string, input: Record<string, unknown>): Promise<unknown> {

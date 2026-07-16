@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useIssuesQuery } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useClientsQuery, useProjectsQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
-import type { ClientRecord, ProjectNode } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ClientRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 export function ClientDirectoryView({ workspaceSlug }: { workspaceSlug: string }) {
   const clientsQuery = useClientsQuery(workspaceSlug);
@@ -33,7 +33,7 @@ export function ProjectDirectoryView({ workspaceSlug, client }: { workspaceSlug:
   const clients = client ? [client] : clientsQuery.data ?? [];
   return (
     <>
-      <RouteHeader breadcrumbs={client ? [client.name] : undefined} description={client ? `Projects, subprojects, and sprints for ${client.name}.` : "Projects grouped by Client."} title="Projects" />
+      <RouteHeader breadcrumbs={client ? [client.name] : undefined} description={client ? `Projects for ${client.name}.` : "Projects grouped by Client."} title="Projects" />
       <div className="divide-y border-y">
         {clients.map((item) => <ClientProjectSection client={item} key={item.id} workspaceSlug={workspaceSlug} />)}
       </div>
@@ -47,22 +47,20 @@ function ClientProjectSection({ workspaceSlug, client }: { workspaceSlug: string
     <section className="px-5 py-4">
       <div className="mb-2 flex items-center gap-2"><Building2 className="size-4 text-muted-foreground" /><h2 className="text-sm font-medium">{client.name}</h2><span className="text-xs text-muted-foreground">{projectsQuery.data?.length ?? 0}</span></div>
       <div className="grid gap-0.5">
-        {(projectsQuery.data ?? []).map((project) => <ProjectLink depth={0} key={project.id} project={project} workspaceSlug={workspaceSlug} />)}
+        {(projectsQuery.data ?? []).map((project) => <ProjectLink key={project.id} project={project} workspaceSlug={workspaceSlug} />)}
       </div>
     </section>
   );
 }
 
-function ProjectLink({ project, workspaceSlug, depth }: { project: ProjectNode; workspaceSlug: string; depth: number }) {
+function ProjectLink({ project, workspaceSlug }: { project: ProjectRecord; workspaceSlug: string }) {
   return (
-    <>
-      <Button asChild className="h-8 justify-start font-normal" variant="ghost">
-        <Link href={`/app/${workspaceSlug}/projects/${project.id}/overview`} style={{ paddingLeft: `${8 + depth * 20}px` }}>
-          <FolderKanban className="size-4 text-muted-foreground" /><span className="truncate">{project.name}</span><Badge className="ml-auto" variant="outline">{project.kind}</Badge>
-        </Link>
-      </Button>
-      {project.children.map((child) => <ProjectLink depth={depth + 1} key={child.id} project={child} workspaceSlug={workspaceSlug} />)}
-    </>
+    <Button asChild className="h-8 justify-start font-normal" variant="ghost">
+      <Link href={`/app/${workspaceSlug}/projects/${project.id}/overview`}>
+        <FolderKanban className="size-4 text-muted-foreground" />
+        <span className="truncate">{project.name}</span>
+      </Link>
+    </Button>
   );
 }
 

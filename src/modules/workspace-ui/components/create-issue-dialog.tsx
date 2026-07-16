@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, LoaderCircle, Plus, Signal, X } from "lucide-react";
+import { FolderKanban, GitBranch, LoaderCircle, Plus, Signal, X } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use
 import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
-import type { IssuePriority, MemberRecord, ProjectNode } from "@/modules/workspace-ui/domain/workspace-types";
+import type { IssuePriority, MemberRecord, ProjectBranchRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
 
 interface CreateIssueDialogProps {
@@ -21,7 +21,9 @@ interface CreateIssueDialogProps {
   workspaceSlug: string;
   clientId: string | null;
   selectedProjectId: string | null;
-  projects: ProjectNode[];
+  projects: ProjectRecord[];
+  branches: ProjectBranchRecord[];
+  selectedBranchId: string | null;
   members: MemberRecord[];
   filters: IssueQueryFilters;
   onOpenChange: (open: boolean) => void;
@@ -40,10 +42,12 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string | null>(props.selectedProjectId);
+  const [branchId, setBranchId] = useState<string | null>(props.selectedBranchId);
   const [assignees, setAssignees] = useState<MemberRecord[]>([]);
   const [priority, setPriority] = useState<IssuePriority>("none");
   const project = props.projects.find((candidate) => candidate.id === projectId);
-  const statusesQuery = useWorkflowStatusesQuery(props.workspaceSlug, project?.effectiveWorkflowId ?? null);
+  const branch = props.branches.find((candidate) => candidate.id === branchId);
+  const statusesQuery = useWorkflowStatusesQuery(props.workspaceSlug, project?.workflowId ?? null);
   const mutation = useCreateIssueMutation(props.workspaceSlug, props.clientId, props.filters);
 
   useGSAP(
@@ -63,6 +67,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
     mutation.mutate({
       clientId: props.clientId,
       projectId,
+      branchId: projectId ? branchId : null,
       assigneeMembershipIds: assignees.map((member) => member.membershipId),
       assignees,
       title: title.trim(),
@@ -70,6 +75,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
       priority,
       visibility: "internal",
       projectName: project?.name ?? null,
+      branchName: branch?.name ?? null,
       statusId: projectId ? defaultStatus?.id ?? null : null,
       statusName: projectId ? defaultStatus?.name ?? "Backlog" : null,
     }, { onSuccess: () => props.onOpenChange(false) });
@@ -95,7 +101,8 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
           <Input autoFocus className="border-0 bg-transparent px-0 text-base font-semibold shadow-none focus-visible:ring-0" maxLength={240} placeholder="Issue title" value={title} onChange={(event) => setTitle(event.target.value)} />
           <Textarea maxLength={20_000} placeholder="Add a concise description..." rows={4} value={description} onChange={(event) => setDescription(event.target.value)} />
           <div className="flex flex-wrap items-center gap-1 border-y py-2">
-            <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={projectId} onChange={setProjectId} />
+            <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={projectId} onChange={(value) => { setProjectId(value); if (value !== props.selectedProjectId) setBranchId(null); }} />
+            {projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={props.branches.map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={branchId} onChange={setBranchId} /> : null}
             <OptionProperty icon={Signal} label="Priority" options={priorityOptions} placeholder="No priority" value={priority} onChange={(value) => setPriority((value ?? "none") as IssuePriority)} />
             <AssigneeProperty members={props.members} value={assignees} onChange={setAssignees} />
           </div>

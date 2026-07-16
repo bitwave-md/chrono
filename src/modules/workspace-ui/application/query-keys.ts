@@ -20,6 +20,8 @@ export const workspaceQueryKeys = {
     ["workspace", workspaceSlug, "active-timer"] as const,
   project: (workspaceSlug: string, projectId: string) =>
     ["workspace", workspaceSlug, "project", projectId] as const,
+  projectBranches: (workspaceSlug: string, projectId: string) =>
+    ["workspace", workspaceSlug, "project", projectId, "branches"] as const,
   projectActivity: (workspaceSlug: string, projectId: string) =>
     ["workspace", workspaceSlug, "project", projectId, "activity"] as const,
   issue: (workspaceSlug: string, issueId: string) =>

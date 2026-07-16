@@ -24,7 +24,7 @@ export function IssueBoard(props: IssueBoardProps) {
     return (
       <div className="grid min-h-[calc(100svh-150px)] place-content-center justify-items-center text-center">
         <CircleDashed className="mb-4 size-12 text-muted-foreground" />
-        <h2 className="text-base font-semibold">Select a Project or Sprint</h2>
+        <h2 className="text-base font-semibold">Select a Project</h2>
         <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">Board movement is scoped to one effective Project workflow.</p>
       </div>
     );

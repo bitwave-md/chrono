@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
@@ -11,7 +11,7 @@ import { CommandMenu } from "@/modules/workspace-ui/components/command-menu";
 import { CreateIssueDialog } from "@/modules/workspace-ui/components/create-issue-dialog";
 import { TimerDock } from "@/modules/workspace-ui/components/timer-dock";
 import { WorkspaceSidebar } from "@/modules/workspace-ui/components/workspace-sidebar";
-import { flattenProjects, type WorkspaceIdentity, type WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
+import type { WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
 import { useCommandMenu, useWorkspaceOverlay, useWorkspaceView, WorkspaceUiProvider } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface WorkspaceExperienceProps {
@@ -44,7 +44,7 @@ function WorkspaceShell({ workspace, workspaces, children }: WorkspaceExperience
   const routeClientId = pathname.match(/\/clients\/([^/]+)/)?.[1] ?? null;
   const activeClient = clients.find((client) => client.id === routeClientId) ?? clients[0] ?? null;
   const projectsQuery = useProjectsQuery(workspace.slug, activeClient?.id ?? null);
-  const projects = useMemo(() => flattenProjects(projectsQuery.data ?? []), [projectsQuery.data]);
+  const projects = projectsQuery.data ?? [];
   const membersQuery = useMembersQuery(workspace.slug);
   const members = membersQuery.data ?? [];
   const activeTimerQuery = useActiveTimerQuery(workspace.slug);
@@ -88,10 +88,12 @@ function WorkspaceShell({ workspace, workspaces, children }: WorkspaceExperience
         <CreateIssueDialog
           clientId={activeClient.id}
           filters={{}}
+          branches={[]}
           members={members}
           open
           projects={projects}
           selectedProjectId={null}
+          selectedBranchId={null}
           workspaceSlug={workspace.slug}
           onOpenChange={(open) => (open ? openCreateIssue() : closeCreateIssue())}
         />

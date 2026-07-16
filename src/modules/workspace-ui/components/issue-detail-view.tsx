@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlay, Clock3, FolderKanban, LoaderCircle, MessageSquare, Shapes, Signal, Square } from "lucide-react";
+import { CirclePlay, Clock3, FolderKanban, GitBranch, LoaderCircle, MessageSquare, Shapes, Signal, Square } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAddIssueCommentMutation, useIssueCommentsQuery } from "@/modules/workspace-ui/application/use-issue-comment-queries";
 import { useIssueMetadataQuery, useReplaceIssueLabelsMutation } from "@/modules/workspace-ui/application/use-issue-metadata-queries";
 import { useIssueQuery, useUpdateIssueDetailMutation } from "@/modules/workspace-ui/application/use-issue-queries";
+import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
 import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useStopTimerMutation } from "@/modules/workspace-ui/application/use-timer-query";
 import { useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
@@ -19,7 +20,7 @@ import { LabelProperty } from "@/modules/workspace-ui/components/label-property"
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
-import { flattenProjects, type IssuePriority, type IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { IssuePriority, IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 const priorityOptions = [
   { value: "none", label: "No priority", color: "#71717a" },
@@ -41,9 +42,10 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
   const update = useUpdateIssueDetailMutation(workspaceSlug, issue.id);
   const membersQuery = useMembersQuery(workspaceSlug);
   const projectsQuery = useProjectsQuery(workspaceSlug, issue.clientId);
-  const projects = flattenProjects(projectsQuery.data ?? []);
+  const projects = projectsQuery.data ?? [];
   const project = projects.find((item) => item.id === issue.projectId);
-  const statusesQuery = useWorkflowStatusesQuery(workspaceSlug, project?.effectiveWorkflowId ?? null);
+  const branchesQuery = useProjectBranchesQuery(workspaceSlug, issue.projectId);
+  const statusesQuery = useWorkflowStatusesQuery(workspaceSlug, project?.workflowId ?? null);
   const metadataQuery = useIssueMetadataQuery(workspaceSlug);
   const labelsMutation = useReplaceIssueLabelsMutation(workspaceSlug, issue.id);
   const commentsQuery = useIssueCommentsQuery(workspaceSlug, issue.id);
@@ -102,7 +104,8 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
             }} />
             <OptionProperty icon={Signal} label="Priority" options={priorityOptions} placeholder="No priority" value={issue.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as IssuePriority })} />
             <AssigneeProperty members={membersQuery.data ?? []} value={issue.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
-            <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={issue.projectId} onChange={(projectId) => patch({ projectId }, { projectId, projectName: projects.find((item) => item.id === projectId)?.name ?? null, ...(projectId ? {} : { statusId: null, statusName: null, statusColor: null }) })} />
+            <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={issue.projectId} onChange={(projectId) => patch({ projectId }, { projectId, projectName: projects.find((item) => item.id === projectId)?.name ?? null, branchId: null, branchName: null, ...(projectId ? {} : { statusId: null, statusName: null, statusColor: null }) })} />
+            {issue.projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={(branchesQuery.data ?? []).map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={issue.branchId} onChange={(branchId) => patch({ branchId }, { branchId, branchName: branchesQuery.data?.find((item) => item.id === branchId)?.name ?? null })} /> : null}
             <OptionProperty allowEmpty icon={Shapes} label="Issue type" options={(metadataQuery.data?.issueTypes ?? []).map((item) => ({ value: item.id, label: item.name, color: item.color }))} placeholder="No type" value={issue.issueTypeId} onChange={(issueTypeId) => {
               const type = metadataQuery.data?.issueTypes.find((item) => item.id === issueTypeId);
               patch({ issueTypeId }, { issueTypeId, issueTypeName: type?.name ?? null, issueTypeColor: type?.color ?? null });

@@ -13,6 +13,7 @@ import {
 
 export interface CreateIssueVariables extends CreateIssueRequest {
   projectName: string | null;
+  branchName: string | null;
   assignees: IssueRecord["assignees"];
   statusId: string | null;
   statusName: string | null;
@@ -47,6 +48,7 @@ export function useCreateIssueMutation(
       new WorkspaceApiClient(workspaceSlug).createIssue({
         clientId: variables.clientId,
         projectId: variables.projectId,
+        branchId: variables.branchId,
         assigneeMembershipIds: variables.assigneeMembershipIds,
         title: variables.title,
         description: variables.description,
@@ -66,6 +68,8 @@ export function useCreateIssueMutation(
         visibility: variables.visibility,
         projectId: variables.projectId,
         projectName: variables.projectName,
+        branchId: variables.branchId,
+        branchName: variables.branchName,
         clientId: variables.clientId,
         clientName: "",
         assignees: variables.assignees,
@@ -115,6 +119,7 @@ export function useUpdateIssueMutation(
         issueId: variables.issueId,
         expectedVersion: variables.expectedVersion,
         projectId: variables.projectId,
+        branchId: variables.branchId,
         assigneeMembershipIds: variables.assigneeMembershipIds,
         statusId: variables.statusId,
         issueTypeId: variables.issueTypeId,

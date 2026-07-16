@@ -17,20 +17,44 @@ export interface ClientRecord {
   permission: "view" | "comment" | "contribute" | null;
 }
 
-export interface ProjectNode {
+export interface ProjectRecord {
   id: string;
-  parentId: string | null;
   name: string;
   slug: string;
-  kind: "project" | "subproject" | "sprint";
-  workflowMode: "own" | "inherit";
   visibility: "internal" | "client_shared" | "restricted";
   position: number;
   namespacePrefix: string | null;
-  workflowId: string | null;
   effectiveNamespacePrefix: string;
-  effectiveWorkflowId: string;
-  children: ProjectNode[];
+  workflowId: string;
+}
+
+export type ProjectBranchKind =
+  | "feature"
+  | "sprint"
+  | "refactor"
+  | "release"
+  | "other";
+
+export type ProjectBranchState =
+  | "planned"
+  | "active"
+  | "completed"
+  | "canceled";
+
+export interface ProjectBranchRecord {
+  id: string;
+  projectId: string;
+  name: string;
+  slug: string;
+  kind: ProjectBranchKind;
+  state: ProjectBranchState;
+  summary: string | null;
+  description: string | null;
+  position: number;
+  startDate: string | null;
+  targetDate: string | null;
+  totalIssues: number;
+  completedIssues: number;
 }
 
 export interface MemberRecord {
@@ -56,6 +80,8 @@ export interface IssueRecord {
   visibility: IssueVisibility;
   projectId: string | null;
   projectName: string | null;
+  branchId: string | null;
+  branchName: string | null;
   assignees: MemberRecord[];
   labels: Array<{ id: string; name: string; color: string }>;
   issueTypeId: string | null;
@@ -98,7 +124,7 @@ export interface ActiveTimerRecord {
   issueTitle: string;
   clientId: string;
   projectId: string | null;
-  rootProjectId: string | null;
+  branchId: string | null;
   categoryId: string | null;
   categoryName: string | null;
   note: string | null;
@@ -121,18 +147,15 @@ export interface ProjectDetailRecord {
   id: string;
   clientId: string;
   clientName: string;
-  parentId: string | null;
-  kind: ProjectNode["kind"];
   name: string;
   slug: string;
   summary: string | null;
   description: string | null;
   state: "planned" | "active" | "paused" | "completed" | "canceled";
-  visibility: ProjectNode["visibility"];
+  visibility: ProjectRecord["visibility"];
   startDate: string | null;
   targetDate: string | null;
-  workflowMode: ProjectNode["workflowMode"];
-  effectiveWorkflowId: string | null;
+  workflowId: string | null;
   assignees: MemberRecord[];
   progress: { total: number; completed: number; percentage: number };
   latestUpdate: ProjectUpdateRecord | null;
@@ -171,11 +194,4 @@ export interface IssueMetadataRecord {
 export interface ActiveTimerState {
   timer: ActiveTimerRecord | null;
   serverNow: string;
-}
-
-export function flattenProjects(projects: ProjectNode[]): ProjectNode[] {
-  return projects.flatMap((project) => [
-    project,
-    ...flattenProjects(project.children),
-  ]);
 }

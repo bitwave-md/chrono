@@ -12,7 +12,6 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -21,14 +20,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { useIssuesQuery } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useProjectActivityQuery, useProjectQuery, usePublishProjectUpdateMutation, useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
-import { useMembersQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
+import { ProjectBranchSection } from "@/modules/workspace-ui/components/project-branch-section";
+import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
-import type { IssueRecord, ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 type ProjectTab = "overview" | "activity" | "issues";
 
@@ -72,7 +72,7 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
       </div>
       {tab === "overview" ? <ProjectOverview project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "activity" ? <ProjectActivity project={project} workspaceSlug={workspaceSlug} /> : null}
-      {tab === "issues" ? <ProjectIssues project={project} workspaceSlug={workspaceSlug} /> : null}
+      {tab === "issues" ? <ProjectIssuesView project={project} workspaceSlug={workspaceSlug} /> : null}
     </>
   );
 }
@@ -108,6 +108,8 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
         if (description !== project.description) patch({ description }, { description });
       }} /></section>
 
+      <ProjectBranchSection projectId={project.id} workspaceSlug={workspaceSlug} />
+
       <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Resources</h2><ResourceCreator pending={addResource.isPending} onCreate={(input) => addResource.mutate(input)} /></div>{project.resources.length ? <div className="mt-2 divide-y">{project.resources.map((resource) => <a className="flex items-center gap-2 py-2 text-sm hover:underline" href={resource.url} key={resource.id} rel="noreferrer" target="_blank"><Link2 className="size-4 text-muted-foreground" />{resource.title}</a>)}</div> : <EmptyLine icon={Link2} text="No resources linked." />}</section>
 
       <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Milestones</h2><MilestoneCreator pending={addMilestone.isPending} onCreate={(input) => addMilestone.mutate(input)} /></div>{project.milestones.length ? <div className="mt-2 divide-y">{project.milestones.map((milestone) => <div className="flex items-center gap-3 py-2 text-sm" key={milestone.id}><CheckCircle2 className="size-4 text-muted-foreground" /><span className="flex-1">{milestone.name}</span>{milestone.targetDate ? <span className="text-xs text-muted-foreground">{new Date(milestone.targetDate).toLocaleDateString()}</span> : null}</div>)}</div> : <EmptyLine icon={CalendarDays} text="No milestones defined." />}</section>
@@ -136,27 +138,6 @@ function ProjectActivity({ project, workspaceSlug }: { project: ProjectDetailRec
       </div>
     </div>
   );
-}
-
-function ProjectIssues({ project, workspaceSlug }: { project: ProjectDetailRecord; workspaceSlug: string }) {
-  const router = useRouter();
-  const issuesQuery = useIssuesQuery(workspaceSlug, project.clientId, { projectId: project.id });
-  const statusesQuery = useWorkflowStatusesQuery(workspaceSlug, project.effectiveWorkflowId);
-  const issues = issuesQuery.data ?? [];
-  const groups = statusesQuery.data ?? [];
-  return (
-    <div className="py-4">
-      {groups.map((status) => {
-        const items = issues.filter((issue) => issue.statusId === status.id);
-        return <IssueGroup color={status.color} issues={items} key={status.id} name={status.name} onOpen={(issue) => router.push(`/app/${workspaceSlug}/projects/${project.id}/issues/${issue.id}`)} />;
-      })}
-      {!issuesQuery.isLoading && !issues.length ? <EmptyLine icon={CircleDashed} text="No issues in this Project." /> : null}
-    </div>
-  );
-}
-
-function IssueGroup({ name, color, issues, onOpen }: { name: string; color: string | null; issues: IssueRecord[]; onOpen: (issue: IssueRecord) => void }) {
-  return <section className="border-b"><header className="flex h-9 items-center gap-2 px-5 text-xs font-medium"><span className="size-2 rounded-full" style={{ backgroundColor: color ?? "#71717a" }} />{name}<span className="text-muted-foreground">{issues.length}</span></header>{issues.map((issue) => <button className="flex min-h-10 w-full items-center gap-3 border-t px-5 text-left text-sm hover:bg-accent" key={issue.id} onClick={() => onOpen(issue)}><span className="w-16 font-mono text-xs text-muted-foreground">{issue.identifier}</span><span className="min-w-0 flex-1 truncate">{issue.title}</span><span className="text-xs capitalize text-muted-foreground">{issue.priority}</span>{issue.assignees.slice(0, 1).map((assignee) => <Avatar className="size-5" key={assignee.membershipId}><AvatarFallback className="text-[0.55rem]">{(assignee.displayName ?? assignee.email).slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>)}</button>)}</section>;
 }
 
 function EmptyLine({ icon: Icon, text }: { icon: typeof Link2; text: string }) {

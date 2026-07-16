@@ -10,7 +10,6 @@ import { useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-
 import { IssueBoard } from "@/modules/workspace-ui/components/issue-board";
 import { IssueList } from "@/modules/workspace-ui/components/issue-list";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
-import { flattenProjects } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceOverlay, useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface IssueCollectionViewProps {
@@ -37,9 +36,9 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
   const issuesQuery = useIssuesQuery(props.workspaceSlug, props.clientId ?? null, filters);
   const issues = issuesQuery.data ?? [];
   const projectsQuery = useProjectsQuery(props.workspaceSlug, props.clientId ?? null);
-  const projects = useMemo(() => flattenProjects(projectsQuery.data ?? []), [projectsQuery.data]);
+  const projects = projectsQuery.data ?? [];
   const project = projects.find((candidate) => candidate.id === props.projectId);
-  const statusesQuery = useWorkflowStatusesQuery(props.workspaceSlug, project?.effectiveWorkflowId ?? null);
+  const statusesQuery = useWorkflowStatusesQuery(props.workspaceSlug, project?.workflowId ?? null);
   const updateIssue = useUpdateIssueMutation(props.workspaceSlug, props.clientId ?? null, filters);
 
   const openIssue = (issueId: string) => {

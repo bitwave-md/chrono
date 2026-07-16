@@ -6,7 +6,7 @@ import { useMemo, useRef } from "react";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
 import { Kbd } from "@/components/ui/kbd";
 import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
-import type { ClientRecord, ProjectNode } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ClientRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 interface WorkspaceCommand {
   id: string;
@@ -21,7 +21,7 @@ interface WorkspaceCommand {
 interface CommandMenuProps {
   open: boolean;
   clients: ClientRecord[];
-  projects: ProjectNode[];
+  projects: ProjectRecord[];
   onOpenChange: (open: boolean) => void;
   onOpenCreate: () => void;
   onNavigate: (path: string) => void;
@@ -39,7 +39,7 @@ export function CommandMenu(props: CommandMenuProps) {
     { id: "inbox", label: "Inbox", group: "Navigation", keywords: "inbox", Icon: Inbox, action: () => props.onNavigate(`${props.workspaceRoot}/inbox`) },
     { id: "my-issues", label: "My Issues", group: "Navigation", keywords: "assigned issues", Icon: ListTodo, action: () => props.onNavigate(`${props.workspaceRoot}/my-issues`) },
     ...props.clients.map((client) => ({ id: `client-${client.id}`, label: client.name, group: "Clients" as const, keywords: `${client.key} client`, Icon: Building2, action: () => props.onNavigate(`${props.workspaceRoot}/clients/${client.id}/home`) })),
-    ...props.projects.map((project) => ({ id: `project-${project.id}`, label: project.name, group: "Projects" as const, keywords: `${project.kind} ${project.slug}`, Icon: FolderKanban, action: () => props.onNavigate(`${props.workspaceRoot}/projects/${project.id}/overview`) })),
+    ...props.projects.map((project) => ({ id: `project-${project.id}`, label: project.name, group: "Projects" as const, keywords: project.slug, Icon: FolderKanban, action: () => props.onNavigate(`${props.workspaceRoot}/projects/${project.id}/overview`) })),
   ], [props]);
 
   useGSAP(() => {
