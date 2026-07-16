@@ -1,5 +1,26 @@
 # Chrono Roadmap
 
+## Linear-style Client workspace
+
+Tracer bullet: open a Client through one persistent Overview, Issues, Projects,
+and Members shell; change its searchable icon and color; pin a resource; and
+manage the explicit Client roster without leaving the Client context.
+
+- [x] Add persisted Client identity fields, resources, and roster APIs.
+- [x] Build the shared route-backed Client header and pill tab switcher.
+- [x] Rebuild Overview with editable identity, resources, and compact aside.
+- [x] Add the Members tab and membership management.
+- [x] Reuse the existing Issue and Project directories inside the Client shell.
+- [x] Verify tenant isolation, responsive behavior, build, and Docker runtime.
+
+The Client workspace was completed and runtime-verified on 2026-07-16 against
+the supplied Linear Overview and icon-picker references. Migration 0007 added
+searchable icon/emoji identity, pinned resources, and owner/admin roster
+backfill. Authenticated tracers changed and restored appearance and membership
+permissions, created and removed a resource, verified all four tabs and the
+legacy Home redirect, and confirmed the rebuilt Docker stack. A headless Chrome
+audit covered the desktop Overview and full icon picker.
+
 ## Interactive Linear-style work-item lists
 
 Tracer bullet: change an Issue's priority, workflow status, labels, and

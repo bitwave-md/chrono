@@ -17,7 +17,10 @@ links.
 Workspace
 ├── Workspace memberships
 └── Clients
+    ├── Icon or emoji identity
     ├── Default issue namespace
+    ├── Explicit Client roster
+    ├── Pinned resources
     └── Projects
         ├── Optional issue namespace override
         ├── Owned workflow
@@ -37,6 +40,11 @@ unprojected Issues live in the Client backlog. Project Issues live on virtual
 Main when `branchId` is null or on one named Project Branch. User responsibility is modeled
 through `issue_assignees` and `project_assignees`, allowing zero, one, or many
 active Workspace members without duplicating columns on the work item.
+
+Clients store an independent icon-or-emoji identity with a validated hex color.
+`client_memberships` is both the guest access boundary and the explicit roster
+shown in the Client workspace. `client_resources` stores ordered, tenant-safe
+HTTP/HTTPS links authored by Workspace memberships.
 
 ## Identity and workflows
 
@@ -106,6 +114,12 @@ authorization.
 Canonical App Router URLs own navigation state. The shared Workspace layout
 renders the shadcn Sidebar and route content; active menu state comes from the
 pathname rather than duplicated selection state.
+
+Each Client renders through one persistent route shell with Overview, Issues,
+Projects, and Members pill tabs. The Overview owns editable Client identity,
+searchable lazy-loaded Lucide icons, emojis, pinned resources, roster avatars,
+and Issues/Projects shortcuts. Existing Issue and Project directories render
+inside this shell without duplicate route headers.
 
 TanStack Query owns all asynchronous data, cache invalidation, optimistic
 updates, and server mutations through custom hooks. Zustand owns synchronous

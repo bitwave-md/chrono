@@ -8,6 +8,16 @@ database session, an accessible Workspace membership, and a trusted `Origin`.
 - `GET /api/workspaces/:workspaceSlug/clients` lists accessible Clients.
 - `POST /api/workspaces/:workspaceSlug/clients` creates a Client and default
   issue namespace for an owner or admin.
+- `PATCH /api/workspaces/:workspaceSlug/clients/:clientId` updates Client name,
+  description, icon-or-emoji key, and validated icon color.
+- `GET|POST /api/workspaces/:workspaceSlug/clients/:clientId/resources` lists
+  or creates pinned Client resources.
+- `PATCH|DELETE /api/workspaces/:workspaceSlug/clients/:clientId/resources/:resourceId`
+  updates, reorders, or archives a pinned resource.
+- `GET|POST /api/workspaces/:workspaceSlug/clients/:clientId/members` lists the
+  explicit Client roster or adds an active Workspace membership.
+- `PATCH|DELETE /api/workspaces/:workspaceSlug/clients/:clientId/members/:membershipId`
+  changes Client permission or removes a roster member.
 - `GET /api/workspaces/:workspaceSlug/members` lists assignable active
   Workspace members. Guest results are limited to the current membership.
 
