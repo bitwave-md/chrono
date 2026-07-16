@@ -22,6 +22,7 @@ Workspace
         ├── Optional issue namespace override
         ├── Owned workflow
         ├── Branches
+        ├── Priority and one optional lead
         ├── User assignees
         ├── Updates, activity, resources, and milestones
         └── Issues
@@ -51,6 +52,9 @@ Project Issue must use a status from that Project's workflow. A Client-backlog I
 Branches are one-level Project workstreams, not nested Projects or version-control
 forks. Feature, sprint, refactor, release, and other Branches share their
 Project's workflow, issue namespace, visibility, permissions, and assignees.
+Projects also store a delivery priority and one optional lead membership. The
+lead is a singular coordination role and does not replace the Project's
+multi-user assignee collection.
 
 Project and Issue creation run in serializable transactions. Issue updates
 require `expectedVersion`, increment the stored version atomically, and return
@@ -111,6 +115,11 @@ effects.
 
 Project and Issue properties are compact icon/value triggers. Each trigger
 opens an appropriate shadcn/Radix popover or command list only after activation.
+The workspace and Client Project directories use one flat Linear-style table
+with latest-update health, priority, lead, target date, Issue count, and derived
+completion progress. Project Issue Branch scope is URL-backed: no query means
+Main, `branch=all` means all Branches, and `branch=:branchId` selects one named
+Branch through a compact Select.
 Animations use `@gsap/react` and compositor-friendly transform/opacity values.
 
 ## Deployment and constraints

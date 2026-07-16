@@ -13,8 +13,10 @@ database session, an accessible Workspace membership, and a trusted `Origin`.
 
 ## Projects
 
-- `GET /api/workspaces/:workspaceSlug/projects?clientId=:clientId` returns the
-  Client's flat Project list with namespace and workflow IDs.
+- `GET /api/workspaces/:workspaceSlug/projects` returns the accessible
+  Workspace-wide flat Project directory. Optional `clientId` limits it to one
+  Client. Records include namespace and workflow IDs, latest-update health,
+  priority, lead, target date, Issue counts, and derived completion progress.
 - `POST /api/workspaces/:workspaceSlug/projects` creates a Project directly
   under its Client and provisions its workflow.
 - `GET|POST /api/workspaces/:workspaceSlug/projects/:projectId/branches` lists
@@ -24,7 +26,8 @@ database session, an accessible Workspace membership, and a trusted `Origin`.
 - `GET /api/workspaces/:workspaceSlug/projects/:projectId` returns Project
   overview data, assignees, progress, latest update, resources, and milestones.
 - `PATCH /api/workspaces/:workspaceSlug/projects/:projectId` updates state,
-  summary, description, visibility, dates, or the atomic assignee collection.
+  priority, singular `leadMembershipId`, summary, description, visibility,
+  dates, or the atomic assignee collection.
 - `GET|POST /api/workspaces/:workspaceSlug/projects/:projectId/activity`
   reads activity or publishes an authored update.
 - `POST /api/workspaces/:workspaceSlug/projects/:projectId/resources` adds a

@@ -1,5 +1,26 @@
 # Chrono Roadmap
 
+## Navigation and Project directory refinement
+
+Tracer bullet: create a Client from the sidebar, follow clickable breadcrumbs,
+open the workspace-wide Linear-style Project table, edit Project priority and
+lead, and switch Project Issues between Main, All branches, and a named Branch
+through one route-backed select.
+
+- [x] Make breadcrumb ancestors canonical links.
+- [x] Add authorized sidebar Client creation with optimistic cache updates.
+- [x] Add Project priority and singular lead fields.
+- [x] Build the flat Linear-style Project directory with health and progress.
+- [x] Replace Branch scope tabs with a compact select defaulting to Main.
+- [x] Verify migrations, permissions, responsive UX, APIs, and production build.
+
+The refinement was completed and runtime-verified on 2026-07-16. Clean
+migration replay created all 29 tables with the tenant-safe Project lead
+constraint. Authenticated tracers verified Workspace-wide Project metadata,
+priority and lead updates, authorized Client creation, Main/All/named Branch
+routes, the production build, and the healthy rebuilt Docker stack. Disposable
+verification data was removed afterward.
+
 ## Project Branches model
 
 Tracer bullet: keep Projects as direct Client children, introduce project-local
