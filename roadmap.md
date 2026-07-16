@@ -1,5 +1,17 @@
 # Chrono Roadmap
 
+## Linear-style application chrome
+
+Tracer bullet: navigate the full Workspace inside near-black application chrome,
+with a gray inset content canvas, rounded desktop separation, dense navigation
+typography, and icon-complete Client navigation.
+
+- [x] Retune shared shadcn tokens for black sidebar chrome and gray content.
+- [x] Add the rounded, bordered, shadowed desktop content inset.
+- [x] Refine Sidebar typography, density, active states, and icon proportions.
+- [x] Render persisted Client icons and icons for every Client subroute.
+- [x] Verify responsive behavior, static checks, tests, build, and Docker health.
+
 ## Unified semantic property pickers
 
 Tracer bullet: change status and priority from an Issue row, full Issue page,

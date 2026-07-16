@@ -22,9 +22,9 @@ import { cn } from "@/lib/utils";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH = "15.25rem";
+const SIDEBAR_WIDTH_MOBILE = "17rem";
+const SIDEBAR_WIDTH_ICON = "2.75rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 interface SidebarContextValue {
@@ -100,7 +100,7 @@ function SidebarProvider({
     <SidebarContext.Provider value={value}>
       <div
         data-slot="sidebar-wrapper"
-        className={cn("group/sidebar-wrapper flex min-h-svh w-full bg-background", className)}
+        className={cn("group/sidebar-wrapper flex min-h-svh w-full bg-sidebar", className)}
         style={{
           "--sidebar-width": SIDEBAR_WIDTH,
           "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
@@ -221,7 +221,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
 }
 
 function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sidebar-header" className={cn("flex flex-col gap-2 p-2", className)} {...props} />;
+  return <div data-slot="sidebar-header" className={cn("flex flex-col gap-2 px-2.5 pt-2.5 pb-1.5", className)} {...props} />;
 }
 
 function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
@@ -229,23 +229,23 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sidebar-content" className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden", className)} {...props} />;
+  return <div data-slot="sidebar-content" className={cn("flex min-h-0 flex-1 flex-col gap-1 overflow-auto pb-2 group-data-[collapsible=icon]:overflow-hidden", className)} {...props} />;
 }
 
 function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sidebar-group" className={cn("relative flex w-full min-w-0 flex-col p-2", className)} {...props} />;
+  return <div data-slot="sidebar-group" className={cn("relative flex w-full min-w-0 flex-col px-2 py-1", className)} {...props} />;
 }
 
 function SidebarGroupLabel({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sidebar-group-label" className={cn("flex h-8 items-center px-2 text-xs font-medium text-sidebar-foreground/70 transition-[margin,opacity] group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0", className)} {...props} />;
+  return <div data-slot="sidebar-group-label" className={cn("flex h-7 items-center px-2 text-[11px] font-semibold text-sidebar-foreground/55 transition-[margin,opacity] group-data-[collapsible=icon]:-mt-7 group-data-[collapsible=icon]:opacity-0", className)} {...props} />;
 }
 
 function SidebarGroupContent({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sidebar-group-content" className={cn("w-full text-sm", className)} {...props} />;
+  return <div data-slot="sidebar-group-content" className={cn("w-full text-[13px]", className)} {...props} />;
 }
 
 function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
-  return <ul data-slot="sidebar-menu" className={cn("flex w-full min-w-0 flex-col gap-1", className)} {...props} />;
+  return <ul data-slot="sidebar-menu" className={cn("flex w-full min-w-0 flex-col gap-0.5", className)} {...props} />;
 }
 
 function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -270,7 +270,7 @@ function SidebarMenuButton({
       data-active={isActive}
       data-slot="sidebar-menu-button"
       className={cn(
-        "flex h-8 w-full items-center gap-2 overflow-hidden rounded-md px-2 text-left text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0",
+        "flex h-8 w-full items-center gap-2 overflow-hidden rounded-md px-2 text-left text-[13px] font-medium text-sidebar-foreground/78 outline-none transition-colors hover:bg-sidebar-accent/75 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 [&>span:last-child]:truncate [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-sidebar-foreground/58 data-[active=true]:[&_svg]:text-sidebar-accent-foreground",
         className,
       )}
       {...props}
@@ -297,7 +297,7 @@ function SidebarMenuAction({ className, ...props }: React.ComponentProps<"button
 }
 
 function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
-  return <ul data-slot="sidebar-menu-sub" className={cn("mx-3.5 flex min-w-0 flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5 group-data-[collapsible=icon]:hidden", className)} {...props} />;
+  return <ul data-slot="sidebar-menu-sub" className={cn("mx-3.5 flex min-w-0 flex-col gap-0.5 border-l border-sidebar-border/70 px-2.5 py-0.5 group-data-[collapsible=icon]:hidden", className)} {...props} />;
 }
 
 function SidebarMenuSubItem(props: React.ComponentProps<"li">) {
@@ -306,7 +306,7 @@ function SidebarMenuSubItem(props: React.ComponentProps<"li">) {
 
 function SidebarMenuSubButton({ className, isActive, asChild = false, ...props }: React.ComponentProps<"button"> & { isActive?: boolean; asChild?: boolean }) {
   const Comp = asChild ? Slot : "button";
-  return <Comp data-active={isActive} data-slot="sidebar-menu-sub-button" className={cn("flex h-7 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-left text-xs text-sidebar-foreground/75 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0", className)} {...props} />;
+  return <Comp data-active={isActive} data-slot="sidebar-menu-sub-button" className={cn("flex h-7 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-left text-[12px] font-medium text-sidebar-foreground/62 outline-none hover:bg-sidebar-accent/75 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-sidebar-foreground/50 data-[active=true]:[&_svg]:text-sidebar-accent-foreground", className)} {...props} />;
 }
 
 export {

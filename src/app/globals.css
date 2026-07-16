@@ -2,32 +2,32 @@
 @import "tw-animate-css";
 
 :root {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.168 0.004 285.82);
+  --foreground: oklch(0.93 0.003 285.82);
+  --card: oklch(0.195 0.004 285.82);
+  --card-foreground: oklch(0.93 0.003 285.82);
+  --popover: oklch(0.19 0.004 285.82);
+  --popover-foreground: oklch(0.93 0.003 285.82);
+  --primary: oklch(0.92 0.003 285.82);
+  --primary-foreground: oklch(0.17 0.004 285.82);
+  --secondary: oklch(0.225 0.005 285.82);
+  --secondary-foreground: oklch(0.92 0.003 285.82);
+  --muted: oklch(0.215 0.004 285.82);
+  --muted-foreground: oklch(0.66 0.006 285.82);
+  --accent: oklch(0.235 0.005 285.82);
+  --accent-foreground: oklch(0.94 0.003 285.82);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.58 0.01 285.82);
+  --sidebar: oklch(0.105 0.003 285.82);
+  --sidebar-foreground: oklch(0.86 0.004 285.82);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-accent: oklch(0.17 0.004 285.82);
+  --sidebar-accent-foreground: oklch(0.94 0.003 285.82);
+  --sidebar-border: oklch(1 0 0 / 7%);
+  --sidebar-ring: oklch(0.54 0.01 285.82);
   --radius: 0.625rem;
   color-scheme: dark;
 }
@@ -78,6 +78,6 @@
   }
 
   body {
-    @apply min-h-svh overflow-x-hidden bg-background text-foreground antialiased;
+    @apply min-h-svh overflow-x-hidden bg-sidebar text-foreground antialiased;
   }
 }

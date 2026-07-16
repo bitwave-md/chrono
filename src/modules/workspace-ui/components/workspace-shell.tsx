@@ -72,7 +72,9 @@ function WorkspaceShell({ workspace, workspaces, children }: WorkspaceExperience
   return (
     <>
       <WorkspaceSidebar clients={clients} workspace={workspace} workspaces={workspaces} />
-      <SidebarInset className="min-h-svh">{children}</SidebarInset>
+      <SidebarInset className="min-h-svh overflow-hidden bg-background md:my-1.5 md:mr-1.5 md:min-h-[calc(100svh-0.75rem)] md:rounded-xl md:border md:border-white/[0.06] md:shadow-[0_18px_55px_rgba(0,0,0,0.32)]">
+        {children}
+      </SidebarInset>
 
       <CommandMenu
         clients={clients}

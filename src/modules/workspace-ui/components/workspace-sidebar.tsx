@@ -5,6 +5,7 @@ import {
   Check,
   ChevronRight,
   FolderKanban,
+  House,
   Inbox,
   ListTodo,
   LogOut,
@@ -35,6 +36,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useSignOutMutation } from "@/modules/auth/presentation/use-auth-mutations";
+import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { CreateClientDialog } from "@/modules/workspace-ui/components/create-client-dialog";
 import type { ClientRecord, WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
@@ -67,13 +69,13 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
   const active = (href: string, exact = true) => exact ? pathname === href : pathname.startsWith(href);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar className="border-r-0" collapsible="icon">
       <SidebarHeader>
         <Popover>
           <PopoverTrigger asChild>
-            <SidebarMenuButton className="h-10" tooltip={workspace.name}>
+            <SidebarMenuButton className="h-9" tooltip={workspace.name}>
               <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Waves className="size-4" /></span>
-              <span className="min-w-0 flex-1 truncate font-medium group-data-[collapsible=icon]:hidden">{workspace.name}</span>
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold group-data-[collapsible=icon]:hidden">{workspace.name}</span>
               <ChevronRight className="rotate-90 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </PopoverTrigger>
@@ -164,7 +166,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
                         <SidebarMenuItem>
                           <CollapsibleTrigger asChild>
                             <SidebarMenuButton isActive={pathname.startsWith(clientRoot)} tooltip={client.name}>
-                              <span className="grid size-4 place-items-center rounded-sm bg-muted text-[0.55rem] font-semibold">{client.name.slice(0, 1).toUpperCase()}</span>
+                              <ClientIcon className="size-5 rounded-[5px]" client={client} iconClassName={client.iconType === "emoji" ? "text-[0.6rem]" : "size-3"} />
                               <span className="truncate">{client.name}</span>
                               <ChevronRight className={`transition-transform ${open ? "rotate-90" : ""}`} />
                             </SidebarMenuButton>
@@ -172,15 +174,15 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
                           <CollapsibleContent>
                             <SidebarMenuSub>
                               {[
-                                ["Home", "overview"],
-                                ["Issues", "issues"],
-                                ["Projects", "projects"],
-                              ].map(([label, segment]) => {
+                                { label: "Home", segment: "overview", icon: House },
+                                { label: "Issues", segment: "issues", icon: ListTodo },
+                                { label: "Projects", segment: "projects", icon: FolderKanban },
+                              ].map(({ label, segment, icon: Icon }) => {
                                 const href = `${clientRoot}/${segment}`;
                                 return (
                                   <SidebarMenuSubItem key={segment}>
                                     <SidebarMenuSubButton asChild isActive={active(href)}>
-                                      <Link href={href} onClick={finishNavigation}>{label}</Link>
+                                      <Link href={href} onClick={finishNavigation}><Icon /><span>{label}</span></Link>
                                     </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>
                                 );
