@@ -15,6 +15,6 @@ capacity. They do not justify a closure table, materialized report view, or
 derived Issue projection yet.
 
 Profile again with realistic cardinalities before introducing derived storage.
-Candidate pressure points are exact Project/Team Issue lists and high-volume
+Candidate pressure points are exact Project/assignee Issue lists and high-volume
 dimension/date report filters; add tenant-leading composite indexes only when
 real plans show material filtering or sorting cost.

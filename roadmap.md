@@ -40,18 +40,17 @@ conflicts, and transactional cycle rejection.
 ## Phase 3: Flexible issue engine
 
 - [x] Add Issue with required Workspace and Client relations.
-- [x] Keep Project, Team, and assignee relations nullable and independent.
+- [x] Keep Project and assignee relations nullable and independent.
 - [x] Allocate stable issue keys from the effective Client or Project namespace.
 - [x] Require workflow status only when a Project is assigned.
-- [x] Add workspace-scoped Client issue lists with Project, Team, and assignee
-  filters.
+- [x] Add workspace-scoped Client issue lists with Project and assignee filters.
 - [x] Add optimistic issue mutations with version conflict handling.
 
 Phase 3 runtime verification completed on 2026-07-15. The authenticated tracer
-created Team-assigned, individually assigned, combined, and unassigned issues.
+created individually assigned and unassigned issues.
 It verified atomic namespace counters, stable issue keys, Project workflow
 defaults, Client-backlog status clearing, cross-workflow category mapping,
-Team/workflow independence, guest visibility boundaries, and stale-version
+assignment/workflow independence, guest visibility boundaries, and stale-version
 conflicts.
 
 ## Phase 4: Time tracking and reporting foundations
@@ -63,9 +62,8 @@ add a manual log, and aggregate both entries through snapshotted dimensions.
 - [x] Add customizable time categories.
 - [x] Add authoritative timer sessions and manual time logs.
 - [x] Enforce one active timer per user at the database boundary.
-- [x] Snapshot Client, exact Project, root Project, Team, and worker dimensions.
-- [x] Aggregate time by Issue, Project subtree, Client, Team, category, and
-  worker.
+- [x] Snapshot Client, exact Project, root Project, and worker dimensions.
+- [x] Aggregate time by Issue, Project subtree, Client, category, and worker.
 - [x] Provide authoritative timer epochs and server clock values for cross-tab
   and multi-device synchronization without per-tick database writes.
 
@@ -73,7 +71,7 @@ Phase 4 runtime verification completed on 2026-07-15. The authenticated tracer
 created a billable Development category, started and retrieved an API-1 timer,
 rejected a concurrent second timer, stopped it into a finalized log, and added a
 manual Client-backlog log. Reports returned correct totals for Issue, exact
-Project, root Project, recursive Project subtree, Client, Team, category, and
+Project, root Project, recursive Project subtree, Client, category, and
 worker dimensions.
 
 ## Phase 5: Keyboard UX and production hardening
@@ -169,7 +167,7 @@ existing per-workspace Zustand store.
 
 - [x] Add the owned shadcn Sidebar primitive and mobile breakpoint hook.
 - [x] Bridge controlled desktop open state to the workspace view store.
-- [x] Recompose Client, Project, Team, and account navigation as Sidebar menus.
+- [x] Recompose Client, Project, and account navigation as Sidebar menus.
 - [x] Re-verify keyboard toggles, icon mode, mobile drawer, and workspace flows.
 
 The Sidebar migration was completed and runtime-verified on 2026-07-15. The
@@ -185,19 +183,28 @@ Workspace, Client, Project, and Issue routes; preserve an existing Issue's user
 assignment through a multi-assignee migration; and navigate from the exact
 approved sidebar hierarchy into a Project overview and full Issue page.
 
-- [ ] Remove the Team domain, schema, API, filters, reporting dimensions, and UI.
-- [ ] Replace single Issue assignees with tenant-safe Issue and Project assignee
+- [x] Remove the deprecated grouping domain, schema, API, filters, reporting
+  dimensions, and UI.
+- [x] Replace single Issue assignees with tenant-safe Issue and Project assignee
   collections.
-- [ ] Add the Workspace switcher and exact Inbox, My Issues, Workspace, and Your
+- [x] Add the Workspace switcher and exact Inbox, My Issues, Workspace, and Your
   clients sidebar hierarchy.
-- [ ] Add canonical Workspace, Client, Project, and Issue routes.
-- [ ] Add Linear-style Project Overview, Activity, and Issues surfaces.
-- [ ] Add compact property triggers, multi-user assignment, labels, types,
+- [x] Add canonical Workspace, Client, Project, and Issue routes.
+- [x] Add Linear-style Project Overview, Activity, and Issues surfaces.
+- [x] Add compact property triggers, multi-user assignment, labels, types,
   resources, milestones, updates, audit events, and Issue comments.
-- [ ] Re-run migrations, static checks, unit tests, production build, and
+- [x] Re-run migrations, static checks, unit tests, production build, and
   authenticated desktop/mobile browser tracers.
 
 Server data and mutations remain encapsulated in TanStack Query hooks. Zustand
 is limited to sidebar disclosure, overlays, filters, and focus state. Shared
 domain services own authorization and tenant invariants, and UI modules remain
 below 500 lines.
+
+The route and work-item refactor was completed and runtime-verified on
+2026-07-16. Migration 0004 preserved existing individual assignments while
+normalizing Issue and Project assignees, added Project/Issue activity metadata,
+and removed the deprecated grouping and report dimensions. Authenticated Chrome
+tracers verified the exact approved sidebar hierarchy, Workspace switcher,
+Client submenus, Project tabs, property popovers, grouped Issues, full Issue
+detail, and mobile drawer against the rebuilt Compose stack.

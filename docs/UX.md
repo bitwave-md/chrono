@@ -1,19 +1,46 @@
 # Chrono Workspace UX
 
-The authenticated Workspace is a dense, keyboard-first surface with an
-independent Bitwave visual identity. It uses original CSS, system fonts, Lucide
-icons, Radix accessibility primitives, and GSAP transform/opacity motion.
+Chrono is a dense, keyboard-first Workspace using Tailwind, owned shadcn
+components, Lucide icons, and original assets.
 
-## Primary views
+## Navigation
 
-- The sidebar selects a Client, nested Project/Subproject/Sprint, or functional
-  Team.
-- List view optimizes scanning and keyboard traversal.
-- Board view is enabled for one selected Project workflow and supports
-  optimistic status movement.
-- Selecting an Issue opens a non-blocking detail pane with editable title,
-  status, priority, Project, Team, and authoritative timer controls.
-- Rapid create defaults to the current Project and Team context.
+The sidebar contains exactly:
+
+```text
+[Workspace switcher]
+Inbox
+My Issues
+Workspace
+  Clients
+  Projects
+Your clients
+  [Client]
+    Home
+    Issues
+    Projects
+```
+
+The Workspace switcher is searchable. Sidebar and Client disclosure state are
+ephemeral Zustand state; active items derive from canonical routes.
+
+## Project experience
+
+Projects expose Overview, Activity, and Issues tabs. Overview contains summary,
+a compact property row, derived progress, latest update, description,
+resources, and milestones. Activity contains an update composer and immutable
+events. Issues are grouped by workflow status.
+
+Properties are icon/value triggers with semantic colors. They open a popover or
+searchable command list only when clicked. Assignees support zero, one, or many
+Workspace users and display overlapping avatars.
+
+## Issue experience
+
+Issue detail is a full page with breadcrumbs, editable title and description,
+comments, a right-side property column, labels, type, dates, estimate, timer,
+and manual logging. Client-backlog Issues display Backlog without a persisted
+workflow status.
 
 ## Shortcuts
 
@@ -24,9 +51,9 @@ icons, Radix accessibility primitives, and GSAP transform/opacity motion.
 | `[` | Toggle navigation |
 | `1` | List view |
 | `2` | Board view |
-| `J` / `K` | Move Issue focus down/up |
+| `J` / `K` | Move Issue focus |
 | `Enter` | Open focused Issue |
-| `Escape` | Close the active Radix dialog/pane |
+| `Escape` | Close the active popover or dialog |
 
-Shortcuts do not fire while typing in inputs, textareas, selects, or editable
-content. Radix handles focus trapping and Escape behavior for modal surfaces.
+Shortcuts do not fire while typing. Radix primitives manage focus and Escape
+behavior for overlays.
