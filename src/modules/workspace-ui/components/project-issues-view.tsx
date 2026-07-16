@@ -2,9 +2,10 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GitBranch, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useIssuesQuery } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
@@ -23,9 +24,14 @@ export function ProjectIssuesView({
   const pathname = usePathname();
   const parameters = useSearchParams();
   const branchScope = parameters.get("branch");
-  const selectedBranchId = branchScope && branchScope !== "all" ? branchScope : null;
   const isAll = branchScope === "all";
   const branchesQuery = useProjectBranchesQuery(workspaceSlug, project.id);
+  const branches = branchesQuery.data ?? [];
+  const selectedBranch = branchScope && !isAll
+    ? branches.find((branch) => branch.id === branchScope) ?? null
+    : null;
+  const selectedBranchId = selectedBranch?.id ?? null;
+  const selectedScope = isAll ? "all" : selectedBranchId ?? "main";
   const statusesQuery = useWorkflowStatusesQuery(workspaceSlug, project.workflowId);
   const membersQuery = useMembersQuery(workspaceSlug);
   const projectsQuery = useProjectsQuery(workspaceSlug, project.clientId);
@@ -37,18 +43,40 @@ export function ProjectIssuesView({
   const issuesQuery = useIssuesQuery(workspaceSlug, project.clientId, filters);
   const issues = issuesQuery.data ?? [];
 
-  const selectBranch = (value: "main" | "all" | string) => {
-    router.replace(value === "main" ? pathname : `${pathname}?branch=${encodeURIComponent(value)}`);
+  useEffect(() => {
+    if (
+      branchesQuery.isSuccess &&
+      branchScope &&
+      branchScope !== "all" &&
+      !selectedBranch
+    ) {
+      router.replace(pathname, { scroll: false });
+    }
+  }, [branchScope, branchesQuery.isSuccess, pathname, router, selectedBranch]);
+
+  const selectBranch = (value: string) => {
+    router.replace(
+      value === "main" ? pathname : `${pathname}?branch=${encodeURIComponent(value)}`,
+      { scroll: false },
+    );
   };
 
   return (
     <div className="py-4">
-      <div className="flex items-center gap-1 overflow-x-auto border-b px-5 pb-3">
-        <ScopeButton active={!branchScope} label="Main" onClick={() => selectBranch("main")} />
-        {(branchesQuery.data ?? []).map((branch) => (
-          <ScopeButton active={selectedBranchId === branch.id} key={branch.id} label={branch.name} onClick={() => selectBranch(branch.id)} />
-        ))}
-        <ScopeButton active={isAll} label="All issues" onClick={() => selectBranch("all")} />
+      <div className="flex items-center gap-2 border-b px-5 pb-3">
+        <Select value={selectedScope} onValueChange={selectBranch}>
+          <SelectTrigger aria-label="Branch scope" className="w-52" size="sm">
+            <GitBranch className="size-4" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="main">Main</SelectItem>
+            <SelectItem value="all">All branches</SelectItem>
+            {branches.map((branch) => (
+              <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button className="ml-auto shrink-0" size="sm" onClick={() => setCreating(true)}><Plus />New issue</Button>
       </div>
       {(statusesQuery.data ?? []).map((status) => {
@@ -60,7 +88,7 @@ export function ProjectIssuesView({
       ) : null}
       {creating ? (
         <CreateIssueDialog
-          branches={branchesQuery.data ?? []}
+          branches={branches}
           clientId={project.clientId}
           filters={filters}
           members={membersQuery.data ?? []}
@@ -74,10 +102,6 @@ export function ProjectIssuesView({
       ) : null}
     </div>
   );
-}
-
-function ScopeButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
-  return <Button className="shrink-0" size="sm" variant={active ? "secondary" : "ghost"} onClick={onClick}><GitBranch />{label}</Button>;
 }
 
 function IssueGroup({ name, color, issues, onOpen }: { name: string; color: string | null; issues: IssueRecord[]; onOpen: (issue: IssueRecord) => void }) {

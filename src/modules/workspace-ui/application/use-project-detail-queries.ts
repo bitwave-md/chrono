@@ -36,7 +36,14 @@ export function useUpdateProjectMutation(workspaceSlug: string, projectId: strin
       return { previous };
     },
     onError: (_error, _variables, context) => queryClient.setQueryData(queryKey, context?.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.projectsRoot(workspaceSlug),
+        }),
+      ]);
+    },
   });
 }
 

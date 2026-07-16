@@ -8,10 +8,12 @@ import {
   Inbox,
   ListTodo,
   LogOut,
+  Plus,
   Waves,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -33,6 +35,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useSignOutMutation } from "@/modules/auth/presentation/use-auth-mutations";
+import { CreateClientDialog } from "@/modules/workspace-ui/components/create-client-dialog";
 import type { ClientRecord, WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
@@ -46,6 +49,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
   const pathname = usePathname();
   const router = useRouter();
   const signOut = useSignOutMutation();
+  const [createClientOpen, setCreateClientOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
   const workspaceOpen = useWorkspaceView((state) => state.workspaceSectionOpen);
   const clientsOpen = useWorkspaceView((state) => state.clientsSectionOpen);
@@ -54,6 +58,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
   const setClientsOpen = useWorkspaceView((state) => state.setClientsSectionOpen);
   const setClientExpanded = useWorkspaceView((state) => state.setClientExpanded);
   const root = `/app/${workspace.slug}`;
+  const canManageClients = workspace.role === "owner" || workspace.role === "admin";
 
   const finishNavigation = () => {
     if (isMobile) setOpenMobile(false);
@@ -114,8 +119,8 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
         <Collapsible open={workspaceOpen} onOpenChange={setWorkspaceOpen}>
           <SidebarGroup>
             <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="cursor-pointer select-none">
-                <span>Workspace</span><ChevronRight className={`ml-auto size-3.5 transition-transform ${workspaceOpen ? "rotate-90" : ""}`} />
+              <SidebarGroupLabel className="cursor-pointer gap-1 select-none">
+                <span>Workspace</span><ChevronRight className={`size-3.5 transition-transform ${workspaceOpen ? "rotate-90" : ""}`} />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -131,11 +136,23 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
 
         <Collapsible open={clientsOpen} onOpenChange={setClientsOpen}>
           <SidebarGroup>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="cursor-pointer select-none">
-                <span>Your clients</span><ChevronRight className={`ml-auto size-3.5 transition-transform ${clientsOpen ? "rotate-90" : ""}`} />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
+            <div className="group/client-label relative">
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="w-full cursor-pointer gap-1 pr-8 select-none">
+                  <span>Your clients</span><ChevronRight className={`size-3.5 transition-transform ${clientsOpen ? "rotate-90" : ""}`} />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              {canManageClients ? (
+                <button
+                  aria-label="Create Client"
+                  className="absolute top-1.5 right-2 grid size-5 place-items-center rounded text-sidebar-foreground/70 opacity-0 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring group-hover/client-label:opacity-100 group-data-[collapsible=icon]:hidden"
+                  type="button"
+                  onClick={() => setCreateClientOpen(true)}
+                >
+                  <Plus className="size-3.5" />
+                </button>
+              ) : null}
+            </div>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -148,8 +165,8 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
                           <CollapsibleTrigger asChild>
                             <SidebarMenuButton isActive={pathname.startsWith(clientRoot)} tooltip={client.name}>
                               <span className="grid size-4 place-items-center rounded-sm bg-muted text-[0.55rem] font-semibold">{client.name.slice(0, 1).toUpperCase()}</span>
-                              <span>{client.name}</span>
-                              <ChevronRight className={`ml-auto transition-transform ${open ? "rotate-90" : ""}`} />
+                              <span className="truncate">{client.name}</span>
+                              <ChevronRight className={`transition-transform ${open ? "rotate-90" : ""}`} />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
@@ -181,6 +198,17 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
         </Collapsible>
       </SidebarContent>
       <SidebarRail />
+      {createClientOpen ? (
+        <CreateClientDialog
+          open
+          workspaceSlug={workspace.slug}
+          onCreated={(client) => {
+            setClientExpanded(client.id, true);
+            router.push(`${root}/clients/${client.id}/home`);
+          }}
+          onOpenChange={setCreateClientOpen}
+        />
+      ) : null}
     </Sidebar>
   );
 }

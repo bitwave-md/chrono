@@ -9,14 +9,14 @@ import { useIssuesQuery, useUpdateIssueMutation } from "@/modules/workspace-ui/a
 import { useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { IssueBoard } from "@/modules/workspace-ui/components/issue-board";
 import { IssueList } from "@/modules/workspace-ui/components/issue-list";
-import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
+import { RouteHeader, type BreadcrumbItem } from "@/modules/workspace-ui/components/route-header";
 import { useWorkspaceOverlay, useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface IssueCollectionViewProps {
   workspaceSlug: string;
   title: string;
   description: string;
-  breadcrumbs?: string[];
+  breadcrumbs?: BreadcrumbItem[];
   clientId?: string | null;
   projectId?: string | null;
   mine?: boolean;

@@ -1,14 +1,20 @@
 import { ChevronRight, Search } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface RouteHeaderProps {
-  breadcrumbs?: string[];
+  breadcrumbs?: BreadcrumbItem[];
   title: string;
   description?: string;
   actions?: ReactNode;
+}
+
+export interface BreadcrumbItem {
+  label: string;
+  href: string;
 }
 
 export function RouteHeader({ breadcrumbs = [], title, description, actions }: RouteHeaderProps) {
@@ -18,7 +24,10 @@ export function RouteHeader({ breadcrumbs = [], title, description, actions }: R
         <SidebarTrigger />
         <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
           {breadcrumbs.map((item) => (
-            <span className="contents" key={item}><span className="max-w-40 truncate">{item}</span><ChevronRight className="size-3" /></span>
+            <span className="contents" key={item.href}>
+              <Link className="max-w-40 truncate rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={item.href}>{item.label}</Link>
+              <ChevronRight className="size-3" />
+            </span>
           ))}
           <span className="truncate text-foreground">{title}</span>
         </div>

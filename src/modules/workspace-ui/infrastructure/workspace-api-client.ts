@@ -89,8 +89,22 @@ export class WorkspaceApiClient {
     return this.#get("/clients");
   }
 
-  listProjects(clientId: string): Promise<ProjectRecord[]> {
-    return this.#get(`/projects?clientId=${encodeURIComponent(clientId)}`);
+  listProjects(clientId: string | null): Promise<ProjectRecord[]> {
+    return this.#get(
+      clientId ? `/projects?clientId=${encodeURIComponent(clientId)}` : "/projects",
+    );
+  }
+
+  createClient(input: {
+    name: string;
+    key: string;
+    issuePrefix: string;
+    description: string | null;
+  }): Promise<ClientRecord> {
+    return this.#request("/clients", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   listMembers(): Promise<MemberRecord[]> {

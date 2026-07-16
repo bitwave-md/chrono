@@ -10,6 +10,7 @@ import {
   LoaderCircle,
   MessageSquareText,
   Plus,
+  Signal,
 } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
@@ -24,6 +25,7 @@ import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useProje
 import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { ProjectBranchSection } from "@/modules/workspace-ui/components/project-branch-section";
 import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
@@ -44,6 +46,13 @@ const visibilityOptions = [
   { value: "client_shared", label: "Client shared", color: "#22c55e" },
   { value: "restricted", label: "Restricted", color: "#f59e0b" },
 ];
+const priorityOptions = [
+  { value: "none", label: "No priority", color: "#71717a" },
+  { value: "urgent", label: "Urgent", color: "#ef4444" },
+  { value: "high", label: "High", color: "#f59e0b" },
+  { value: "medium", label: "Medium", color: "#eab308" },
+  { value: "low", label: "Low", color: "#60a5fa" },
+];
 const healthOptions = [
   { value: "on_track", label: "On track", color: "#22c55e" },
   { value: "at_risk", label: "At risk", color: "#f59e0b" },
@@ -58,7 +67,10 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
 
   return (
     <>
-      <RouteHeader breadcrumbs={[project.clientName]} title={project.name} />
+      <RouteHeader breadcrumbs={[
+        { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/home` },
+        { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
+      ]} title={project.name} />
       <div className="border-b px-5 pt-4">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 grid size-9 place-items-center rounded-md bg-muted"><FolderKanban className="size-5" /></span>
@@ -92,6 +104,8 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
         }} />
         <div className="mt-3 flex flex-wrap items-center gap-1 border-y py-2">
           <OptionProperty icon={CircleDashed} label="Status" options={stateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
+          <OptionProperty icon={Signal} label="Priority" options={priorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
+          <MemberProperty label="Lead" members={membersQuery.data ?? []} value={project.lead} onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })} />
           <AssigneeProperty members={membersQuery.data ?? []} value={project.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
           <OptionProperty icon={Eye} label="Visibility" options={visibilityOptions} placeholder="Internal" value={project.visibility} onChange={(value) => value && patch({ visibility: value }, { visibility: value as ProjectDetailRecord["visibility"] })} />
           <DateProperty label="Start date" value={project.startDate} onChange={(startDate) => patch({ startDate }, { startDate })} />

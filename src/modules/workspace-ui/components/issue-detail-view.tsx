@@ -68,7 +68,12 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
 
   return (
     <>
-      <RouteHeader breadcrumbs={[issue.clientName, issue.projectName ?? "Client backlog"]} title={issue.identifier} />
+      <RouteHeader breadcrumbs={[
+        { label: issue.clientName, href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
+        issue.projectId
+          ? { label: issue.projectName ?? "Project", href: `/app/${workspaceSlug}/projects/${issue.projectId}/issues` }
+          : { label: "Client backlog", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
+      ]} title={issue.identifier} />
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] max-lg:grid-cols-1">
         <main className="min-w-0 border-r px-6 py-7 max-lg:border-r-0 max-md:px-4">
           <Input className="h-auto border-0 px-0 text-2xl font-semibold shadow-none focus-visible:ring-0" defaultValue={issue.title} maxLength={240} onBlur={(event) => {

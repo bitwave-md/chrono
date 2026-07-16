@@ -19,6 +19,8 @@ export interface ClientRecord {
 
 export interface ProjectRecord {
   id: string;
+  clientId: string;
+  clientName: string;
   name: string;
   slug: string;
   visibility: "internal" | "client_shared" | "restricted";
@@ -26,6 +28,15 @@ export interface ProjectRecord {
   namespacePrefix: string | null;
   effectiveNamespacePrefix: string;
   workflowId: string;
+  state: "planned" | "active" | "paused" | "completed" | "canceled";
+  priority: ProjectPriority;
+  targetDate: string | null;
+  lead: MemberRecord | null;
+  health: "on_track" | "at_risk" | "off_track" | null;
+  healthUpdatedAt: string | null;
+  issueCount: number;
+  completedIssueCount: number;
+  progressPercentage: number;
 }
 
 export type ProjectBranchKind =
@@ -67,6 +78,7 @@ export interface MemberRecord {
 }
 
 export type IssuePriority = "none" | "urgent" | "high" | "medium" | "low";
+export type ProjectPriority = IssuePriority;
 export type IssueVisibility = "internal" | "client_shared" | "restricted";
 
 export interface IssueRecord {
@@ -152,6 +164,8 @@ export interface ProjectDetailRecord {
   summary: string | null;
   description: string | null;
   state: "planned" | "active" | "paused" | "completed" | "canceled";
+  priority: ProjectPriority;
+  lead: MemberRecord | null;
   visibility: ProjectRecord["visibility"];
   startDate: string | null;
   targetDate: string | null;

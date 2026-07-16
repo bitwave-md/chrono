@@ -2,8 +2,10 @@ import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/wo
 
 export const workspaceQueryKeys = {
   clients: (workspaceSlug: string) => ["workspace", workspaceSlug, "clients"] as const,
+  projectsRoot: (workspaceSlug: string) =>
+    ["workspace", workspaceSlug, "projects"] as const,
   projects: (workspaceSlug: string, clientId: string | null) =>
-    ["workspace", workspaceSlug, "projects", clientId] as const,
+    [...workspaceQueryKeys.projectsRoot(workspaceSlug), clientId] as const,
   members: (workspaceSlug: string) => ["workspace", workspaceSlug, "members"] as const,
   categories: (workspaceSlug: string) =>
     ["workspace", workspaceSlug, "time-categories"] as const,
