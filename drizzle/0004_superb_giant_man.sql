@@ -123,6 +123,8 @@ ALTER TABLE "issues" ADD COLUMN "issue_type_id" uuid;--> statement-breakpoint
 ALTER TABLE "projects" ADD COLUMN "state" "project_state" DEFAULT 'planned' NOT NULL;--> statement-breakpoint
 ALTER TABLE "projects" ADD COLUMN "summary" text;--> statement-breakpoint
 CREATE UNIQUE INDEX "issues_workspace_id_unique" ON "issues" USING btree ("workspace_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "issue_types_workspace_id_unique" ON "issue_types" USING btree ("workspace_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "labels_workspace_id_unique" ON "labels" USING btree ("workspace_id","id");--> statement-breakpoint
 ALTER TABLE "issue_assignees" ADD CONSTRAINT "issue_assignees_issue_tenant_fk" FOREIGN KEY ("workspace_id","issue_id") REFERENCES "public"."issues"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issue_assignees" ADD CONSTRAINT "issue_assignees_membership_tenant_fk" FOREIGN KEY ("workspace_id","membership_id") REFERENCES "public"."workspace_memberships"("workspace_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issue_assignees" ADD CONSTRAINT "issue_assignees_creator_tenant_fk" FOREIGN KEY ("workspace_id","created_by_membership_id") REFERENCES "public"."workspace_memberships"("workspace_id","id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -147,9 +149,25 @@ CREATE INDEX "issue_assignees_membership_idx" ON "issue_assignees" USING btree (
 CREATE INDEX "issue_comments_issue_created_idx" ON "issue_comments" USING btree ("issue_id","created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "issue_labels_issue_label_unique" ON "issue_labels" USING btree ("issue_id","label_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "issue_types_workspace_name_unique" ON "issue_types" USING btree ("workspace_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX "issue_types_workspace_id_unique" ON "issue_types" USING btree ("workspace_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "labels_workspace_name_unique" ON "labels" USING btree ("workspace_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX "labels_workspace_id_unique" ON "labels" USING btree ("workspace_id","id");--> statement-breakpoint
+INSERT INTO "issue_types" ("workspace_id", "name", "icon", "color")
+SELECT workspace."id", template."name", template."icon", template."color"
+FROM "workspaces" workspace
+CROSS JOIN (VALUES
+	('Task', 'circle-check', '#60a5fa'),
+	('Bug', 'bug', '#ef4444'),
+	('Feature', 'sparkles', '#a78bfa')
+) AS template("name", "icon", "color")
+ON CONFLICT DO NOTHING;--> statement-breakpoint
+INSERT INTO "labels" ("workspace_id", "name", "color")
+SELECT workspace."id", template."name", template."color"
+FROM "workspaces" workspace
+CROSS JOIN (VALUES
+	('Bug', '#ef4444'),
+	('Feature', '#a78bfa'),
+	('Improvement', '#22c55e')
+) AS template("name", "color")
+ON CONFLICT DO NOTHING;--> statement-breakpoint
 CREATE INDEX "project_activity_project_created_idx" ON "project_activity_events" USING btree ("project_id","created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "project_assignees_project_membership_unique" ON "project_assignees" USING btree ("project_id","membership_id");--> statement-breakpoint
 CREATE INDEX "project_assignees_membership_idx" ON "project_assignees" USING btree ("workspace_id","membership_id");--> statement-breakpoint
