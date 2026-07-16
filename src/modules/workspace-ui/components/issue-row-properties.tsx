@@ -2,7 +2,6 @@
 
 import {
   Check,
-  CircleDashed,
   Tags,
   UserRound,
 } from "lucide-react";
@@ -20,12 +19,13 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { issuePriorityMetadata } from "@/modules/workspace-ui/components/issue-property-metadata";
 import {
-  issuePriorityMetadata,
-  issuePriorityOptions,
-  workflowStatusIcons,
-} from "@/modules/workspace-ui/components/issue-property-metadata";
+  IssuePriorityIcon,
+  IssuePriorityPickerContent,
+  IssueStatusPickerContent,
+  WorkflowStatusIcon,
+} from "@/modules/workspace-ui/components/issue-property-picker-content";
 import type {
   IssuePriority,
   IssueRecord,
@@ -42,42 +42,24 @@ export function IssuePriorityTrigger({
   disabled?: boolean;
   onChange: (priority: IssuePriority) => void;
 }) {
-  const selected = issuePriorityMetadata[value];
-  const SelectedIcon = selected.icon;
+  const label = issuePriorityMetadata[value].label;
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          aria-label={`Priority: ${selected.label}`}
-          className={cn("size-7", selected.iconClassName)}
+          aria-label={`Priority: ${label}`}
+          className="size-7"
           disabled={disabled}
           size="icon-sm"
-          title={selected.label}
+          title={label}
           variant="ghost"
           onClick={stopRowClick}
         >
-          <SelectedIcon className="size-4" />
+          <IssuePriorityIcon priority={value} />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-0" onClick={stopPopoverClick}>
-        <Command>
-          <CommandInput placeholder="Change priority..." />
-          <CommandList>
-            <CommandGroup>
-              {issuePriorityOptions.map((option) => {
-                const metadata = issuePriorityMetadata[option.value];
-                const OptionIcon = metadata.icon;
-                return (
-                  <CommandItem key={option.value} onSelect={() => onChange(option.value)}>
-                    <OptionIcon className={cn("size-4", metadata.iconClassName)} />
-                    <span className="flex-1">{metadata.label}</span>
-                    {option.value === value ? <Check className="size-4" /> : null}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        <IssuePriorityPickerContent value={value} onChange={onChange} />
       </PopoverContent>
     </Popover>
   );
@@ -114,21 +96,7 @@ export function IssueStatusTrigger({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-0" onClick={stopPopoverClick}>
-        <Command>
-          <CommandInput placeholder="Change status..." />
-          <CommandList>
-            <CommandEmpty>No workflow status found.</CommandEmpty>
-            <CommandGroup>
-              {statuses.map((status) => (
-                <CommandItem key={status.id} value={status.name} onSelect={() => onChange(status)}>
-                  <WorkflowStatusIcon category={status.category} color={status.color} />
-                  <span className="flex-1">{status.name}</span>
-                  {status.id === issue.statusId ? <Check className="size-4" /> : null}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        <IssueStatusPickerContent statuses={statuses} value={issue.statusId} onChange={onChange} />
       </PopoverContent>
     </Popover>
   );
@@ -244,19 +212,6 @@ export function IssueAssigneesTrigger({
       </PopoverContent>
     </Popover>
   );
-}
-
-export function WorkflowStatusIcon({
-  category,
-  color,
-  className,
-}: {
-  category?: WorkflowStatusRecord["category"];
-  color?: string | null;
-  className?: string;
-}) {
-  const Icon = category ? workflowStatusIcons[category] : CircleDashed;
-  return <Icon className={cn("size-4", className)} style={color ? { color } : undefined} />;
 }
 
 function MemberAvatar({ member }: { member: MemberRecord }) {

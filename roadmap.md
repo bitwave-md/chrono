@@ -6,7 +6,7 @@ Tracer bullet: change status and priority from an Issue row, full Issue page,
 create dialog, Project overview, or Project directory and always see the same
 semantic icon, color, option order, and searchable picker behavior.
 
-- [x] Make Issue-list priority and workflow icon metadata authoritative.
+- [x] Share the exact Issue-list priority and status picker content everywhere.
 - [x] Teach the shared property picker to render option-specific Lucide icons.
 - [x] Replace legacy Issue detail and creation priority/status options.
 - [x] Align Project and Branch state and priority controls.

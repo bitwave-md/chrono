@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, CircleDashed, CirclePlay, Clock3, FolderKanban, GitBranch, LoaderCircle, MessageSquare, Shapes, Square } from "lucide-react";
+import { CirclePlay, Clock3, FolderKanban, GitBranch, LoaderCircle, MessageSquare, Shapes, Square } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,12 +16,12 @@ import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useS
 import { useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
-import { issuePriorityOptions, workflowStatusIcons } from "@/modules/workspace-ui/components/issue-property-metadata";
+import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
 import { LabelProperty } from "@/modules/workspace-ui/components/label-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
-import type { IssuePriority, IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 export function IssueDetailView({ workspaceSlug, issueId }: { workspaceSlug: string; issueId: string }) {
   const issueQuery = useIssueQuery(workspaceSlug, issueId);
@@ -96,11 +96,8 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
         <aside className="px-4 py-5 max-lg:border-t">
           <h2 className="px-2 text-xs font-medium text-muted-foreground">Properties</h2>
           <div className="mt-2 grid justify-items-start gap-0.5">
-            <OptionProperty icon={CircleDashed} label="Status" options={(statusesQuery.data ?? []).map((status) => ({ value: status.id, label: status.name, color: status.color, icon: workflowStatusIcons[status.category] }))} placeholder={issue.projectId ? "Select status" : "Backlog"} value={issue.statusId} disabled={!issue.projectId} onChange={(statusId) => {
-              const status = statusesQuery.data?.find((item) => item.id === statusId);
-              if (status) patch({ statusId }, { statusId, statusName: status.name, statusColor: status.color });
-            }} />
-            <OptionProperty icon={Circle} label="Priority" options={issuePriorityOptions} placeholder="No priority" value={issue.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as IssuePriority })} />
+            <IssueStatusProperty statuses={statusesQuery.data ?? []} statusColor={issue.statusColor} statusId={issue.statusId} statusName={issue.statusName} disabled={!issue.projectId} onChange={(status) => patch({ statusId: status.id }, { statusId: status.id, statusName: status.name, statusColor: status.color })} />
+            <IssuePriorityProperty value={issue.priority} onChange={(priority) => patch({ priority }, { priority })} />
             <AssigneeProperty members={membersQuery.data ?? []} value={issue.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
             <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={issue.projectId} onChange={(projectId) => patch({ projectId }, { projectId, projectName: projects.find((item) => item.id === projectId)?.name ?? null, branchId: null, branchName: null, ...(projectId ? {} : { statusId: null, statusName: null, statusColor: null }) })} />
             {issue.projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={(branchesQuery.data ?? []).map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={issue.branchId} onChange={(branchId) => patch({ branchId }, { branchId, branchName: branchesQuery.data?.find((item) => item.id === branchId)?.name ?? null })} /> : null}

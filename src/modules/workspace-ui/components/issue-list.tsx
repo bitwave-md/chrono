@@ -13,8 +13,8 @@ import {
   IssueLabelsTrigger,
   IssuePriorityTrigger,
   IssueStatusTrigger,
-  WorkflowStatusIcon,
 } from "@/modules/workspace-ui/components/issue-row-properties";
+import { WorkflowStatusIcon } from "@/modules/workspace-ui/components/issue-property-picker-content";
 import { buildIssueGroups, type IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import type { IssueRecord, WorkflowStatusRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";

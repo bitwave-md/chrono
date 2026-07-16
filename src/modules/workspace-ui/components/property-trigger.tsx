@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface PropertyTriggerProps {
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  iconElement?: ReactNode;
   label: string;
   value: ReactNode;
   color?: string | null;
@@ -17,7 +18,7 @@ interface PropertyTriggerProps {
   onClick?: () => void;
 }
 
-export function PropertyTrigger({ icon: Icon, label, value, color, iconClassName, ...props }: PropertyTriggerProps) {
+export function PropertyTrigger({ icon: Icon, iconElement, label, value, color, iconClassName, ...props }: PropertyTriggerProps) {
   return (
     <Button
       aria-label={`${label}: ${typeof value === "string" ? value : "selected"}`}
@@ -27,7 +28,9 @@ export function PropertyTrigger({ icon: Icon, label, value, color, iconClassName
       variant="ghost"
       onClick={props.onClick}
     >
-      <Icon className={cn("size-3.5", iconClassName)} style={color ? { color } : undefined} />
+      {iconElement ?? (Icon ? (
+        <Icon className={cn("size-3.5", iconClassName)} style={color ? { color } : undefined} />
+      ) : null)}
       <span className="truncate">{value}</span>
     </Button>
   );

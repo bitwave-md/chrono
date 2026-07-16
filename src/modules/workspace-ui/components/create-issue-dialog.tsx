@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, FolderKanban, GitBranch, LoaderCircle, Plus, X } from "lucide-react";
+import { FolderKanban, GitBranch, LoaderCircle, Plus, X } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useCreateIssueMutation } from "@/modules/workspace-ui/application/use-i
 import { useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
-import { issuePriorityOptions } from "@/modules/workspace-ui/components/issue-property-metadata";
+import { IssuePriorityProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import type { IssuePriority, MemberRecord, ProjectBranchRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
@@ -96,7 +96,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
           <div className="flex flex-wrap items-center gap-1 border-y py-2">
             <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={projectId} onChange={(value) => { setProjectId(value); if (value !== props.selectedProjectId) setBranchId(null); }} />
             {projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={props.branches.map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={branchId} onChange={setBranchId} /> : null}
-            <OptionProperty icon={Circle} label="Priority" options={issuePriorityOptions} placeholder="No priority" value={priority} onChange={(value) => setPriority((value ?? "none") as IssuePriority)} />
+            <IssuePriorityProperty value={priority} onChange={setPriority} />
             <AssigneeProperty members={props.members} value={assignees} onChange={setAssignees} />
           </div>
           {mutation.error ? <p className="text-xs leading-5 text-destructive">{mutation.error.message}</p> : null}
