@@ -5,6 +5,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -14,7 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { clients } from "./clients";
-import { workspaces } from "./workspaces";
+import { workspaceMemberships, workspaces } from "./workspaces";
 
 export const projectKind = pgEnum("project_kind", [
   "project",
@@ -31,6 +32,27 @@ export const projectVisibility = pgEnum("project_visibility", [
   "internal",
   "client_shared",
   "restricted",
+]);
+
+export const projectState = pgEnum("project_state", [
+  "planned",
+  "active",
+  "paused",
+  "completed",
+  "canceled",
+]);
+
+export const projectHealth = pgEnum("project_health", [
+  "on_track",
+  "at_risk",
+  "off_track",
+]);
+
+export const milestoneState = pgEnum("milestone_state", [
+  "planned",
+  "active",
+  "completed",
+  "canceled",
 ]);
 
 export const workflowStatusCategory = pgEnum("workflow_status_category", [
@@ -53,8 +75,10 @@ export const projects = pgTable(
     kind: projectKind("kind").notNull(),
     workflowMode: projectWorkflowMode("workflow_mode").notNull(),
     visibility: projectVisibility("visibility").default("internal").notNull(),
+    state: projectState("state").default("planned").notNull(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    summary: text("summary"),
     description: text("description"),
     position: integer("position").default(0).notNull(),
     startDate: timestamp("start_date", { mode: "date", withTimezone: true }),
@@ -208,5 +232,166 @@ export const workflowStatuses = pgTable(
     uniqueIndex("workflow_statuses_default_unique")
       .on(table.workflowId)
       .where(sql`${table.isDefault} = true and ${table.archivedAt} is null`),
+  ],
+);
+
+export const projectAssignees = pgTable(
+  "project_assignees",
+  {
+    workspaceId: uuid("workspace_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    membershipId: uuid("membership_id").notNull(),
+    createdByMembershipId: uuid("created_by_membership_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "project_assignees_project_tenant_fk",
+      columns: [table.workspaceId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "project_assignees_membership_tenant_fk",
+      columns: [table.workspaceId, table.membershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "project_assignees_creator_tenant_fk",
+      columns: [table.workspaceId, table.createdByMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
+    uniqueIndex("project_assignees_project_membership_unique").on(
+      table.projectId,
+      table.membershipId,
+    ),
+    index("project_assignees_membership_idx").on(
+      table.workspaceId,
+      table.membershipId,
+    ),
+  ],
+);
+
+export const projectUpdates = pgTable(
+  "project_updates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    authorMembershipId: uuid("author_membership_id").notNull(),
+    body: text("body").notNull(),
+    health: projectHealth("health"),
+    progress: integer("progress"),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "project_updates_project_tenant_fk",
+      columns: [table.workspaceId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "project_updates_author_tenant_fk",
+      columns: [table.workspaceId, table.authorMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
+    index("project_updates_project_created_idx").on(table.projectId, table.createdAt),
+    check(
+      "project_updates_progress_check",
+      sql`${table.progress} is null or (${table.progress} >= 0 and ${table.progress} <= 100)`,
+    ),
+  ],
+);
+
+export const projectActivityEvents = pgTable(
+  "project_activity_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    actorMembershipId: uuid("actor_membership_id"),
+    eventType: text("event_type").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "project_activity_project_tenant_fk",
+      columns: [table.workspaceId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "project_activity_actor_tenant_fk",
+      columns: [table.workspaceId, table.actorMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("set null"),
+    index("project_activity_project_created_idx").on(table.projectId, table.createdAt),
+  ],
+);
+
+export const projectResources = pgTable(
+  "project_resources",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    description: text("description"),
+    position: integer("position").default(0).notNull(),
+    createdByMembershipId: uuid("created_by_membership_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "project_resources_project_tenant_fk",
+      columns: [table.workspaceId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "project_resources_creator_tenant_fk",
+      columns: [table.workspaceId, table.createdByMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
+    index("project_resources_project_position_idx").on(table.projectId, table.position),
+  ],
+);
+
+export const projectMilestones = pgTable(
+  "project_milestones",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    state: milestoneState("state").default("planned").notNull(),
+    position: integer("position").default(0).notNull(),
+    targetDate: timestamp("target_date", { mode: "date", withTimezone: true }),
+    completedAt: timestamp("completed_at", { mode: "date", withTimezone: true }),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "project_milestones_project_tenant_fk",
+      columns: [table.workspaceId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.id],
+    }).onDelete("cascade"),
+    index("project_milestones_project_position_idx").on(table.projectId, table.position),
   ],
 );

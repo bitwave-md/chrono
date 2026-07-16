@@ -1,60 +1,40 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
-import { issues, teams, workspaceMemberships } from "@/db/schema";
+import { issues, workspaceMemberships } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
-import { NotFoundError } from "@/modules/shared/application/application-error";
+import {
+  NotFoundError,
+  ValidationError,
+} from "@/modules/shared/application/application-error";
 
 export class IssueRelationValidator {
-  async assertTeam(
+  async assertAssignees(
     transaction: DatabaseTransaction,
     principal: Principal,
-    teamId: string | null,
+    membershipIds: string[],
   ): Promise<void> {
-    if (!teamId) {
+    if (membershipIds.length === 0) {
       return;
     }
 
-    const [team] = await transaction
-      .select({ id: teams.id })
-      .from(teams)
-      .where(
-        and(
-          eq(teams.id, teamId),
-          eq(teams.workspaceId, principal.workspaceId),
-          isNull(teams.archivedAt),
-        ),
-      )
-      .limit(1);
-
-    if (!team) {
-      throw new NotFoundError("Team not found.");
-    }
-  }
-
-  async assertAssignee(
-    transaction: DatabaseTransaction,
-    principal: Principal,
-    assigneeId: string | null,
-  ): Promise<void> {
-    if (!assigneeId) {
-      return;
+    if (membershipIds.length > 20) {
+      throw new ValidationError("A work item can have at most 20 assignees.");
     }
 
-    const [assignee] = await transaction
+    const assignees = await transaction
       .select({ id: workspaceMemberships.id })
       .from(workspaceMemberships)
       .where(
         and(
           eq(workspaceMemberships.workspaceId, principal.workspaceId),
-          eq(workspaceMemberships.userId, assigneeId),
+          inArray(workspaceMemberships.id, membershipIds),
           eq(workspaceMemberships.status, "active"),
         ),
-      )
-      .limit(1);
+      );
 
-    if (!assignee) {
-      throw new NotFoundError("Assignee not found in the workspace.");
+    if (assignees.length !== new Set(membershipIds).size) {
+      throw new NotFoundError("One or more assignees are unavailable.");
     }
   }
 

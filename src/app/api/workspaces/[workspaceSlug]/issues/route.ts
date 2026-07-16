@@ -5,7 +5,6 @@ import {
   issuePriorities,
   issueVisibilities,
 } from "@/modules/issues/application/issue-service";
-import { ValidationError } from "@/modules/shared/application/application-error";
 import { EntityId } from "@/modules/shared/domain/entity-id";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
 import { JsonInput } from "@/modules/shared/infrastructure/json-input";
@@ -30,10 +29,6 @@ export async function GET(
     const parameters = new URL(request.url).searchParams;
     const clientIdInput = parameters.get("clientId");
 
-    if (!clientIdInput) {
-      throw new ValidationError("clientId is required.");
-    }
-
     const optionalId = (key: string): string | undefined => {
       const value = parameters.get(key);
       return value ? new EntityId(value, key).value : undefined;
@@ -41,11 +36,11 @@ export async function GET(
 
     const issues = await issueService.list(
       principal,
-      new EntityId(clientIdInput, "clientId").value,
+      clientIdInput ? new EntityId(clientIdInput, "clientId").value : null,
       {
         projectId: optionalId("projectId"),
-        teamId: optionalId("teamId"),
-        assigneeId: optionalId("assigneeId"),
+        assigneeMembershipId: optionalId("assigneeMembershipId"),
+        mine: parameters.get("mine") === "true",
       },
     );
 
@@ -67,8 +62,7 @@ export async function POST(
     const issue = await issueService.create(principal, {
       clientId: input.requiredUuid("clientId"),
       projectId: input.optionalUuid("projectId"),
-      teamId: input.optionalUuid("teamId"),
-      assigneeId: input.optionalUuid("assigneeId"),
+      assigneeMembershipIds: input.uuidArray("assigneeMembershipIds", 20),
       statusId: input.optionalUuid("statusId"),
       parentIssueId: input.optionalUuid("parentIssueId"),
       title: input.requiredString("title", 240),

@@ -6,7 +6,6 @@ import {
   issueNamespaces,
   issues,
   projects,
-  teams,
   timeCategories,
   timeLogs,
   users,
@@ -32,7 +31,6 @@ export interface TimeLogFilters {
   issueId?: string;
   clientId?: string;
   projectId?: string;
-  teamId?: string;
   categoryId?: string;
   workerUserId?: string;
   from?: Date;
@@ -55,7 +53,6 @@ export class TimeLogService {
       [timeLogs.issueId, filters.issueId],
       [timeLogs.clientId, filters.clientId],
       [timeLogs.projectId, filters.projectId],
-      [timeLogs.teamId, filters.teamId],
       [timeLogs.categoryId, filters.categoryId],
       [timeLogs.workerUserId, workerUserId],
     ] as const;
@@ -89,8 +86,6 @@ export class TimeLogService {
         projectId: timeLogs.projectId,
         projectName: projects.name,
         rootProjectId: timeLogs.rootProjectId,
-        teamId: timeLogs.teamId,
-        teamName: teams.name,
         categoryId: timeLogs.categoryId,
         categoryName: timeCategories.name,
         workerUserId: timeLogs.workerUserId,
@@ -127,13 +122,6 @@ export class TimeLogService {
         and(
           eq(projects.id, timeLogs.projectId),
           eq(projects.workspaceId, timeLogs.workspaceId),
-        ),
-      )
-      .leftJoin(
-        teams,
-        and(
-          eq(teams.id, timeLogs.teamId),
-          eq(teams.workspaceId, timeLogs.workspaceId),
         ),
       )
       .leftJoin(

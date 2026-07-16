@@ -4,6 +4,7 @@ import type { DatabaseTransaction } from "@/db/client";
 import {
   clientMemberships,
   clients,
+  issueAssignees,
   issues,
   projects,
   timeCategories,
@@ -19,7 +20,6 @@ export interface TimeAttribution {
   clientId: string;
   projectId: string | null;
   rootProjectId: string | null;
-  teamId: string | null;
 }
 
 export interface ResolvedTimeCategory {
@@ -57,7 +57,6 @@ export class TimeAttributionResolver {
       clientId: issue.clientId,
       projectId: issue.projectId,
       rootProjectId,
-      teamId: issue.teamId,
     };
   }
 
@@ -108,7 +107,6 @@ export class TimeAttributionResolver {
       id: issues.id,
       clientId: issues.clientId,
       projectId: issues.projectId,
-      teamId: issues.teamId,
     };
 
     if (principal.role !== "guest") {
@@ -155,7 +153,11 @@ export class TimeAttributionResolver {
           eq(clientMemberships.permission, "contribute"),
           or(
             eq(issues.visibility, "client_shared"),
-            eq(issues.assigneeId, principal.userId),
+            sql`exists (
+              select 1 from ${issueAssignees} assignment
+              where assignment.issue_id = ${issues.id}
+                and assignment.membership_id = ${principal.membershipId}
+            )`,
           ),
         ),
       )

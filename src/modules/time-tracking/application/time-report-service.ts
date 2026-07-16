@@ -5,7 +5,6 @@ import {
   clients,
   issues,
   projects,
-  teams,
   timeCategories,
   timeLogs,
   users,
@@ -19,7 +18,6 @@ export const timeReportGroups = [
   "project",
   "root_project",
   "client",
-  "team",
   "category",
   "worker",
 ] as const;
@@ -32,7 +30,6 @@ export interface TimeReportFilters {
   projectId?: string;
   projectScopeId?: string;
   rootProjectId?: string;
-  teamId?: string;
   categoryId?: string;
   workerUserId?: string;
   from?: Date;
@@ -73,11 +70,6 @@ const reportDimensions: Record<TimeReportGroup, ReportDimension> = {
     id: sql.raw("logs.client_id"),
     label: sql.raw("client_dimension.name"),
     fallback: "Unknown client",
-  },
-  team: {
-    id: sql.raw("logs.team_id"),
-    label: sql.raw("team_dimension.name"),
-    fallback: "No team",
   },
   category: {
     id: sql.raw("logs.category_id"),
@@ -128,9 +120,6 @@ export class TimeReportService {
       left join ${clients} client_dimension
         on client_dimension.${sql.identifier("id")} = logs.client_id
         and client_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
-      left join ${teams} team_dimension
-        on team_dimension.${sql.identifier("id")} = logs.team_id
-        and team_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
       left join ${timeCategories} category_dimension
         on category_dimension.${sql.identifier("id")} = logs.category_id
         and category_dimension.${sql.identifier("workspace_id")} = logs.workspace_id
@@ -160,7 +149,6 @@ export class TimeReportService {
       ["client_id", filters.clientId],
       ["project_id", filters.projectId],
       ["root_project_id", filters.rootProjectId],
-      ["team_id", filters.teamId],
       ["category_id", filters.categoryId],
       ["worker_user_id", filters.workerUserId],
     ] as const;

@@ -1,14 +1,17 @@
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, isNull, or, sql } from "drizzle-orm";
 
-import { db } from "@/db/client";
+import { db, type DatabaseTransaction } from "@/db/client";
 import {
+  clientMemberships,
   clients,
+  issueAssignees,
   issueNamespaces,
   issues,
+  issueTypes,
   projects,
-  teams,
   users,
   workflowStatuses,
+  workspaceMemberships,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
@@ -22,11 +25,7 @@ import {
 } from "@/modules/shared/application/application-error";
 
 const issuePriorities = ["none", "urgent", "high", "medium", "low"] as const;
-const issueVisibilities = [
-  "internal",
-  "client_shared",
-  "restricted",
-] as const;
+const issueVisibilities = ["internal", "client_shared", "restricted"] as const;
 
 export type IssuePriority = (typeof issuePriorities)[number];
 export type IssueVisibility = (typeof issueVisibilities)[number];
@@ -34,8 +33,7 @@ export type IssueVisibility = (typeof issueVisibilities)[number];
 export interface CreateIssueInput {
   clientId: string;
   projectId: string | null;
-  teamId: string | null;
-  assigneeId: string | null;
+  assigneeMembershipIds: string[];
   statusId: string | null;
   parentIssueId: string | null;
   title: string;
@@ -45,20 +43,24 @@ export interface CreateIssueInput {
 }
 
 export interface IssueFilters {
+  issueId?: string;
   projectId?: string;
-  teamId?: string;
-  assigneeId?: string;
+  assigneeMembershipId?: string;
+  mine?: boolean;
 }
 
 export interface UpdateIssueInput {
   expectedVersion: number;
   projectId?: string | null;
-  teamId?: string | null;
-  assigneeId?: string | null;
+  assigneeMembershipIds?: string[];
   statusId?: string | null;
+  issueTypeId?: string | null;
   title?: string;
+  description?: string | null;
   priority?: IssuePriority;
   visibility?: IssueVisibility;
+  estimateMinutes?: number | null;
+  dueAt?: Date | null;
 }
 
 export class IssueService {
@@ -69,325 +71,352 @@ export class IssueService {
 
   async list(
     principal: Principal,
-    clientId: string,
+    clientId: string | null,
     filters: IssueFilters,
   ) {
-    await this.#clientAccess.assertCanRead(principal, clientId);
+    if (clientId) {
+      await this.#clientAccess.assertCanRead(principal, clientId);
+    }
 
     const conditions = [
       eq(issues.workspaceId, principal.workspaceId),
-      eq(issues.clientId, clientId),
       isNull(issues.archivedAt),
     ];
 
-    if (filters.projectId) {
-      conditions.push(eq(issues.projectId, filters.projectId));
-    }
+    if (clientId) conditions.push(eq(issues.clientId, clientId));
+    if (filters.issueId) conditions.push(eq(issues.id, filters.issueId));
+    if (filters.projectId) conditions.push(eq(issues.projectId, filters.projectId));
 
-    if (filters.teamId) {
-      conditions.push(eq(issues.teamId, filters.teamId));
-    }
+    const assigneeMembershipId = filters.mine
+      ? principal.membershipId
+      : filters.assigneeMembershipId;
 
-    if (filters.assigneeId) {
-      conditions.push(eq(issues.assigneeId, filters.assigneeId));
+    if (assigneeMembershipId) {
+      conditions.push(
+        exists(
+          db
+            .select({ value: sql`1` })
+            .from(issueAssignees)
+            .where(
+              and(
+                eq(issueAssignees.issueId, issues.id),
+                eq(issueAssignees.membershipId, assigneeMembershipId),
+              ),
+            ),
+        ),
+      );
     }
 
     if (principal.role === "guest") {
       conditions.push(
+        exists(
+          db
+            .select({ value: sql`1` })
+            .from(clientMemberships)
+            .where(
+              and(
+                eq(clientMemberships.clientId, issues.clientId),
+                eq(clientMemberships.workspaceMembershipId, principal.membershipId),
+              ),
+            ),
+        ),
         or(
           eq(issues.visibility, "client_shared"),
-          eq(issues.assigneeId, principal.userId),
+          exists(
+            db
+              .select({ value: sql`1` })
+              .from(issueAssignees)
+              .where(
+                and(
+                  eq(issueAssignees.issueId, issues.id),
+                  eq(issueAssignees.membershipId, principal.membershipId),
+                ),
+              ),
+          ),
         )!,
       );
     }
 
-    return db
+    const rows = await db
       .select({
         id: issues.id,
-        identifier:
-          sql<string>`${issueNamespaces.prefix} || '-' || ${issues.number}`.as(
-            "identifier",
-          ),
+        clientId: issues.clientId,
+        clientName: clients.name,
+        identifier: sql<string>`${issueNamespaces.prefix} || '-' || ${issues.number}`.as("identifier"),
         title: issues.title,
         description: issues.description,
         priority: issues.priority,
         visibility: issues.visibility,
         projectId: issues.projectId,
         projectName: projects.name,
-        teamId: issues.teamId,
-        teamName: teams.name,
-        assigneeId: issues.assigneeId,
-        assigneeName: users.name,
+        issueTypeId: issues.issueTypeId,
+        issueTypeName: issueTypes.name,
+        issueTypeColor: issueTypes.color,
         statusId: issues.statusId,
         statusName: workflowStatuses.name,
+        statusColor: workflowStatuses.color,
+        estimateMinutes: issues.estimateMinutes,
+        dueAt: issues.dueAt,
         version: issues.version,
         createdAt: issues.createdAt,
         updatedAt: issues.updatedAt,
       })
       .from(issues)
-      .innerJoin(
-        issueNamespaces,
-        eq(issueNamespaces.id, issues.issueNamespaceId),
-      )
+      .innerJoin(clients, eq(clients.id, issues.clientId))
+      .innerJoin(issueNamespaces, eq(issueNamespaces.id, issues.issueNamespaceId))
       .leftJoin(projects, eq(projects.id, issues.projectId))
-      .leftJoin(teams, eq(teams.id, issues.teamId))
-      .leftJoin(users, eq(users.id, issues.assigneeId))
+      .leftJoin(issueTypes, eq(issueTypes.id, issues.issueTypeId))
       .leftJoin(workflowStatuses, eq(workflowStatuses.id, issues.statusId))
       .where(and(...conditions))
       .orderBy(desc(issues.createdAt));
+
+    return this.#attachAssignees(principal.workspaceId, rows);
+  }
+
+  async get(principal: Principal, issueId: string) {
+    const [issue] = await this.list(principal, null, { issueId });
+    if (!issue) throw new NotFoundError("Issue not found.");
+    return issue;
   }
 
   async create(principal: Principal, input: CreateIssueInput) {
     await this.#clientAccess.assertCanContribute(principal, input.clientId);
+    const title = this.#title(input.title);
 
-    const title = input.title.trim();
+    return db.transaction(async (transaction) => {
+      const [client] = await transaction
+        .select({ id: clients.id })
+        .from(clients)
+        .where(and(
+          eq(clients.id, input.clientId),
+          eq(clients.workspaceId, principal.workspaceId),
+          isNull(clients.archivedAt),
+        ))
+        .limit(1);
 
-    if (title.length < 2 || title.length > 240) {
-      throw new ValidationError("Issue titles must contain 2-240 characters.");
-    }
+      if (!client) throw new NotFoundError("Client not found.");
 
-    return db.transaction(
-      async (transaction) => {
-        const [client] = await transaction
-          .select({ id: clients.id })
-          .from(clients)
-          .where(
-            and(
-              eq(clients.id, input.clientId),
-              eq(clients.workspaceId, principal.workspaceId),
-              isNull(clients.archivedAt),
-            ),
-          )
-          .limit(1);
+      await this.#relationValidator.assertAssignees(
+        transaction,
+        principal,
+        input.assigneeMembershipIds,
+      );
+      await this.#relationValidator.assertParentIssue(
+        transaction,
+        principal,
+        input.clientId,
+        input.parentIssueId,
+      );
 
-        if (!client) {
-          throw new NotFoundError("Client not found.");
-        }
+      const context = await this.#contextResolver.resolve(
+        transaction,
+        principal,
+        input.clientId,
+        input.projectId,
+      );
+      const statusId = await this.#contextResolver.resolveStatus(
+        transaction,
+        context.workflow_id,
+        input.statusId,
+      );
+      const [namespace] = await transaction
+        .update(issueNamespaces)
+        .set({ nextNumber: sql`${issueNamespaces.nextNumber} + 1`, updatedAt: new Date() })
+        .where(eq(issueNamespaces.id, context.namespace_id))
+        .returning({ nextNumber: issueNamespaces.nextNumber });
 
-        await this.#relationValidator.assertTeam(
-          transaction,
-          principal,
-          input.teamId,
-        );
-        await this.#relationValidator.assertAssignee(
-          transaction,
-          principal,
-          input.assigneeId,
-        );
-        await this.#relationValidator.assertParentIssue(
-          transaction,
-          principal,
-          input.clientId,
-          input.parentIssueId,
-        );
+      if (!namespace) throw new ConflictError("The issue namespace could not be allocated.");
 
-        const context = await this.#contextResolver.resolve(
-          transaction,
-          principal,
-          input.clientId,
-          input.projectId,
-        );
+      const number = namespace.nextNumber - 1;
+      const [issue] = await transaction
+        .insert(issues)
+        .values({
+          workspaceId: principal.workspaceId,
+          clientId: input.clientId,
+          projectId: input.projectId,
+          statusId,
+          issueNamespaceId: context.namespace_id,
+          number,
+          title,
+          description: input.description,
+          priority: input.priority,
+          visibility: input.visibility,
+          creatorMembershipId: principal.membershipId,
+          parentIssueId: input.parentIssueId,
+          rank: number.toString().padStart(12, "0"),
+        })
+        .returning();
 
-        const statusId = await this.#contextResolver.resolveStatus(
-          transaction,
-          context.workflow_id,
-          input.statusId,
-        );
+      await this.#replaceAssignees(
+        transaction,
+        principal,
+        issue.id,
+        input.assigneeMembershipIds,
+      );
 
-        const [incrementedNamespace] = await transaction
-          .update(issueNamespaces)
-          .set({
-            nextNumber: sql`${issueNamespaces.nextNumber} + 1`,
-            updatedAt: new Date(),
-          })
-          .where(eq(issueNamespaces.id, context.namespace_id))
-          .returning({ nextNumber: issueNamespaces.nextNumber });
-
-        if (!incrementedNamespace) {
-          throw new ConflictError("The issue namespace could not be allocated.");
-        }
-
-        const number = incrementedNamespace.nextNumber - 1;
-        const [issue] = await transaction
-          .insert(issues)
-          .values({
-            workspaceId: principal.workspaceId,
-            clientId: input.clientId,
-            projectId: input.projectId,
-            teamId: input.teamId,
-            assigneeId: input.assigneeId,
-            statusId,
-            issueNamespaceId: context.namespace_id,
-            number,
-            title,
-            description: input.description,
-            priority: input.priority,
-            visibility: input.visibility,
-            creatorMembershipId: principal.membershipId,
-            parentIssueId: input.parentIssueId,
-            rank: number.toString().padStart(12, "0"),
-          })
-          .returning();
-
-        return {
-          issue,
-          identifier: `${context.prefix}-${number}`,
-        };
-      },
-      { isolationLevel: "serializable", accessMode: "read write" },
-    );
+      return { issue, identifier: `${context.prefix}-${number}` };
+    }, { isolationLevel: "serializable", accessMode: "read write" });
   }
 
-  async update(
-    principal: Principal,
-    issueId: string,
-    input: UpdateIssueInput,
-  ) {
+  async update(principal: Principal, issueId: string, input: UpdateIssueInput) {
     const [snapshot] = await db
       .select({ clientId: issues.clientId })
       .from(issues)
-      .where(
-        and(
+      .where(and(
+        eq(issues.id, issueId),
+        eq(issues.workspaceId, principal.workspaceId),
+        isNull(issues.archivedAt),
+      ))
+      .limit(1);
+
+    if (!snapshot) throw new NotFoundError("Issue not found.");
+    await this.#clientAccess.assertCanContribute(principal, snapshot.clientId);
+
+    return db.transaction(async (transaction) => {
+      const [current] = await transaction
+        .select()
+        .from(issues)
+        .where(and(
           eq(issues.id, issueId),
           eq(issues.workspaceId, principal.workspaceId),
           isNull(issues.archivedAt),
-        ),
-      )
-      .limit(1);
+        ))
+        .limit(1);
 
-    if (!snapshot) {
-      throw new NotFoundError("Issue not found.");
-    }
+      if (!current) throw new NotFoundError("Issue not found.");
 
-    await this.#clientAccess.assertCanContribute(principal, snapshot.clientId);
-
-    return db.transaction(
-      async (transaction) => {
-        const [current] = await transaction
-          .select()
-          .from(issues)
-          .where(
-            and(
-              eq(issues.id, issueId),
-              eq(issues.workspaceId, principal.workspaceId),
-              isNull(issues.archivedAt),
-            ),
-          )
-          .limit(1);
-
-        if (!current) {
-          throw new NotFoundError("Issue not found.");
-        }
-
-        const projectId =
-          input.projectId === undefined ? current.projectId : input.projectId;
-        const teamId = input.teamId === undefined ? current.teamId : input.teamId;
-        const assigneeId =
-          input.assigneeId === undefined
-            ? current.assigneeId
-            : input.assigneeId;
-
-        await this.#relationValidator.assertTeam(transaction, principal, teamId);
-        await this.#relationValidator.assertAssignee(
+      if (input.assigneeMembershipIds) {
+        await this.#relationValidator.assertAssignees(
           transaction,
           principal,
-          assigneeId,
+          input.assigneeMembershipIds,
+        );
+      }
+
+      const projectId = input.projectId === undefined ? current.projectId : input.projectId;
+      const projectChanged = projectId !== current.projectId;
+      let statusId = current.statusId;
+
+      if (projectChanged || input.statusId !== undefined) {
+        const context = await this.#contextResolver.resolve(
+          transaction,
+          principal,
+          current.clientId,
+          projectId,
         );
 
-        const projectChanged = projectId !== current.projectId;
-        let statusId = current.statusId;
-
-        if (projectChanged || input.statusId !== undefined) {
-          const context = await this.#contextResolver.resolve(
+        if (!context.workflow_id) {
+          if (input.statusId) throw new ValidationError("Client-backlog issues cannot have a workflow status.");
+          statusId = null;
+        } else if (input.statusId !== undefined) {
+          if (!input.statusId) throw new ValidationError("Project issues require a workflow status.");
+          statusId = await this.#contextResolver.resolveStatus(
             transaction,
-            principal,
-            current.clientId,
-            projectId,
+            context.workflow_id,
+            input.statusId,
           );
-
-          if (!context.workflow_id) {
-            if (input.statusId) {
-              throw new ValidationError(
-                "Client-backlog issues cannot have a workflow status.",
-              );
-            }
-
-            statusId = null;
-          } else if (input.statusId !== undefined) {
-            if (!input.statusId) {
-              throw new ValidationError(
-                "Project issues require a workflow status.",
-              );
-            }
-
-            statusId = await this.#contextResolver.resolveStatus(
-              transaction,
-              context.workflow_id,
-              input.statusId,
-            );
-          } else if (projectChanged) {
-            statusId = await this.#statusMapper.map(
-              transaction,
-              current.statusId,
-              context.workflow_id,
-            );
-          }
-        }
-
-        const title = input.title?.trim();
-
-        if (title !== undefined && (title.length < 2 || title.length > 240)) {
-          throw new ValidationError(
-            "Issue titles must contain 2-240 characters.",
+        } else if (projectChanged) {
+          statusId = await this.#statusMapper.map(
+            transaction,
+            current.statusId,
+            context.workflow_id,
           );
         }
+      }
 
-        const [updated] = await transaction
-          .update(issues)
-          .set({
-            projectId,
-            teamId,
-            assigneeId,
-            statusId,
-            ...(title !== undefined ? { title } : {}),
-            ...(input.priority !== undefined
-              ? { priority: input.priority }
-              : {}),
-            ...(input.visibility !== undefined
-              ? { visibility: input.visibility }
-              : {}),
-            version: sql`${issues.version} + 1`,
-            updatedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(issues.id, current.id),
-              eq(issues.version, input.expectedVersion),
-            ),
-          )
-          .returning();
+      const [updated] = await transaction
+        .update(issues)
+        .set({
+          projectId,
+          statusId,
+          ...(input.issueTypeId !== undefined ? { issueTypeId: input.issueTypeId } : {}),
+          ...(input.title !== undefined ? { title: this.#title(input.title) } : {}),
+          ...(input.description !== undefined ? { description: input.description } : {}),
+          ...(input.priority !== undefined ? { priority: input.priority } : {}),
+          ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
+          ...(input.estimateMinutes !== undefined ? { estimateMinutes: input.estimateMinutes } : {}),
+          ...(input.dueAt !== undefined ? { dueAt: input.dueAt } : {}),
+          version: sql`${issues.version} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(issues.id, current.id), eq(issues.version, input.expectedVersion)))
+        .returning();
 
-        if (!updated) {
-          throw new ConflictError(
-            "The issue changed since it was loaded. Refresh and retry.",
-          );
-        }
+      if (!updated) throw new ConflictError("The issue changed since it was loaded. Refresh and retry.");
 
-        const [namespace] = await transaction
-          .select({ prefix: issueNamespaces.prefix })
-          .from(issueNamespaces)
-          .where(eq(issueNamespaces.id, updated.issueNamespaceId))
-          .limit(1);
+      if (input.assigneeMembershipIds) {
+        await this.#replaceAssignees(
+          transaction,
+          principal,
+          issueId,
+          input.assigneeMembershipIds,
+        );
+      }
 
-        return {
-          issue: updated,
-          identifier: `${namespace.prefix}-${updated.number}`,
-        };
-      },
-      { isolationLevel: "serializable", accessMode: "read write" },
-    );
+      const [namespace] = await transaction
+        .select({ prefix: issueNamespaces.prefix })
+        .from(issueNamespaces)
+        .where(eq(issueNamespaces.id, updated.issueNamespaceId))
+        .limit(1);
+
+      return { issue: updated, identifier: `${namespace.prefix}-${updated.number}` };
+    }, { isolationLevel: "serializable", accessMode: "read write" });
   }
 
+  async #attachAssignees<T extends { id: string }>(workspaceId: string, rows: T[]) {
+    if (rows.length === 0) return rows.map((row) => ({ ...row, assignees: [] }));
+
+    const assignments = await db
+      .select({
+        issueId: issueAssignees.issueId,
+        membershipId: workspaceMemberships.id,
+        userId: users.id,
+        displayName: users.name,
+        email: users.email,
+        avatarUrl: users.image,
+      })
+      .from(issueAssignees)
+      .innerJoin(workspaceMemberships, eq(workspaceMemberships.id, issueAssignees.membershipId))
+      .innerJoin(users, eq(users.id, workspaceMemberships.userId))
+      .where(and(
+        eq(issueAssignees.workspaceId, workspaceId),
+        inArray(issueAssignees.issueId, rows.map((row) => row.id)),
+      ));
+
+    return rows.map((row) => ({
+      ...row,
+      assignees: assignments.filter((assignment) => assignment.issueId === row.id),
+    }));
+  }
+
+  async #replaceAssignees(
+    transaction: DatabaseTransaction,
+    principal: Principal,
+    issueId: string,
+    membershipIds: string[],
+  ) {
+    await transaction.delete(issueAssignees).where(and(
+      eq(issueAssignees.workspaceId, principal.workspaceId),
+      eq(issueAssignees.issueId, issueId),
+    ));
+
+    if (membershipIds.length) {
+      await transaction.insert(issueAssignees).values(membershipIds.map((membershipId) => ({
+        workspaceId: principal.workspaceId,
+        issueId,
+        membershipId,
+        createdByMembershipId: principal.membershipId,
+      })));
+    }
+  }
+
+  #title(value: string): string {
+    const title = value.trim();
+    if (title.length < 2 || title.length > 240) {
+      throw new ValidationError("Issue titles must contain 2-240 characters.");
+    }
+    return title;
+  }
 }
 
 export { issuePriorities, issueVisibilities };

@@ -14,7 +14,6 @@ import {
 
 import { clients } from "./clients";
 import { issueNamespaces, projects, workflowStatuses } from "./projects";
-import { teams } from "./teams";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
 export const issuePriority = pgEnum("issue_priority", [
@@ -31,6 +30,54 @@ export const issueVisibility = pgEnum("issue_visibility", [
   "restricted",
 ]);
 
+export const issueTypes = pgTable(
+  "issue_types",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    icon: text("icon").default("circle-dot").notNull(),
+    color: text("color").default("#6b7280").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("issue_types_workspace_name_unique").on(
+      table.workspaceId,
+      table.name,
+    ),
+    uniqueIndex("issue_types_workspace_id_unique").on(
+      table.workspaceId,
+      table.id,
+    ),
+  ],
+);
+
+export const labels = pgTable(
+  "labels",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    color: text("color").default("#6b7280").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("labels_workspace_name_unique").on(table.workspaceId, table.name),
+    uniqueIndex("labels_workspace_id_unique").on(table.workspaceId, table.id),
+  ],
+);
+
 export const issues = pgTable(
   "issues",
   {
@@ -40,8 +87,7 @@ export const issues = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
     clientId: uuid("client_id").notNull(),
     projectId: uuid("project_id"),
-    teamId: uuid("team_id"),
-    assigneeId: text("assignee_id"),
+    issueTypeId: uuid("issue_type_id"),
     statusId: uuid("status_id"),
     issueNamespaceId: uuid("issue_namespace_id").notNull(),
     number: integer("number").notNull(),
@@ -82,17 +128,9 @@ export const issues = pgTable(
       foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
     }).onDelete("restrict"),
     foreignKey({
-      name: "issues_team_tenant_fk",
-      columns: [table.workspaceId, table.teamId],
-      foreignColumns: [teams.workspaceId, teams.id],
-    }).onDelete("restrict"),
-    foreignKey({
-      name: "issues_assignee_membership_tenant_fk",
-      columns: [table.workspaceId, table.assigneeId],
-      foreignColumns: [
-        workspaceMemberships.workspaceId,
-        workspaceMemberships.userId,
-      ],
+      name: "issues_type_tenant_fk",
+      columns: [table.workspaceId, table.issueTypeId],
+      foreignColumns: [issueTypes.workspaceId, issueTypes.id],
     }).onDelete("restrict"),
     foreignKey({
       name: "issues_status_tenant_fk",
@@ -129,6 +167,7 @@ export const issues = pgTable(
       table.issueNamespaceId,
       table.number,
     ),
+    uniqueIndex("issues_workspace_id_unique").on(table.workspaceId, table.id),
     uniqueIndex("issues_tenant_client_id_unique").on(
       table.workspaceId,
       table.clientId,
@@ -139,8 +178,7 @@ export const issues = pgTable(
       table.createdAt,
     ),
     index("issues_project_rank_idx").on(table.projectId, table.rank),
-    index("issues_team_rank_idx").on(table.teamId, table.rank),
-    index("issues_assignee_idx").on(table.assigneeId, table.updatedAt),
+    index("issues_type_idx").on(table.issueTypeId, table.updatedAt),
     check(
       "issues_project_status_check",
       sql`(${table.projectId} is null and ${table.statusId} is null) or (${table.projectId} is not null and ${table.statusId} is not null)`,
@@ -151,5 +189,102 @@ export const issues = pgTable(
       "issues_estimate_check",
       sql`${table.estimateMinutes} is null or ${table.estimateMinutes} >= 0`,
     ),
+  ],
+);
+
+export const issueAssignees = pgTable(
+  "issue_assignees",
+  {
+    workspaceId: uuid("workspace_id").notNull(),
+    issueId: uuid("issue_id").notNull(),
+    membershipId: uuid("membership_id").notNull(),
+    createdByMembershipId: uuid("created_by_membership_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "issue_assignees_issue_tenant_fk",
+      columns: [table.workspaceId, table.issueId],
+      foreignColumns: [issues.workspaceId, issues.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "issue_assignees_membership_tenant_fk",
+      columns: [table.workspaceId, table.membershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "issue_assignees_creator_tenant_fk",
+      columns: [table.workspaceId, table.createdByMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
+    uniqueIndex("issue_assignees_issue_membership_unique").on(
+      table.issueId,
+      table.membershipId,
+    ),
+    index("issue_assignees_membership_idx").on(
+      table.workspaceId,
+      table.membershipId,
+    ),
+  ],
+);
+
+export const issueLabels = pgTable(
+  "issue_labels",
+  {
+    workspaceId: uuid("workspace_id").notNull(),
+    issueId: uuid("issue_id").notNull(),
+    labelId: uuid("label_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "issue_labels_issue_tenant_fk",
+      columns: [table.workspaceId, table.issueId],
+      foreignColumns: [issues.workspaceId, issues.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "issue_labels_label_tenant_fk",
+      columns: [table.workspaceId, table.labelId],
+      foreignColumns: [labels.workspaceId, labels.id],
+    }).onDelete("cascade"),
+    uniqueIndex("issue_labels_issue_label_unique").on(
+      table.issueId,
+      table.labelId,
+    ),
+  ],
+);
+
+export const issueComments = pgTable(
+  "issue_comments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    issueId: uuid("issue_id").notNull(),
+    authorMembershipId: uuid("author_membership_id").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp("deleted_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: "issue_comments_issue_tenant_fk",
+      columns: [table.workspaceId, table.issueId],
+      foreignColumns: [issues.workspaceId, issues.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "issue_comments_author_tenant_fk",
+      columns: [table.workspaceId, table.authorMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
+    index("issue_comments_issue_created_idx").on(table.issueId, table.createdAt),
   ],
 );

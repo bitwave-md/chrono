@@ -32,7 +32,6 @@ export async function GET(
         projectId: input.optionalUuid("projectId"),
         projectScopeId: input.optionalUuid("projectScopeId"),
         rootProjectId: input.optionalUuid("rootProjectId"),
-        teamId: input.optionalUuid("teamId"),
         categoryId: input.optionalUuid("categoryId"),
         workerUserId: input.optionalUuid("workerUserId"),
         from: input.optionalDateTime("from"),

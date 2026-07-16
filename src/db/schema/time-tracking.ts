@@ -15,7 +15,6 @@ import {
 
 import { issues } from "./issues";
 import { projects } from "./projects";
-import { teams } from "./teams";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
 export const timeLogSource = pgEnum("time_log_source", ["timer", "manual"]);
@@ -73,7 +72,6 @@ export const timerSessions = pgTable(
     clientId: uuid("client_id").notNull(),
     projectId: uuid("project_id"),
     rootProjectId: uuid("root_project_id"),
-    teamId: uuid("team_id"),
     categoryId: uuid("category_id"),
     note: text("note"),
     billable: boolean("billable").default(false).notNull(),
@@ -103,11 +101,6 @@ export const timerSessions = pgTable(
       name: "timer_sessions_root_project_tenant_client_fk",
       columns: [table.workspaceId, table.clientId, table.rootProjectId],
       foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
-    }).onDelete("restrict"),
-    foreignKey({
-      name: "timer_sessions_team_tenant_fk",
-      columns: [table.workspaceId, table.teamId],
-      foreignColumns: [teams.workspaceId, teams.id],
     }).onDelete("restrict"),
     foreignKey({
       name: "timer_sessions_category_tenant_fk",
@@ -160,7 +153,6 @@ export const timeLogs = pgTable(
     clientId: uuid("client_id").notNull(),
     projectId: uuid("project_id"),
     rootProjectId: uuid("root_project_id"),
-    teamId: uuid("team_id"),
     categoryId: uuid("category_id"),
     source: timeLogSource("source").notNull(),
     note: text("note"),
@@ -204,11 +196,6 @@ export const timeLogs = pgTable(
       foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
     }).onDelete("restrict"),
     foreignKey({
-      name: "time_logs_team_tenant_fk",
-      columns: [table.workspaceId, table.teamId],
-      foreignColumns: [teams.workspaceId, teams.id],
-    }).onDelete("restrict"),
-    foreignKey({
       name: "time_logs_category_tenant_fk",
       columns: [table.workspaceId, table.categoryId],
       foreignColumns: [timeCategories.workspaceId, timeCategories.id],
@@ -242,7 +229,6 @@ export const timeLogs = pgTable(
       table.rootProjectId,
       table.startedAt,
     ),
-    index("time_logs_team_started_idx").on(table.teamId, table.startedAt),
     index("time_logs_worker_started_idx").on(
       table.workerUserId,
       table.startedAt,

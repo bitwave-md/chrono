@@ -97,8 +97,47 @@ export class JsonInput {
     return value ? new EntityId(value, key).value : null;
   }
 
+  uuidArray(key: string, maximumLength = 50): string[] {
+    const value = this.#value[key];
+
+    if (value === undefined || value === null) {
+      return [];
+    }
+
+    if (!Array.isArray(value) || value.length > maximumLength) {
+      throw new ValidationError(
+        `${key} must be an array with at most ${maximumLength} values.`,
+      );
+    }
+
+    return [...new Set(value.map((entry, index) => {
+      if (typeof entry !== "string") {
+        throw new ValidationError(`${key}[${index}] must be a UUID.`);
+      }
+
+      return new EntityId(entry, `${key}[${index}]`).value;
+    }))];
+  }
+
   requiredInteger(key: string, minimum = Number.MIN_SAFE_INTEGER): number {
     const value = this.#value[key];
+
+    if (!Number.isInteger(value) || (value as number) < minimum) {
+      throw new ValidationError(`${key} must be an integer of at least ${minimum}.`);
+    }
+
+    return value as number;
+  }
+
+  optionalInteger(
+    key: string,
+    minimum = Number.MIN_SAFE_INTEGER,
+  ): number | null {
+    const value = this.#value[key];
+
+    if (value === undefined || value === null) {
+      return null;
+    }
 
     if (!Number.isInteger(value) || (value as number) < minimum) {
       throw new ValidationError(`${key} must be an integer of at least ${minimum}.`);
@@ -125,6 +164,21 @@ export class JsonInput {
     const value = this.requiredString(key, 64);
     const date = new Date(value);
 
+    if (Number.isNaN(date.getTime())) {
+      throw new ValidationError(`${key} must be a valid ISO date-time.`);
+    }
+
+    return date;
+  }
+
+  optionalDateTime(key: string): Date | null {
+    const value = this.optionalString(key, 64);
+
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
       throw new ValidationError(`${key} must be a valid ISO date-time.`);
     }
