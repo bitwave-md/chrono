@@ -3,18 +3,18 @@ import { createStore } from "zustand/vanilla";
 export type WorkspaceViewMode = "list" | "board";
 
 export interface WorkspaceViewState {
-  selectedClientId: string | null;
-  selectedProjectId: string | null;
-  selectedTeamId: string | null;
+  workspaceSectionOpen: boolean;
+  clientsSectionOpen: boolean;
+  expandedClientIds: Record<string, boolean>;
   focusedIssueId: string | null;
   sidebarCollapsed: boolean;
   viewMode: WorkspaceViewMode;
 }
 
 export interface WorkspaceViewActions {
-  selectClient: (clientId: string) => void;
-  selectProject: (projectId: string | null) => void;
-  selectTeam: (teamId: string | null) => void;
+  setWorkspaceSectionOpen: (open: boolean) => void;
+  setClientsSectionOpen: (open: boolean) => void;
+  setClientExpanded: (clientId: string, open: boolean) => void;
   focusIssue: (issueId: string | null) => void;
   setViewMode: (viewMode: WorkspaceViewMode) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -25,23 +25,17 @@ export type WorkspaceViewStore = WorkspaceViewState & WorkspaceViewActions;
 
 export function createWorkspaceViewStore() {
   return createStore<WorkspaceViewStore>()((set) => ({
-    selectedClientId: null,
-    selectedProjectId: null,
-    selectedTeamId: null,
+    workspaceSectionOpen: true,
+    clientsSectionOpen: true,
+    expandedClientIds: {},
     focusedIssueId: null,
     sidebarCollapsed: false,
     viewMode: "list",
-    selectClient: (selectedClientId) =>
-      set({
-        selectedClientId,
-        selectedProjectId: null,
-        selectedTeamId: null,
-        focusedIssueId: null,
-      }),
-    selectProject: (selectedProjectId) =>
-      set({ selectedProjectId, focusedIssueId: null }),
-    selectTeam: (selectedTeamId) =>
-      set({ selectedTeamId, focusedIssueId: null }),
+    setWorkspaceSectionOpen: (workspaceSectionOpen) => set({ workspaceSectionOpen }),
+    setClientsSectionOpen: (clientsSectionOpen) => set({ clientsSectionOpen }),
+    setClientExpanded: (clientId, open) => set((state) => ({
+      expandedClientIds: { ...state.expandedClientIds, [clientId]: open },
+    })),
     focusIssue: (focusedIssueId) => set({ focusedIssueId }),
     setViewMode: (viewMode) => set({ viewMode }),
     setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),

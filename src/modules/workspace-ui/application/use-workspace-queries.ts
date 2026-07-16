@@ -23,10 +23,10 @@ export function useProjectsQuery(
   });
 }
 
-export function useTeamsQuery(workspaceSlug: string) {
+export function useMembersQuery(workspaceSlug: string) {
   return useQuery({
-    queryKey: workspaceQueryKeys.teams(workspaceSlug),
-    queryFn: () => new WorkspaceApiClient(workspaceSlug).listTeams(),
+    queryKey: workspaceQueryKeys.members(workspaceSlug),
+    queryFn: () => new WorkspaceApiClient(workspaceSlug).listMembers(),
   });
 }
 

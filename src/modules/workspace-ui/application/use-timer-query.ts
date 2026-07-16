@@ -76,3 +76,10 @@ export function useStopTimerMutation(workspaceSlug: string) {
     },
   });
 }
+
+export function useManualTimeMutation(workspaceSlug: string) {
+  return useMutation({
+    mutationFn: (input: { issueId: string; durationSeconds: number; note: string | null }) =>
+      new WorkspaceApiClient(workspaceSlug).addManualTime(input),
+  });
+}

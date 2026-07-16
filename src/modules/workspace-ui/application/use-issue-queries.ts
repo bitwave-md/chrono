@@ -13,7 +13,7 @@ import {
 
 export interface CreateIssueVariables extends CreateIssueRequest {
   projectName: string | null;
-  teamName: string | null;
+  assignees: IssueRecord["assignees"];
   statusId: string | null;
   statusName: string | null;
 }
@@ -30,8 +30,7 @@ export function useIssuesQuery(
   return useQuery({
     queryKey: workspaceQueryKeys.issues(workspaceSlug, clientId, filters),
     queryFn: () =>
-      new WorkspaceApiClient(workspaceSlug).listIssues(clientId!, filters),
-    enabled: Boolean(clientId),
+      new WorkspaceApiClient(workspaceSlug).listIssues(clientId, filters),
   });
 }
 
@@ -48,7 +47,7 @@ export function useCreateIssueMutation(
       new WorkspaceApiClient(workspaceSlug).createIssue({
         clientId: variables.clientId,
         projectId: variables.projectId,
-        teamId: variables.teamId,
+        assigneeMembershipIds: variables.assigneeMembershipIds,
         title: variables.title,
         description: variables.description,
         priority: variables.priority,
@@ -67,12 +66,18 @@ export function useCreateIssueMutation(
         visibility: variables.visibility,
         projectId: variables.projectId,
         projectName: variables.projectName,
-        teamId: variables.teamId,
-        teamName: variables.teamName,
-        assigneeId: null,
-        assigneeName: null,
+        clientId: variables.clientId,
+        clientName: "",
+        assignees: variables.assignees,
+        labels: [],
+        issueTypeId: null,
+        issueTypeName: null,
+        issueTypeColor: null,
         statusId: variables.statusId,
         statusName: variables.statusName,
+        statusColor: null,
+        estimateMinutes: null,
+        dueAt: null,
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -110,11 +115,15 @@ export function useUpdateIssueMutation(
         issueId: variables.issueId,
         expectedVersion: variables.expectedVersion,
         projectId: variables.projectId,
-        teamId: variables.teamId,
+        assigneeMembershipIds: variables.assigneeMembershipIds,
         statusId: variables.statusId,
+        issueTypeId: variables.issueTypeId,
         title: variables.title,
+        description: variables.description,
         priority: variables.priority,
         visibility: variables.visibility,
+        estimateMinutes: variables.estimateMinutes,
+        dueAt: variables.dueAt,
       };
 
       return new WorkspaceApiClient(workspaceSlug).updateIssue(request);
@@ -145,5 +154,39 @@ export function useUpdateIssueMutation(
       queryClient.invalidateQueries({
         queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug),
       }),
+  });
+}
+
+export function useIssueQuery(workspaceSlug: string, issueId: string) {
+  return useQuery({
+    queryKey: workspaceQueryKeys.issue(workspaceSlug, issueId),
+    queryFn: () => new WorkspaceApiClient(workspaceSlug).getIssue(issueId),
+  });
+}
+
+export function useUpdateIssueDetailMutation(workspaceSlug: string, issueId: string) {
+  const queryClient = useQueryClient();
+  const queryKey = workspaceQueryKeys.issue(workspaceSlug, issueId);
+  return useMutation({
+    mutationFn: (variables: UpdateIssueVariables) =>
+      new WorkspaceApiClient(workspaceSlug).updateIssue(variables),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<IssueRecord>(queryKey);
+      queryClient.setQueryData<IssueRecord>(queryKey, (current) => current ? {
+        ...current,
+        ...variables.optimistic,
+        version: current.version + 1,
+        updatedAt: new Date().toISOString(),
+      } : current);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => queryClient.setQueryData(queryKey, context?.previous),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug) }),
+      ]);
+    },
   });
 }

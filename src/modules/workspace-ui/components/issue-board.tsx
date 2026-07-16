@@ -79,7 +79,7 @@ export function IssueBoard(props: IssueBoardProps) {
                   <strong className="text-sm leading-5">{issue.title}</strong>
                   <span className="flex min-w-0 items-center justify-between gap-3 text-xs text-muted-foreground [&_[data-slot=badge]>span]:hidden">
                     <PriorityBadge priority={issue.priority} />
-                    <span>{issue.teamName ?? "Unassigned"}</span>
+                    <span>{issue.assignees.length ? `${issue.assignees.length} assigned` : "Unassigned"}</span>
                   </span>
                 </Button>
               ))}

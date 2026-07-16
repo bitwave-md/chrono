@@ -1,10 +1,9 @@
 "use client";
 
-import { CircleDashed, Clock3, UserRound } from "lucide-react";
+import { CircleDashed, Clock3 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   PriorityBadge,
@@ -31,12 +30,12 @@ export function IssueList(props: IssueListProps) {
   }
 
   return (
-    <Card className="overflow-hidden" role="list">
+    <div className="overflow-hidden border-y" role="list">
       <div className="grid min-h-9 grid-cols-[minmax(260px,1.7fr)_minmax(130px,.7fr)_minmax(120px,.55fr)_minmax(145px,.7fr)] items-center gap-3.5 border-b px-3.5 font-mono text-[0.62rem] uppercase tracking-[0.07em] text-muted-foreground max-lg:hidden" aria-hidden="true">
         <span>Issue</span>
         <span>Status</span>
         <span>Priority</span>
-        <span>Team</span>
+        <span>Assignees</span>
       </div>
       {props.issues.map((issue) => (
         <Button
@@ -62,18 +61,15 @@ export function IssueList(props: IssueListProps) {
           <span className="max-md:hidden"><StatusBadge name={issue.statusName} /></span>
           <span className="max-lg:[&_[data-slot=badge]>span]:hidden"><PriorityBadge priority={issue.priority} /></span>
           <span className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground max-lg:hidden">
-            {issue.teamName ? (
-              <>
-                <Avatar className="size-6 rounded-md border">
-                  <AvatarFallback>{issue.teamName.slice(0, 2)}</AvatarFallback>
-                </Avatar>
-                <span>{issue.teamName}</span>
-              </>
-            ) : issue.assigneeName ? (
-              <>
-                <UserRound size={14} />
-                <span>{issue.assigneeName}</span>
-              </>
+            {issue.assignees.length ? (
+              <span className="flex -space-x-1.5">
+                {issue.assignees.slice(0, 3).map((assignee) => (
+                  <Avatar className="size-6 border border-background" key={assignee.membershipId}>
+                    <AvatarImage alt="" src={assignee.avatarUrl ?? undefined} />
+                    <AvatarFallback className="text-[0.55rem]">{(assignee.displayName ?? assignee.email).slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                ))}
+              </span>
             ) : (
               <span className="text-muted-foreground">Unassigned</span>
             )}
@@ -85,6 +81,6 @@ export function IssueList(props: IssueListProps) {
           ) : null}
         </Button>
       ))}
-    </Card>
+    </div>
   );
 }

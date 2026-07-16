@@ -145,7 +145,7 @@ function Sidebar({
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Workspace navigation</SheetTitle>
-            <SheetDescription>Navigate Clients, Projects, Teams, and account actions.</SheetDescription>
+            <SheetDescription>Navigate Workspace, Clients, Projects, and Issues.</SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
@@ -304,8 +304,9 @@ function SidebarMenuSubItem(props: React.ComponentProps<"li">) {
   return <li data-slot="sidebar-menu-sub-item" {...props} />;
 }
 
-function SidebarMenuSubButton({ className, isActive, ...props }: React.ComponentProps<"button"> & { isActive?: boolean }) {
-  return <button data-active={isActive} data-slot="sidebar-menu-sub-button" className={cn("flex h-7 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-left text-xs text-sidebar-foreground/75 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0", className)} type="button" {...props} />;
+function SidebarMenuSubButton({ className, isActive, asChild = false, ...props }: React.ComponentProps<"button"> & { isActive?: boolean; asChild?: boolean }) {
+  const Comp = asChild ? Slot : "button";
+  return <Comp data-active={isActive} data-slot="sidebar-menu-sub-button" className={cn("flex h-7 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-left text-xs text-sidebar-foreground/75 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0", className)} {...props} />;
 }
 
 export {

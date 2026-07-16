@@ -1,0 +1,56 @@
+import { MutationOriginPolicy } from "@/modules/auth/domain/mutation-origin-policy";
+import { ServerPrincipalResolver } from "@/modules/authorization/application/server-principal-resolver";
+import {
+  ProjectDetailService,
+  projectStates,
+} from "@/modules/projects/application/project-detail-service";
+import { projectVisibilities } from "@/modules/projects/application/project-service";
+import { EntityId } from "@/modules/shared/domain/entity-id";
+import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
+import { JsonInput } from "@/modules/shared/infrastructure/json-input";
+
+export const runtime = "nodejs";
+
+const principalResolver = new ServerPrincipalResolver();
+const mutationOriginPolicy = new MutationOriginPolicy();
+const projectService = new ProjectDetailService();
+
+interface ProjectRouteContext {
+  params: Promise<{ workspaceSlug: string; projectId: string }>;
+}
+
+export async function GET(_request: Request, context: ProjectRouteContext) {
+  try {
+    const { workspaceSlug, projectId: value } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const project = await projectService.get(principal, new EntityId(value, "projectId").value);
+    return Response.json({ data: project });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}
+
+export async function PATCH(request: Request, context: ProjectRouteContext) {
+  try {
+    mutationOriginPolicy.assertTrusted(request);
+    const { workspaceSlug, projectId: value } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const input = new JsonInput(await request.json());
+    const project = await projectService.update(
+      principal,
+      new EntityId(value, "projectId").value,
+      {
+        ...(input.has("state") ? { state: input.requiredEnum("state", projectStates) } : {}),
+        ...(input.has("summary") ? { summary: input.optionalString("summary", 500) } : {}),
+        ...(input.has("description") ? { description: input.optionalString("description", 20_000) } : {}),
+        ...(input.has("visibility") ? { visibility: input.requiredEnum("visibility", projectVisibilities) } : {}),
+        ...(input.has("startDate") ? { startDate: input.optionalDateTime("startDate") } : {}),
+        ...(input.has("targetDate") ? { targetDate: input.optionalDateTime("targetDate") } : {}),
+        ...(input.has("assigneeMembershipIds") ? { assigneeMembershipIds: input.uuidArray("assigneeMembershipIds", 20) } : {}),
+      },
+    );
+    return Response.json({ data: project });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}

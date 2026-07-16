@@ -1,14 +1,17 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
-import { issues, workspaceMemberships } from "@/db/schema";
+import { issues } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import {
   NotFoundError,
   ValidationError,
 } from "@/modules/shared/application/application-error";
+import { WorkspaceMemberService } from "@/modules/workspaces/application/workspace-member-service";
 
 export class IssueRelationValidator {
+  readonly #memberService = new WorkspaceMemberService();
+
   async assertAssignees(
     transaction: DatabaseTransaction,
     principal: Principal,
@@ -22,20 +25,7 @@ export class IssueRelationValidator {
       throw new ValidationError("A work item can have at most 20 assignees.");
     }
 
-    const assignees = await transaction
-      .select({ id: workspaceMemberships.id })
-      .from(workspaceMemberships)
-      .where(
-        and(
-          eq(workspaceMemberships.workspaceId, principal.workspaceId),
-          inArray(workspaceMemberships.id, membershipIds),
-          eq(workspaceMemberships.status, "active"),
-        ),
-      );
-
-    if (assignees.length !== new Set(membershipIds).size) {
-      throw new NotFoundError("One or more assignees are unavailable.");
-    }
+    await this.#memberService.assertActive(transaction, principal, membershipIds);
   }
 
   async assertParentIssue(

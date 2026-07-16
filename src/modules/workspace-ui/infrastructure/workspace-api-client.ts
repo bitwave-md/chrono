@@ -3,9 +3,13 @@ import type {
   ClientRecord,
   IssuePriority,
   IssueRecord,
+  IssueCommentRecord,
+  IssueMetadataRecord,
   IssueVisibility,
+  MemberRecord,
+  ProjectActivityRecord,
+  ProjectDetailRecord,
   ProjectNode,
-  TeamRecord,
   TimeCategoryRecord,
   WorkflowStatusRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
@@ -20,13 +24,14 @@ interface ApiErrorEnvelope {
 
 export interface IssueQueryFilters {
   projectId?: string;
-  teamId?: string;
+  assigneeMembershipId?: string;
+  mine?: boolean;
 }
 
 export interface CreateIssueRequest {
   clientId: string;
   projectId: string | null;
-  teamId: string | null;
+  assigneeMembershipIds: string[];
   title: string;
   description: string | null;
   priority: IssuePriority;
@@ -37,11 +42,15 @@ export interface UpdateIssueRequest {
   issueId: string;
   expectedVersion: number;
   projectId?: string | null;
-  teamId?: string | null;
+  assigneeMembershipIds?: string[];
   statusId?: string | null;
+  issueTypeId?: string | null;
   title?: string;
+  description?: string | null;
   priority?: IssuePriority;
   visibility?: IssueVisibility;
+  estimateMinutes?: number | null;
+  dueAt?: string | null;
 }
 
 export interface StartTimerRequest {
@@ -77,8 +86,8 @@ export class WorkspaceApiClient {
     return this.#get(`/projects?clientId=${encodeURIComponent(clientId)}`);
   }
 
-  listTeams(): Promise<TeamRecord[]> {
-    return this.#get("/teams");
+  listMembers(): Promise<MemberRecord[]> {
+    return this.#get("/members");
   }
 
   listCategories(): Promise<TimeCategoryRecord[]> {
@@ -92,18 +101,19 @@ export class WorkspaceApiClient {
   }
 
   listIssues(
-    clientId: string,
+    clientId: string | null,
     filters: IssueQueryFilters,
   ): Promise<IssueRecord[]> {
-    const parameters = new URLSearchParams({ clientId });
+    const parameters = new URLSearchParams();
+
+    if (clientId) parameters.set("clientId", clientId);
 
     if (filters.projectId) {
       parameters.set("projectId", filters.projectId);
     }
 
-    if (filters.teamId) {
-      parameters.set("teamId", filters.teamId);
-    }
+    if (filters.assigneeMembershipId) parameters.set("assigneeMembershipId", filters.assigneeMembershipId);
+    if (filters.mine) parameters.set("mine", "true");
 
     return this.#get(`/issues?${parameters.toString()}`);
   }
@@ -113,7 +123,6 @@ export class WorkspaceApiClient {
       method: "POST",
       body: JSON.stringify({
         ...input,
-        assigneeId: null,
         statusId: null,
         parentIssueId: null,
       }),
@@ -125,6 +134,71 @@ export class WorkspaceApiClient {
     return this.#request(`/issues/${encodeURIComponent(issueId)}`, {
       method: "PATCH",
       body: JSON.stringify(body),
+    });
+  }
+
+  getIssue(issueId: string): Promise<IssueRecord> {
+    return this.#get(`/issues/${encodeURIComponent(issueId)}`);
+  }
+
+  issueComments(issueId: string): Promise<IssueCommentRecord[]> {
+    return this.#get(`/issues/${encodeURIComponent(issueId)}/comments`);
+  }
+
+  addIssueComment(issueId: string, body: string): Promise<unknown> {
+    return this.#request(`/issues/${encodeURIComponent(issueId)}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    });
+  }
+
+  issueMetadata(): Promise<IssueMetadataRecord> {
+    return this.#get("/issue-metadata");
+  }
+
+  replaceIssueLabels(issueId: string, labelIds: string[]): Promise<unknown> {
+    return this.#request(`/issues/${encodeURIComponent(issueId)}/labels`, {
+      method: "PUT",
+      body: JSON.stringify({ labelIds }),
+    });
+  }
+
+  getProject(projectId: string): Promise<ProjectDetailRecord> {
+    return this.#get(`/projects/${encodeURIComponent(projectId)}`);
+  }
+
+  updateProject(projectId: string, input: Record<string, unknown>): Promise<unknown> {
+    return this.#request(`/projects/${encodeURIComponent(projectId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  projectActivity(projectId: string): Promise<ProjectActivityRecord> {
+    return this.#get(`/projects/${encodeURIComponent(projectId)}/activity`);
+  }
+
+  publishProjectUpdate(
+    projectId: string,
+    input: { body: string; health: string | null; progress: number | null },
+  ): Promise<unknown> {
+    return this.#request(`/projects/${encodeURIComponent(projectId)}/activity`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  addProjectResource(projectId: string, input: { title: string; url: string; description: string | null }): Promise<unknown> {
+    return this.#request(`/projects/${encodeURIComponent(projectId)}/resources`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  addProjectMilestone(projectId: string, input: { name: string; targetDate: string | null }): Promise<unknown> {
+    return this.#request(`/projects/${encodeURIComponent(projectId)}/milestones`, {
+      method: "POST",
+      body: JSON.stringify({ ...input, description: null, state: "planned" }),
     });
   }
 
@@ -141,6 +215,18 @@ export class WorkspaceApiClient {
 
   stopTimer(): Promise<unknown> {
     return this.#request("/timers/active", { method: "DELETE" });
+  }
+
+  addManualTime(input: { issueId: string; durationSeconds: number; note: string | null }): Promise<unknown> {
+    return this.#request("/time-logs", {
+      method: "POST",
+      body: JSON.stringify({
+        ...input,
+        categoryId: null,
+        startedAt: new Date(Date.now() - input.durationSeconds * 1_000).toISOString(),
+        billable: null,
+      }),
+    });
   }
 
   async #get<T>(path: string): Promise<T> {

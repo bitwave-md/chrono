@@ -3,23 +3,16 @@ import test from "node:test";
 
 import { createWorkspaceViewStore } from "./workspace-view-store.ts";
 
-test("WorkspaceViewStore resets dependent filters when Client changes", () => {
+test("WorkspaceViewStore keeps client disclosure independent", () => {
   const store = createWorkspaceViewStore();
 
-  store.getState().selectProject("project-a");
-  store.getState().selectTeam("team-a");
-  store.getState().focusIssue("issue-a");
-  store.getState().selectClient("client-b");
+  store.getState().setClientExpanded("client-a", true);
+  store.getState().setClientExpanded("client-b", false);
 
-  assert.deepEqual(
-    {
-      client: store.getState().selectedClientId,
-      project: store.getState().selectedProjectId,
-      team: store.getState().selectedTeamId,
-      issue: store.getState().focusedIssueId,
-    },
-    { client: "client-b", project: null, team: null, issue: null },
-  );
+  assert.deepEqual(store.getState().expandedClientIds, {
+    "client-a": true,
+    "client-b": false,
+  });
 });
 
 test("WorkspaceViewStore keeps view controls independent", () => {
