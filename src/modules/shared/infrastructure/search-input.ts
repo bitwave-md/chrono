@@ -29,6 +29,12 @@ export class SearchInput {
     return date;
   }
 
+  requiredDateTime(key: string): Date {
+    const value = this.optionalDateTime(key);
+    if (!value) throw new ValidationError(`${key} is required.`);
+    return value;
+  }
+
   requiredEnum<T extends string>(
     key: string,
     allowedValues: readonly T[],

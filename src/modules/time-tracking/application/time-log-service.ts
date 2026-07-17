@@ -5,12 +5,14 @@ import {
   clients,
   issueNamespaces,
   issues,
+  projectBranches,
   projects,
   timeCategories,
   timeLogs,
   users,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueService } from "@/modules/issues/application/issue-service";
 import {
   ForbiddenError,
@@ -37,16 +39,20 @@ export interface TimeLogFilters {
   workerUserId?: string;
   from?: Date;
   to?: Date;
+  dateBasis?: "started" | "ended";
+  limit?: number;
 }
 
 export class TimeLogService {
   readonly #attributionResolver = new TimeAttributionResolver();
   readonly #entryValidator = new TimeEntryValidator();
   readonly #issues = new IssueService();
+  readonly #clientAccess = new ClientAccessService();
 
   async list(principal: Principal, filters: TimeLogFilters) {
     this.#assertDateRange(filters.from, filters.to);
     if (filters.issueId) await this.#issues.get(principal, filters.issueId);
+    else if (filters.clientId) await this.#clientAccess.assertCanRead(principal, filters.clientId);
     const workerUserId = this.#visibleWorker(
       principal,
       filters.workerUserId,
@@ -72,13 +78,11 @@ export class TimeLogService {
       }
     }
 
-    if (filters.from) {
-      conditions.push(gte(timeLogs.startedAt, filters.from));
-    }
-
-    if (filters.to) {
-      conditions.push(lt(timeLogs.startedAt, filters.to));
-    }
+    const dateColumn = filters.dateBasis === "ended"
+      ? timeLogs.endedAt
+      : timeLogs.startedAt;
+    if (filters.from) conditions.push(gte(dateColumn, filters.from));
+    if (filters.to) conditions.push(lt(dateColumn, filters.to));
 
     return db
       .select({
@@ -95,6 +99,7 @@ export class TimeLogService {
         projectId: timeLogs.projectId,
         projectName: projects.name,
         branchId: timeLogs.branchId,
+        branchName: projectBranches.name,
         categoryId: timeLogs.categoryId,
         categoryName: timeCategories.name,
         categoryColor: timeCategories.color,
@@ -136,6 +141,13 @@ export class TimeLogService {
         ),
       )
       .leftJoin(
+        projectBranches,
+        and(
+          eq(projectBranches.id, timeLogs.branchId),
+          eq(projectBranches.workspaceId, timeLogs.workspaceId),
+        ),
+      )
+      .leftJoin(
         timeCategories,
         and(
           eq(timeCategories.id, timeLogs.categoryId),
@@ -144,8 +156,8 @@ export class TimeLogService {
       )
       .innerJoin(users, eq(users.id, timeLogs.workerUserId))
       .where(and(...conditions))
-      .orderBy(desc(timeLogs.startedAt))
-      .limit(250);
+      .orderBy(desc(dateColumn))
+      .limit(this.#limit(filters.limit));
   }
 
   async createManual(principal: Principal, input: CreateManualTimeLogInput) {
@@ -218,5 +230,13 @@ export class TimeLogService {
     if (from && to && from >= to) {
       throw new ValidationError("from must be earlier than to.");
     }
+  }
+
+  #limit(requested?: number): number {
+    if (requested === undefined) return 250;
+    if (!Number.isInteger(requested) || requested < 1 || requested > 1_000) {
+      throw new ValidationError("Time-log limits must contain 1-1000 entries.");
+    }
+    return requested;
   }
 }

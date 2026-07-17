@@ -1,5 +1,23 @@
 # Chrono Roadmap
 
+## Client time reports
+
+Tracer bullet: open a Client-level Time tab, review the current month by
+default, change the reporting period and dimensions through route-backed
+filters, and reconcile summary totals with the underlying Issue entries.
+
+- [x] Add the Time route and Client header tab after Projects.
+- [x] Authorize Client-scoped time-entry reporting with role-aware visibility.
+- [x] Add current-month presets and a custom shadcn date-range picker.
+- [x] Add summary, trend, category, Project, contributor, and entry-detail views.
+- [x] Verify filter URLs, aggregation accuracy, responsive UX, and Docker runtime.
+
+The Client Time report was completed and runtime-verified on 2026-07-18. A
+reversible service tracer reconciled Client-wide and Project-filtered totals,
+and an authenticated HTTP tracer returned `200` for both the report API and
+canonical Time page. The current-month default, preset/custom ranges, URL
+filters, 29-test suite, production build, and rebuilt Compose stack passed.
+
 ## Issue time tracking experience
 
 Tracer bullet: classify Issue work with Workspace-wide time entry types, start

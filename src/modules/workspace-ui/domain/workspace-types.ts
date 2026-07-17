@@ -181,6 +181,7 @@ export interface TimeLogRecord {
   projectId: string | null;
   projectName: string | null;
   branchId: string | null;
+  branchName: string | null;
   categoryId: string | null;
   categoryName: string | null;
   categoryColor: string | null;
@@ -194,6 +195,12 @@ export interface TimeLogRecord {
   endedAt: string;
   durationSeconds: number;
   version: number;
+}
+
+export interface ClientTimeReportRecord {
+  entries: TimeLogRecord[];
+  scope: "client" | "personal";
+  truncated: boolean;
 }
 
 export interface ActiveTimerRecord {

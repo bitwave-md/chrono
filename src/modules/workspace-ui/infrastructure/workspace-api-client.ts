@@ -3,6 +3,7 @@ import type {
   ClientRecord,
   ClientMemberRecord,
   ClientResourceRecord,
+  ClientTimeReportRecord,
   FavoriteRecord,
   FavoriteTargetType,
   IssuePriority,
@@ -75,6 +76,14 @@ export interface StartTimerRequest {
   issueId: string;
   categoryId: string | null;
   note: string | null;
+}
+
+export interface ClientTimeReportFilters {
+  from: string;
+  to: string;
+  projectId?: string;
+  categoryId?: string;
+  workerUserId?: string;
 }
 
 export class WorkspaceApiError extends Error {
@@ -163,6 +172,19 @@ export class WorkspaceApiClient {
 
   listClientMembers(clientId: string): Promise<ClientMemberRecord[]> {
     return this.#get(`/clients/${encodeURIComponent(clientId)}/members`);
+  }
+
+  clientTimeReport(
+    clientId: string,
+    filters: ClientTimeReportFilters,
+  ): Promise<ClientTimeReportRecord> {
+    const parameters = new URLSearchParams({ from: filters.from, to: filters.to });
+    if (filters.projectId) parameters.set("projectId", filters.projectId);
+    if (filters.categoryId) parameters.set("categoryId", filters.categoryId);
+    if (filters.workerUserId) parameters.set("workerUserId", filters.workerUserId);
+    return this.#get(
+      `/clients/${encodeURIComponent(clientId)}/time-report?${parameters.toString()}`,
+    );
   }
 
   addClientMember(

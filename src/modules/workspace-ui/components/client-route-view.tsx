@@ -6,6 +6,7 @@ import { useClientsQuery } from "@/modules/workspace-ui/application/use-workspac
 import { ClientHeader, type ClientTab } from "@/modules/workspace-ui/components/client-header";
 import { ClientMembersView } from "@/modules/workspace-ui/components/client-members-view";
 import { ClientOverviewView } from "@/modules/workspace-ui/components/client-overview-view";
+import { ClientTimeReportView } from "@/modules/workspace-ui/components/client-time-report-view";
 import { ProjectDirectoryView } from "@/modules/workspace-ui/components/directory-views";
 import { IssueCollectionView } from "@/modules/workspace-ui/components/issue-collection-view";
 import { useWorkspaceOverlay } from "@/modules/workspace-ui/state/workspace-ui-provider";
@@ -63,6 +64,9 @@ export function ClientRouteView({
       ) : null}
       {view === "projects" ? (
         <ProjectDirectoryView client={client} embedded workspaceSlug={workspaceSlug} />
+      ) : null}
+      {view === "time" ? (
+        <ClientTimeReportView client={client} workspaceSlug={workspaceSlug} />
       ) : null}
       {view === "members" ? (
         <ClientMembersView

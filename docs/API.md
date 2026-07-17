@@ -120,6 +120,9 @@ sidebar rendering.
   reporting categories.
 - `GET /api/workspaces/:workspaceSlug/time-reports?groupBy=:dimension`
   aggregates for owners and admins.
+- `GET /api/workspaces/:workspaceSlug/clients/:clientId/time-report` returns up
+  to 1,000 Client-scoped finalized entries for a required `from`/`to` period,
+  with optional `projectId`, `categoryId`, and `workerUserId` filters.
 
 Time-log filters are `issueId`, `clientId`, `projectId`, `categoryId`,
 `branchId`, `workerUserId`, `from`, and `to`. Report grouping accepts `issue`,
@@ -131,6 +134,11 @@ and Other. Owners and admins may add further categories; category keys remain
 unique within the Workspace. Issue-scoped log requests first authorize the
 Issue and then return its visible activity entries. Non-Issue report/list
 requests retain worker-level restrictions for regular members.
+
+Client time reports authorize Client visibility before querying. Owners and
+admins receive the Client-wide scope; members and guests receive only their
+own entries. The response declares `scope` and whether the 1,000-entry result
+was truncated.
 
 Manual time-log creation accepts an explicit `startedAt` epoch. The Issue UI
 derives it from the selected local work date and duration so the finalized

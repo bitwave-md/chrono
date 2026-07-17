@@ -107,6 +107,12 @@ and Other without removing custom categories. Issue detail loads finalized
 logs through an Issue-authorized query; the same TanStack cache drives Activity,
 the cumulative area chart, and the stacked radial category distribution.
 
+Client reporting is exposed through a dedicated application service layered
+over the authoritative time-log service. It reuses Client visibility, worker
+scope, date validation, and snapshotted dimensions rather than duplicating
+report SQL. Client-wide queries are capped at 1,000 finalized entries and use
+completion-date boundaries so manual work dates match report periods.
+
 ## Authorization
 
 `WorkspaceMembership` is the tenant principal. Resource services enforce:
@@ -145,6 +151,11 @@ than in the property rail. Starting a timer persists only its authoritative
 epoch; the browser derives the live counter. Stopping or manually logging work
 invalidates the Issue time-log query, which updates Activity and both charts
 without duplicated component state.
+
+The Client `Time` tab keeps its period and dimension filters in canonical URL
+search parameters. TanStack Query keys include the complete filter object;
+pure report utilities derive summary cards, daily trend points, and category,
+Project, and contributor breakdowns from the returned entries.
 
 `workspace_favorites` stores membership-scoped Client, Project, and Issue
 references with tenant-safe composite foreign keys and an exact-target check.

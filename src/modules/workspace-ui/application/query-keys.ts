@@ -1,4 +1,4 @@
-import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
+import type { ClientTimeReportFilters, IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
 
 export const workspaceQueryKeys = {
   clients: (workspaceSlug: string) => ["workspace", workspaceSlug, "clients"] as const,
@@ -7,6 +7,11 @@ export const workspaceQueryKeys = {
     ["workspace", workspaceSlug, "client", clientId, "resources"] as const,
   clientMembers: (workspaceSlug: string, clientId: string) =>
     ["workspace", workspaceSlug, "client", clientId, "members"] as const,
+  clientTimeReport: (
+    workspaceSlug: string,
+    clientId: string,
+    filters: ClientTimeReportFilters,
+  ) => ["workspace", workspaceSlug, "client", clientId, "time-report", filters] as const,
   projectsRoot: (workspaceSlug: string) =>
     ["workspace", workspaceSlug, "projects"] as const,
   projects: (workspaceSlug: string, clientId: string | null) =>

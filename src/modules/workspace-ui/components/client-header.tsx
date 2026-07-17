@@ -10,7 +10,7 @@ import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { favoriteFromClient } from "@/modules/workspace-ui/domain/favorite-target";
 import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
-export type ClientTab = "overview" | "issues" | "projects" | "members";
+export type ClientTab = "overview" | "issues" | "projects" | "time" | "members";
 
 export function ClientHeader({
   client,
@@ -39,8 +39,8 @@ export function ClientHeader({
       title={client.name}
       workspaceSlug={workspaceSlug}
     >
-      <div className="flex h-12 items-center gap-1 px-3">
-        {(["overview", "issues", "projects", "members"] as const).map((item) => (
+      <div className="flex h-12 items-center gap-1 overflow-x-auto px-3">
+        {(["overview", "issues", "projects", "time", "members"] as const).map((item) => (
           <Button asChild className={cn("rounded-full bg-secondary/35 capitalize text-muted-foreground hover:bg-secondary/70 hover:text-foreground", tab === item && "bg-secondary text-secondary-foreground")} key={item} size="sm" variant="secondary">
             <Link href={`${root}/${item}`}>{item}</Link>
           </Button>

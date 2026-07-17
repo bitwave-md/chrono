@@ -45,6 +45,13 @@ clickable breadcrumbs, entity icon, title, favorite toggle, and actions menu.
 The menu copies the canonical link or opens it in a new tab. Project icons are
 editable from Project Overview using the shared icon/emoji picker.
 
+Client pages expose Overview, Issues, Projects, Time, and Members tabs. Time
+defaults to the current calendar month and offers previous-month, rolling
+30-day, and custom two-month range selection. Project, time-entry type, and
+authorized contributor filters are URL-backed. The report combines total and
+billable summaries, daily trend, category and Project breakdowns, and a dense
+entry table linking back to its Issue and Project/Branch context.
+
 ## Issue experience
 
 Issue detail is a full page with breadcrumbs, editable title and description,
