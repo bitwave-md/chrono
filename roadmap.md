@@ -36,6 +36,7 @@ manage the explicit Client roster without leaving the Client context.
 - [x] Rebuild Overview with editable identity, resources, and compact aside.
 - [x] Add the Members tab and membership management.
 - [x] Reuse the existing Issue and Project directories inside the Client shell.
+- [x] Remove the redundant embedded Client Issues view-mode toolbar.
 - [x] Verify tenant isolation, responsive behavior, build, and Docker runtime.
 
 The Client workspace was completed and runtime-verified on 2026-07-16 against

@@ -58,17 +58,15 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
 
   return (
     <>
-      {props.embedded ? (
-        <div className="flex h-11 items-center justify-end gap-1 border-b px-4">{viewActions}</div>
-      ) : (
+      {!props.embedded ? (
         <RouteHeader
           actions={<>{viewActions}<Button size="sm" onClick={openCreateIssue}><Plus />New issue</Button></>}
           breadcrumbs={props.breadcrumbs}
           description={props.description}
           title={props.title}
         />
-      )}
-      <section className="min-h-0 flex-1 py-3" aria-live="polite">
+      ) : null}
+      <section className={props.embedded ? "min-h-0 flex-1 pb-3" : "min-h-0 flex-1 py-3"} aria-live="polite">
         {issuesQuery.isLoading ? (
           <div className="p-6 text-sm text-muted-foreground">Loading issues...</div>
         ) : issuesQuery.error ? (
