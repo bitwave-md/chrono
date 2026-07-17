@@ -48,11 +48,11 @@ export function EntityHeader({
 
   return (
     <header className="shrink-0">
-      <div className="flex h-14 min-w-0 items-center gap-1.5 border-b bg-sidebar/55 px-4">
+      <div className="flex h-14 min-w-0 items-center gap-1.5 border-b px-4">
         <SidebarTrigger className="mr-1 text-muted-foreground" />
         {breadcrumbs.map((item) => (
           <span className="contents" key={`${item.href}:${item.label}`}>
-            <Link className="flex min-w-0 shrink items-center gap-2 rounded-sm text-[15px] font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-[17px]" href={item.href}>
+            <Link className="flex min-w-0 shrink items-center gap-2 rounded-sm text-xs font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={item.href}>
               {item.icon}
               <span className="max-w-44 truncate">{item.label}</span>
             </Link>
@@ -60,7 +60,7 @@ export function EntityHeader({
           </span>
         ))}
         {icon}
-        <span className="min-w-0 truncate text-[15px] font-medium text-foreground md:text-[17px]">{title}</span>
+        <span className="min-w-0 truncate text-sm font-medium text-foreground">{title}</span>
         <Button
           aria-label={selected ? "Remove from favorites" : "Add to favorites"}
           className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
