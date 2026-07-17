@@ -6,20 +6,24 @@ import {
   issues,
   projectActivityEvents,
   projectAssignees,
+  projectBranches,
   projectMilestones,
   projectResources,
   projects,
   projectUpdates,
   users,
+  timerSessions,
   workflows,
   workflowStatuses,
   workspaceMemberships,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { ClientIcon, type ClientIconType } from "@/modules/clients/domain/client-icon";
 import type { ProjectPriority } from "@/modules/projects/application/project-service";
 import {
+  ConflictError,
   NotFoundError,
   ValidationError,
 } from "@/modules/shared/application/application-error";
@@ -51,6 +55,7 @@ export interface UpdateProjectInput {
 export class ProjectDetailService {
   readonly #clientAccess = new ClientAccessService();
   readonly #memberService = new WorkspaceMemberService();
+  readonly #policy = new WorkspacePolicy();
 
   async get(principal: Principal, projectId: string) {
     const project = await this.#project(principal, projectId);
@@ -198,6 +203,42 @@ export class ProjectDetailService {
     });
   }
 
+  async archive(principal: Principal, projectId: string) {
+    this.#policy.assertCanManageProjects(principal);
+    await this.#project(principal, projectId);
+    const [activeTimer] = await db
+      .select({ id: timerSessions.id })
+      .from(timerSessions)
+      .where(and(
+        eq(timerSessions.workspaceId, principal.workspaceId),
+        eq(timerSessions.projectId, projectId),
+        isNull(timerSessions.stoppedAt),
+      ))
+      .limit(1);
+    if (activeTimer) throw new ConflictError("Stop active timers for this Project before deleting it.");
+
+    return db.transaction(async (transaction) => {
+      const archivedAt = new Date();
+      await transaction.update(issues).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(issues.workspaceId, principal.workspaceId),
+        eq(issues.projectId, projectId),
+        isNull(issues.archivedAt),
+      ));
+      await transaction.update(projectBranches).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(projectBranches.workspaceId, principal.workspaceId),
+        eq(projectBranches.projectId, projectId),
+        isNull(projectBranches.archivedAt),
+      ));
+      const [archived] = await transaction.update(projects).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(projects.workspaceId, principal.workspaceId),
+        eq(projects.id, projectId),
+        isNull(projects.archivedAt),
+      )).returning({ id: projects.id });
+      if (!archived) throw new NotFoundError("Project not found.");
+      return archived;
+    });
+  }
+
   async publishUpdate(
     principal: Principal,
     projectId: string,
@@ -271,6 +312,9 @@ export class ProjectDetailService {
         workspaceId: projects.workspaceId,
         clientId: projects.clientId,
         clientName: clients.name,
+        clientIconType: clients.iconType,
+        clientIconKey: clients.iconKey,
+        clientIconColor: clients.iconColor,
         name: projects.name,
         slug: projects.slug,
         iconType: projects.iconType,

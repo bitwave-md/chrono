@@ -1,5 +1,24 @@
 # Chrono Roadmap
 
+## Entity header and deletion refinement
+
+Tracer bullet: navigate Client → Project → Issue through a compact Linear-like
+header, then archive an authorized entity from its trailing actions menu and
+return to the nearest valid parent without losing historical time data.
+
+- [x] Rebuild the shared header hierarchy with icons, chevrons, and stronger typography.
+- [x] Add authorized soft deletion for Clients, Projects, and Issues.
+- [x] Add reusable confirmation UI and TanStack cache invalidation.
+- [x] Reject deletion while an affected Issue timer is active.
+- [x] Verify descendant archival, redirects, favorites, builds, and Docker runtime.
+
+The entity header and deletion refinement was completed and runtime-verified on
+2026-07-18 against the supplied Linear header reference. Temporary fixtures
+confirmed Issue, Project-descendant, and Client-descendant archival plus active
+timer rejection. Authenticated HTTP tracers returned `200` for all three DELETE
+routes, cleanup removed every tracer fixture, and the 30-test suite, production
+build, and rebuilt Compose stack passed.
+
 ## Client time reports
 
 Tracer bullet: open a Client-level Time tab, review the current month by

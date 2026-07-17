@@ -8,6 +8,12 @@ export class WorkspacePolicy {
     }
   }
 
+  assertCanManageProjects(principal: Principal): void {
+    if (principal.role !== "owner" && principal.role !== "admin") {
+      throw new ForbiddenError("Only workspace owners and admins manage Projects.");
+    }
+  }
+
   assertCanContribute(principal: Principal): void {
     if (principal.role === "guest") {
       throw new ForbiddenError("Guest contribution requires client access.");

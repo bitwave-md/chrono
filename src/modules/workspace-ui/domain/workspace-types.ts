@@ -126,6 +126,9 @@ export interface IssueRecord {
   id: string;
   clientId: string;
   clientName: string;
+  clientIconType: "icon" | "emoji";
+  clientIconKey: string;
+  clientIconColor: string;
   identifier: string;
   title: string;
   description: string | null;
@@ -233,6 +236,9 @@ export interface ProjectDetailRecord {
   id: string;
   clientId: string;
   clientName: string;
+  clientIconType: "icon" | "emoji";
+  clientIconKey: string;
+  clientIconColor: string;
   name: string;
   slug: string;
   iconType: "icon" | "emoji";

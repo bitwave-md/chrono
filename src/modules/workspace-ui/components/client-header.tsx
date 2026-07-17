@@ -34,6 +34,7 @@ export function ClientHeader({
 
   return (
     <EntityHeader
+      allowDelete={client.canManage}
       favoriteTarget={favoriteFromClient(client)}
       icon={<ClientIcon className="size-6" client={client} iconClassName={client.iconType === "emoji" ? "text-xs" : "size-3.5"} />}
       title={client.name}

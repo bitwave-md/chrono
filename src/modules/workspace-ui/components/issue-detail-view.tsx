@@ -21,6 +21,7 @@ import { useIssueTimeLogsQuery } from "@/modules/workspace-ui/application/use-ti
 import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { IssueActivity } from "@/modules/workspace-ui/components/issue-activity";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
@@ -69,8 +70,13 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
   return (
     <>
       <EntityHeader
+        allowDelete={client?.canEdit ?? false}
         breadcrumbs={[
-          { label: issue.clientName, href: `/app/${workspaceSlug}/clients/${issue.clientId}/overview` },
+          {
+            label: issue.clientName,
+            href: `/app/${workspaceSlug}/clients/${issue.clientId}/overview`,
+            icon: <ClientIcon className="size-6" client={{ name: issue.clientName, iconType: issue.clientIconType, iconKey: issue.clientIconKey, iconColor: issue.clientIconColor }} iconClassName={issue.clientIconType === "emoji" ? "text-xs" : "size-3.5"} />,
+          },
           { label: "Issues", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
         ]}
         favoriteTarget={favoriteFromIssue(issue)}

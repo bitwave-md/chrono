@@ -110,6 +110,18 @@ Favorites are membership-scoped and reapply normal target visibility rules.
 The response includes current labels, context IDs, and entity icon metadata for
 sidebar rendering.
 
+## Entity deletion
+
+- `DELETE /api/workspaces/:workspaceSlug/clients/:clientId` archives the Client,
+  its Projects, Branches, and Issues. Owners and admins only.
+- `DELETE /api/workspaces/:workspaceSlug/projects/:projectId` archives the
+  Project, its Branches, and its Issues. Owners and admins only.
+- `DELETE /api/workspaces/:workspaceSlug/issues/:issueId` archives one Issue
+  for an authorized Client contributor.
+
+Deletion is soft: historical time logs remain queryable. Any active timer in
+the affected scope returns `409 conflict` until it is stopped.
+
 ## Time tracking
 
 - `GET|POST|DELETE /api/workspaces/:workspaceSlug/timers/active` reads, starts,

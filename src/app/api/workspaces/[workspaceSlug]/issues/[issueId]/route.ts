@@ -92,3 +92,21 @@ export async function GET(
     return ApiErrorResponse.from(error);
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: IssueRouteContext,
+): Promise<Response> {
+  try {
+    mutationOriginPolicy.assertTrusted(request);
+    const { workspaceSlug, issueId: issueIdInput } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const issue = await issueService.archive(
+      principal,
+      new EntityId(issueIdInput, "issueId").value,
+    );
+    return Response.json({ data: issue });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}

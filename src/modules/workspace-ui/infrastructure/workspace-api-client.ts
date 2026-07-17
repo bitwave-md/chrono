@@ -149,6 +149,10 @@ export class WorkspaceApiClient {
     });
   }
 
+  deleteClient(clientId: string): Promise<unknown> {
+    return this.#request(`/clients/${encodeURIComponent(clientId)}`, { method: "DELETE" });
+  }
+
   listClientResources(clientId: string): Promise<ClientResourceRecord[]> {
     return this.#get(`/clients/${encodeURIComponent(clientId)}/resources`);
   }
@@ -283,6 +287,10 @@ export class WorkspaceApiClient {
     });
   }
 
+  deleteIssue(issueId: string): Promise<unknown> {
+    return this.#request(`/issues/${encodeURIComponent(issueId)}`, { method: "DELETE" });
+  }
+
   getIssue(issueId: string): Promise<IssueRecord> {
     return this.#get(`/issues/${encodeURIComponent(issueId)}`);
   }
@@ -352,6 +360,10 @@ export class WorkspaceApiClient {
       method: "PATCH",
       body: JSON.stringify(input),
     });
+  }
+
+  deleteProject(projectId: string): Promise<unknown> {
+    return this.#request(`/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
   }
 
   projectActivity(projectId: string): Promise<ProjectActivityRecord> {

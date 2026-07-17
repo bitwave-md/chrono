@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { favoritePath } from "./favorite-target.ts";
+import { deletedEntityParentPath, favoritePath } from "./favorite-target.ts";
 import type { FavoriteRecord } from "./workspace-types.ts";
 
 const base: FavoriteRecord = {
@@ -31,4 +31,10 @@ test("favorite routes are canonical for each supported target", () => {
     favoritePath("bitwave", { ...base, targetType: "issue", targetId: "issue-id" }),
     "/app/bitwave/issues/issue-id",
   );
+});
+
+test("deleted entities return to their nearest surviving parent", () => {
+  assert.equal(deletedEntityParentPath("bitwave", base), "/app/bitwave/clients");
+  assert.equal(deletedEntityParentPath("bitwave", { ...base, targetType: "project", targetId: "project-id", projectId: "project-id" }), "/app/bitwave/clients/client-id/projects");
+  assert.equal(deletedEntityParentPath("bitwave", { ...base, targetType: "issue", targetId: "issue-id", projectId: "project-id" }), "/app/bitwave/projects/project-id/issues");
 });

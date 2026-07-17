@@ -163,6 +163,13 @@ Favorite target authorization is re-evaluated when listing and mutating; stale
 or inaccessible targets are not exposed. The conditional sidebar section is a
 projection of this TanStack-owned server state.
 
+Client, Project, and Issue deletion uses domain-owned soft-archive operations.
+Client and Project archival atomically archives active descendants while
+retaining immutable time attribution. Active timers are checked before the
+transaction and block deletion with a conflict. TanStack invalidates entity
+directories, Issue collections, and favorites before navigation returns to the
+nearest surviving parent route.
+
 Project and Issue properties are compact icon/value triggers. Each trigger
 opens an appropriate shadcn/Radix popover or command list only after activation.
 Every Issue list route uses one shared Linear-style row implementation grouped

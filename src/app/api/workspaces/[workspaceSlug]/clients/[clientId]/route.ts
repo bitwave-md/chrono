@@ -38,3 +38,18 @@ export async function PATCH(request: Request, context: ClientDetailRouteContext)
     return ApiErrorResponse.from(error);
   }
 }
+
+export async function DELETE(request: Request, context: ClientDetailRouteContext) {
+  try {
+    mutationOriginPolicy.assertTrusted(request);
+    const { workspaceSlug, clientId: value } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const client = await clientService.archive(
+      principal,
+      new EntityId(value, "clientId").value,
+    );
+    return Response.json({ data: client });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}

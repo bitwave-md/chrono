@@ -12,6 +12,7 @@ import {
   labels,
   projectBranches,
   projects,
+  timerSessions,
   users,
   workflowStatuses,
   workspaceMemberships,
@@ -151,6 +152,9 @@ export class IssueService {
         id: issues.id,
         clientId: issues.clientId,
         clientName: clients.name,
+        clientIconType: clients.iconType,
+        clientIconKey: clients.iconKey,
+        clientIconColor: clients.iconColor,
         identifier: sql<string>`${issueNamespaces.prefix} || '-' || ${issues.number}`.as("identifier"),
         title: issues.title,
         description: issues.description,
@@ -391,6 +395,34 @@ export class IssueService {
 
       return { issue: updated, identifier: `${namespace.prefix}-${updated.number}` };
     }, { isolationLevel: "serializable", accessMode: "read write" });
+  }
+
+  async archive(principal: Principal, issueId: string) {
+    const issue = await this.get(principal, issueId);
+    await this.#clientAccess.assertCanContribute(principal, issue.clientId);
+    const [activeTimer] = await db
+      .select({ id: timerSessions.id })
+      .from(timerSessions)
+      .where(and(
+        eq(timerSessions.workspaceId, principal.workspaceId),
+        eq(timerSessions.issueId, issueId),
+        isNull(timerSessions.stoppedAt),
+      ))
+      .limit(1);
+    if (activeTimer) throw new ConflictError("Stop the active timer before deleting this Issue.");
+
+    const archivedAt = new Date();
+    const [archived] = await db
+      .update(issues)
+      .set({ archivedAt, updatedAt: archivedAt, version: sql`${issues.version} + 1` })
+      .where(and(
+        eq(issues.workspaceId, principal.workspaceId),
+        eq(issues.id, issueId),
+        isNull(issues.archivedAt),
+      ))
+      .returning({ id: issues.id });
+    if (!archived) throw new NotFoundError("Issue not found.");
+    return archived;
   }
 
   async #attachAssignees<T extends { id: string }>(workspaceId: string, rows: T[]) {

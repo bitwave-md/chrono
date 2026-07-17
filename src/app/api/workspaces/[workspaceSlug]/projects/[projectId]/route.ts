@@ -63,3 +63,18 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
     return ApiErrorResponse.from(error);
   }
 }
+
+export async function DELETE(request: Request, context: ProjectRouteContext) {
+  try {
+    mutationOriginPolicy.assertTrusted(request);
+    const { workspaceSlug, projectId: value } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const project = await projectService.archive(
+      principal,
+      new EntityId(value, "projectId").value,
+    );
+    return Response.json({ data: project });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}

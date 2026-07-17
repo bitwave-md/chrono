@@ -41,9 +41,12 @@ searchable command list only when clicked. Assignees support zero, one, or many
 Workspace users and display overlapping avatars.
 
 Client, Project, and Issue pages use one shared entity header standard with
-clickable breadcrumbs, entity icon, title, favorite toggle, and actions menu.
-The menu copies the canonical link or opens it in a new tab. Project icons are
-editable from Project Overview using the shared icon/emoji picker.
+clickable icon-bearing breadcrumbs, chevrons, stronger inline typography,
+entity icon/title, favorite toggle, and trailing actions menu. The menu copies
+the canonical link, opens it in a new tab, or exposes authorized deletion.
+Deletion requires confirmation, preserves historical time entries, and returns
+to the nearest surviving Client/Project list. Project icons are editable from
+Project Overview using the shared icon/emoji picker.
 
 Client pages expose Overview, Issues, Projects, Time, and Members tabs. Time
 defaults to the current calendar month and offers previous-month, rolling

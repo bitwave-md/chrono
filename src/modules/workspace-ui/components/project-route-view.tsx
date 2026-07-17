@@ -24,6 +24,7 @@ import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspac
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { EntityIconPicker } from "@/modules/workspace-ui/components/client-icon-picker";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
@@ -34,6 +35,7 @@ import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace
 import { ProjectTabs, type ProjectTab } from "@/modules/workspace-ui/components/project-tabs";
 import { favoriteFromProject } from "@/modules/workspace-ui/domain/favorite-target";
 import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 const visibilityOptions = [
   { value: "internal", label: "Internal", color: "#94a3b8" },
@@ -47,6 +49,7 @@ const healthOptions = [
 ];
 
 export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceSlug: string; projectId: string; tab: ProjectTab }) {
+  const workspace = useWorkspaceIdentity();
   const projectQuery = useProjectQuery(workspaceSlug, projectId);
   const project = projectQuery.data;
   if (projectQuery.isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading project...</div>;
@@ -55,8 +58,13 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
   return (
     <>
       <EntityHeader
+        allowDelete={workspace.role === "owner" || workspace.role === "admin"}
         breadcrumbs={[
-          { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/overview` },
+          {
+            label: project.clientName,
+            href: `/app/${workspaceSlug}/clients/${project.clientId}/overview`,
+            icon: <ClientIcon className="size-6" client={{ name: project.clientName, iconType: project.clientIconType, iconKey: project.clientIconKey, iconColor: project.clientIconColor }} iconClassName={project.clientIconType === "emoji" ? "text-xs" : "size-3.5"} />,
+          },
           { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
         ]}
         favoriteTarget={favoriteFromProject(project)}

@@ -6,6 +6,10 @@ import {
   clientMemberships,
   clients,
   issueNamespaces,
+  issues,
+  projectBranches,
+  projects,
+  timerSessions,
   workflows,
   workflowStatuses,
 } from "@/db/schema";
@@ -18,6 +22,7 @@ import { DefaultWorkflowTemplate } from "@/modules/projects/domain/default-workf
 import { IssuePrefix } from "@/modules/projects/domain/issue-prefix";
 import {
   ConflictError,
+  NotFoundError,
   ValidationError,
 } from "@/modules/shared/application/application-error";
 
@@ -258,5 +263,55 @@ export class ClientService {
       .returning();
 
     return client;
+  }
+
+  async archive(principal: Principal, clientId: string) {
+    this.#policy.assertCanManageClients(principal);
+    const [client] = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(
+        eq(clients.id, clientId),
+        eq(clients.workspaceId, principal.workspaceId),
+        isNull(clients.archivedAt),
+      ))
+      .limit(1);
+    if (!client) throw new NotFoundError("Client not found.");
+
+    const [activeTimer] = await db
+      .select({ id: timerSessions.id })
+      .from(timerSessions)
+      .where(and(
+        eq(timerSessions.workspaceId, principal.workspaceId),
+        eq(timerSessions.clientId, clientId),
+        isNull(timerSessions.stoppedAt),
+      ))
+      .limit(1);
+    if (activeTimer) throw new ConflictError("Stop active timers for this Client before deleting it.");
+
+    return db.transaction(async (transaction) => {
+      const archivedAt = new Date();
+      await transaction.update(issues).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(issues.workspaceId, principal.workspaceId),
+        eq(issues.clientId, clientId),
+        isNull(issues.archivedAt),
+      ));
+      await transaction.update(projectBranches).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(projectBranches.workspaceId, principal.workspaceId),
+        eq(projectBranches.clientId, clientId),
+        isNull(projectBranches.archivedAt),
+      ));
+      await transaction.update(projects).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(projects.workspaceId, principal.workspaceId),
+        eq(projects.clientId, clientId),
+        isNull(projects.archivedAt),
+      ));
+      const [archived] = await transaction.update(clients).set({ archivedAt, updatedAt: archivedAt }).where(and(
+        eq(clients.workspaceId, principal.workspaceId),
+        eq(clients.id, clientId),
+        isNull(clients.archivedAt),
+      )).returning({ id: clients.id });
+      return archived;
+    });
   }
 }

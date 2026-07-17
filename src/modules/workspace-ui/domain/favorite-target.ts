@@ -62,3 +62,17 @@ export function favoritePath(workspaceSlug: string, favorite: FavoriteRecord): s
     ? `${root}/projects/${encodeURIComponent(favorite.projectId)}/issues/${encodeURIComponent(favorite.targetId)}`
     : `${root}/issues/${encodeURIComponent(favorite.targetId)}`;
 }
+
+export function deletedEntityParentPath(
+  workspaceSlug: string,
+  target: FavoriteRecord,
+): string {
+  const root = `/app/${encodeURIComponent(workspaceSlug)}`;
+  if (target.targetType === "client") return `${root}/clients`;
+  if (target.targetType === "project") {
+    return `${root}/clients/${encodeURIComponent(target.clientId)}/projects`;
+  }
+  return target.projectId
+    ? `${root}/projects/${encodeURIComponent(target.projectId)}/issues`
+    : `${root}/clients/${encodeURIComponent(target.clientId)}/issues`;
+}
