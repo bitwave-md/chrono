@@ -13,6 +13,26 @@ at `http://localhost:8025`. Mailpit SMTP is published at
 `127.0.0.1:1025` for a host-run Next.js process, while the Docker application
 uses the internal `mailpit:1025` service address.
 
+## Demo workspace data
+
+After the bootstrap owner has signed in at least once, populate the configured
+Workspace with a representative agency portfolio:
+
+```sh
+npm run db:seed:demo
+```
+
+Pass a Workspace slug as the first argument when it differs from
+`AUTH_BOOTSTRAP_WORKSPACE_SLUG`:
+
+```sh
+npm run db:seed:demo -- another-workspace
+```
+
+The command is additive and idempotent. It detects fixtures by stable Client
+key, Project slug, Branch slug, and Project-scoped Issue title, and does not
+delete or overwrite existing records.
+
 ## Backup
 
 Create a PostgreSQL custom-format backup outside the Docker volume:

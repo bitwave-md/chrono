@@ -340,3 +340,24 @@ and removed the deprecated grouping and report dimensions. Authenticated Chrome
 tracers verified the exact approved sidebar hierarchy, Workspace switcher,
 Client submenus, Project tabs, property popovers, grouped Issues, full Issue
 detail, and mobile drawer against the rebuilt Compose stack.
+
+## Demo workspace fixtures
+
+Tracer bullet: seed a realistic agency portfolio through the existing Client,
+Project, Branch, and Issue application services without replacing or deleting
+any current workspace data.
+
+- [x] Add an idempotent demo fixture catalog with varied Clients and Projects.
+- [x] Populate Project workflows with Main and Branch Issues across statuses.
+- [x] Include Project priority, lead, target date, health, and assignment data.
+- [x] Add a reusable `db:seed:demo` command with Workspace selection.
+- [x] Replay the command twice and verify database counts and application health.
+
+The fixture command only creates entities missing by stable Client key, Project
+slug, Branch slug, or Project-scoped Issue title. Existing records and user
+changes are left intact.
+
+Runtime verification on 2026-07-17 created three Clients, seven Projects,
+eight Branches, and forty Issues on the first replay. The second replay created
+zero records. Together with the existing DaCredit fixtures, the demo Workspace
+contains four Clients, eight Projects, eight Branches, and forty-two Issues.
