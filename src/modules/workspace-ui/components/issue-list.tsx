@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight, CircleDashed, Clock3, Plus } from "lucide-react";
+import { Box, ChevronRight, CircleDashed, Clock3, Plus } from "lucide-react";
+import Link from "next/link";
 import { type KeyboardEvent, useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useReplaceIssueListLabelsMutation, useIssueMetadataQuery } from "@/modules/workspace-ui/application/use-issue-metadata-queries";
 import { useUpdateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
-import { useMembersQuery, useProjectsQuery, useWorkflowStatusMapsQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusMapsQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import {
   IssueAssigneesTrigger,
   IssueLabelsTrigger,
@@ -35,6 +36,7 @@ interface IssueListProps {
 
 export function IssueList(props: IssueListProps) {
   const membersQuery = useMembersQuery(props.workspaceSlug);
+  const clientsQuery = useClientsQuery(props.workspaceSlug);
   const projectsQuery = useProjectsQuery(props.workspaceSlug, props.clientId);
   const metadataQuery = useIssueMetadataQuery(props.workspaceSlug);
   const updateIssue = useUpdateIssueMutation(
@@ -49,10 +51,13 @@ export function IssueList(props: IssueListProps) {
   );
   const projects = projectsQuery.data ?? [];
   const projectById = new Map(projects.map((project) => [project.id, project]));
+  const clientById = new Map((clientsQuery.data ?? []).map((client) => [client.id, client]));
   const workflowStatuses = useWorkflowStatusMapsQuery(
     props.workspaceSlug,
     props.issues.flatMap((issue) => {
-      const workflowId = issue.projectId ? projectById.get(issue.projectId)?.workflowId : null;
+      const workflowId = issue.projectId
+        ? projectById.get(issue.projectId)?.workflowId
+        : clientById.get(issue.clientId)?.workflowId;
       return workflowId ? [workflowId] : [];
     }),
   );
@@ -98,7 +103,12 @@ export function IssueList(props: IssueListProps) {
                 key={issue.id}
                 labelOptions={metadataQuery.data?.labels ?? []}
                 members={membersQuery.data ?? []}
-                statuses={project ? workflowStatuses.get(project.workflowId) ?? [] : []}
+                project={project}
+                showProject={Boolean(props.clientId && !props.filters.projectId)}
+                statuses={workflowStatuses.get(
+                  project?.workflowId ?? clientById.get(issue.clientId)?.workflowId ?? "",
+                ) ?? []}
+                workspaceSlug={props.workspaceSlug}
                 onAssigneesChange={(assignees) => updateIssue.mutate({
                   issueId: issue.id,
                   expectedVersion: issue.version,
@@ -210,6 +220,9 @@ interface IssueRowProps {
   members: Parameters<typeof IssueAssigneesTrigger>[0]["members"];
   focused: boolean;
   disabled: boolean;
+  project: { id: string; name: string } | null | undefined;
+  showProject: boolean;
+  workspaceSlug: string;
   onFocus: () => void;
   onOpen: () => void;
   onPriorityChange: Parameters<typeof IssuePriorityTrigger>[0]["onChange"];
@@ -230,7 +243,7 @@ function IssueRow(props: IssueRowProps) {
   return (
     <div
       className={cn(
-        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_76px_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center gap-1 px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_64px_28px_minmax(0,1fr)_32px] max-md:px-3",
+        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_max-content_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_max-content_28px_minmax(0,1fr)_32px] max-md:px-3",
       )}
       role="link"
       tabIndex={0}
@@ -240,7 +253,7 @@ function IssueRow(props: IssueRowProps) {
       onMouseEnter={props.onFocus}
     >
       <IssuePriorityTrigger disabled={props.disabled} value={props.issue.priority} onChange={props.onPriorityChange} />
-      <span className="truncate font-mono text-xs text-muted-foreground">{props.issue.identifier}</span>
+      <span className="truncate pr-0.5 font-mono text-xs text-muted-foreground">{props.issue.identifier}</span>
       <IssueStatusTrigger
         disabled={props.disabled}
         issue={props.issue}
@@ -248,13 +261,25 @@ function IssueRow(props: IssueRowProps) {
         onChange={props.onStatusChange}
       />
       <span className="min-w-0 truncate font-medium">{props.issue.title}</span>
-      <span className="min-w-0 justify-self-end max-md:hidden">
+      <span className="flex min-w-0 items-center justify-self-end gap-1 max-md:hidden">
         <IssueLabelsTrigger
           disabled={props.disabled}
           options={props.labelOptions}
           value={props.issue.labels}
           onChange={props.onLabelsChange}
         />
+        {props.showProject && props.project ? (
+          <Link
+            className="flex h-7 max-w-40 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            href={`/app/${props.workspaceSlug}/projects/${props.project.id}/issues`}
+            title={`Open ${props.project.name} Issues`}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <Box className="size-3.5 shrink-0" />
+            <span className="truncate">{props.project.name}</span>
+          </Link>
+        ) : null}
       </span>
       <IssueAssigneesTrigger
         disabled={props.disabled}

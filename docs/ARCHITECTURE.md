@@ -19,6 +19,7 @@ Workspace
 └── Clients
     ├── Icon or emoji identity
     ├── Default issue namespace
+    ├── Default workflow
     ├── Explicit Client roster
     ├── Pinned resources
     └── Projects
@@ -36,8 +37,9 @@ Workspace
 ```
 
 An Issue always belongs to a Workspace and Client. Its Project is nullable, so
-unprojected Issues live in the Client backlog. Project Issues live on virtual
-Main when `branchId` is null or on one named Project Branch. User responsibility is modeled
+direct Client Issues use the Client workflow without requiring a Project.
+Project Issues live on virtual Main when `branchId` is null or on one named
+Project Branch. User responsibility is modeled
 through `issue_assignees` and `project_assignees`, allowing zero, one, or many
 active Workspace members without duplicating columns on the work item.
 
@@ -53,9 +55,10 @@ Workspace-level issue prefixes are prohibited. Every Client owns one default
 when present and otherwise fall back to the Client namespace. The allocated
 namespace and number remain stable when an Issue moves.
 
-Workflows are owned only by Projects, and every Project owns exactly one. A
-Project Issue must use a status from that Project's workflow. A Client-backlog Issue has
-`statusId = null` and is presented as Backlog in the UI.
+Every Client owns one default workflow and every Project owns one workflow under
+that Client. A direct Client Issue must use a status from the Client workflow;
+a Project Issue must use a status from its Project workflow. Backlog is a real,
+switchable workflow status rather than a null-state presentation fallback.
 
 Branches are one-level Project workstreams, not nested Projects or version-control
 forks. Feature, sprint, refactor, release, and other Branches share their
@@ -132,7 +135,9 @@ opens an appropriate shadcn/Radix popover or command list only after activation.
 Every Issue list route uses one shared Linear-style row implementation grouped
 by non-empty workflow status. Priority, status, labels, and assignees mutate
 inline with optimistic TanStack Query updates; aggregate views resolve status
-options through deduplicated queries for each represented Project workflow.
+options through deduplicated queries for each represented Client or Project workflow.
+Aggregate Client lists show a compact Project navigation chip only for Issues
+that belong to a Project.
 Project directory rows expose the same inline model for priority, lead, target
 date, and Project state while preserving row-level keyboard navigation.
 The workspace and Client Project directories use one flat Linear-style table

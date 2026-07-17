@@ -233,7 +233,8 @@ export const workflows = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     workspaceId: uuid("workspace_id").notNull(),
-    projectId: uuid("project_id").notNull(),
+    clientId: uuid("client_id").notNull(),
+    projectId: uuid("project_id"),
     name: text("name").notNull(),
     createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
       .defaultNow()
@@ -244,11 +245,21 @@ export const workflows = pgTable(
   },
   (table) => [
     foreignKey({
-      name: "workflows_project_tenant_fk",
-      columns: [table.workspaceId, table.projectId],
-      foreignColumns: [projects.workspaceId, projects.id],
+      name: "workflows_client_tenant_fk",
+      columns: [table.workspaceId, table.clientId],
+      foreignColumns: [clients.workspaceId, clients.id],
     }).onDelete("cascade"),
-    uniqueIndex("workflows_project_unique").on(table.projectId),
+    foreignKey({
+      name: "workflows_project_tenant_client_fk",
+      columns: [table.workspaceId, table.clientId, table.projectId],
+      foreignColumns: [projects.workspaceId, projects.clientId, projects.id],
+    }).onDelete("cascade"),
+    uniqueIndex("workflows_client_default_unique")
+      .on(table.clientId)
+      .where(sql`${table.projectId} is null`),
+    uniqueIndex("workflows_project_unique")
+      .on(table.projectId)
+      .where(sql`${table.projectId} is not null`),
     uniqueIndex("workflows_workspace_id_unique").on(table.workspaceId, table.id),
   ],
 );

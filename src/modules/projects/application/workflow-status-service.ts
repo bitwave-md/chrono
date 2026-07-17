@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { projects, workflows, workflowStatuses } from "@/db/schema";
+import { clients, workflows, workflowStatuses } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { NotFoundError } from "@/modules/shared/application/application-error";
@@ -11,20 +11,20 @@ export class WorkflowStatusService {
 
   async list(principal: Principal, workflowId: string) {
     const [workflow] = await db
-      .select({ clientId: projects.clientId })
+      .select({ clientId: workflows.clientId })
       .from(workflows)
       .innerJoin(
-        projects,
+        clients,
         and(
-          eq(projects.id, workflows.projectId),
-          eq(projects.workspaceId, workflows.workspaceId),
+          eq(clients.id, workflows.clientId),
+          eq(clients.workspaceId, workflows.workspaceId),
         ),
       )
       .where(
         and(
           eq(workflows.id, workflowId),
           eq(workflows.workspaceId, principal.workspaceId),
-          isNull(projects.archivedAt),
+          isNull(clients.archivedAt),
         ),
       )
       .limit(1);

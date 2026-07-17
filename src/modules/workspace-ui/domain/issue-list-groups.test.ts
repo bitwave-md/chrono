@@ -20,15 +20,16 @@ test("Issue list groups follow workflow order and omit empty statuses", () => {
   assert.equal(groups.some((group) => group.name === "Canceled"), false);
 });
 
-test("aggregate Issue lists merge same-named statuses across Projects", () => {
+test("aggregate Issue lists merge same-named statuses across workflows", () => {
   const projectStatuses = new Map<string, WorkflowStatusRecord>([
+    ["client-backlog", { id: "client-backlog", name: "Backlog", slug: "backlog", category: "backlog", color: "#777", position: 0, isDefault: true }],
     ["project-a-done", { ...statuses[1], id: "project-a-done" }],
     ["project-b-done", { ...statuses[1], id: "project-b-done" }],
   ]);
   const groups = buildIssueGroups([
     issue("one", "project-a-done", "Done"),
     issue("two", "project-b-done", "Done"),
-    issue("three", null, null),
+    issue("three", "client-backlog", "Backlog"),
   ], [], projectStatuses);
 
   assert.deepEqual(groups.map((group) => [group.name, group.issues.length]), [

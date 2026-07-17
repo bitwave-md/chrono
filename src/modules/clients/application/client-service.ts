@@ -6,12 +6,15 @@ import {
   clientMemberships,
   clients,
   issueNamespaces,
+  workflows,
+  workflowStatuses,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { ClientKey } from "@/modules/clients/domain/client-key";
 import { ClientIcon, type ClientIconType } from "@/modules/clients/domain/client-icon";
+import { DefaultWorkflowTemplate } from "@/modules/projects/domain/default-workflow-template";
 import { IssuePrefix } from "@/modules/projects/domain/issue-prefix";
 import {
   ConflictError,
@@ -39,6 +42,7 @@ export interface UpdateClientInput {
 export class ClientService {
   readonly #access = new ClientAccessService();
   readonly #policy = new WorkspacePolicy();
+  readonly #workflowTemplate = new DefaultWorkflowTemplate();
 
   async list(principal: Principal) {
     const selection = {
@@ -50,6 +54,7 @@ export class ClientService {
       iconKey: clients.iconKey,
       iconColor: clients.iconColor,
       issuePrefix: issueNamespaces.prefix,
+      workflowId: workflows.id,
       permission: clientMemberships.permission,
     };
     let records;
@@ -64,6 +69,13 @@ export class ClientService {
           and(
             eq(issueNamespaces.clientId, clients.id),
             isNull(issueNamespaces.projectId),
+          ),
+        )
+        .innerJoin(
+          workflows,
+          and(
+            eq(workflows.clientId, clients.id),
+            isNull(workflows.projectId),
           ),
         )
         .where(
@@ -86,6 +98,13 @@ export class ClientService {
           and(
             eq(issueNamespaces.clientId, clients.id),
             isNull(issueNamespaces.projectId),
+          ),
+        )
+        .innerJoin(
+          workflows,
+          and(
+            eq(workflows.clientId, clients.id),
+            isNull(workflows.projectId),
           ),
         )
         .leftJoin(
@@ -158,6 +177,23 @@ export class ClientService {
             prefix: issueNamespaces.prefix,
           });
 
+        const [workflow] = await transaction
+          .insert(workflows)
+          .values({
+            workspaceId: principal.workspaceId,
+            clientId: client.id,
+            name: this.#workflowTemplate.name,
+          })
+          .returning({ id: workflows.id });
+
+        await transaction.insert(workflowStatuses).values(
+          this.#workflowTemplate.statuses().map((status) => ({
+            workspaceId: principal.workspaceId,
+            workflowId: workflow.id,
+            ...status,
+          })),
+        );
+
         await transaction.insert(clientMemberships).values({
           workspaceId: principal.workspaceId,
           clientId: client.id,
@@ -168,6 +204,7 @@ export class ClientService {
         return {
           ...client,
           issuePrefix: namespace.prefix,
+          workflowId: workflow.id,
           permission: "contribute" as const,
           canEdit: true,
           canManage: true,

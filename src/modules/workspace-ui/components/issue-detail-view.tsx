@@ -24,7 +24,7 @@ import { useIssueMetadataQuery, useReplaceIssueLabelsMutation } from "@/modules/
 import { useIssueQuery, useUpdateIssueDetailMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
 import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useStopTimerMutation } from "@/modules/workspace-ui/application/use-timer-query";
-import { useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
@@ -45,11 +45,16 @@ export function IssueDetailView({ workspaceSlug, issueId }: { workspaceSlug: str
 function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; workspaceSlug: string }) {
   const update = useUpdateIssueDetailMutation(workspaceSlug, issue.id);
   const membersQuery = useMembersQuery(workspaceSlug);
+  const clientsQuery = useClientsQuery(workspaceSlug);
   const projectsQuery = useProjectsQuery(workspaceSlug, issue.clientId);
   const projects = projectsQuery.data ?? [];
   const project = projects.find((item) => item.id === issue.projectId);
+  const client = clientsQuery.data?.find((item) => item.id === issue.clientId);
   const branchesQuery = useProjectBranchesQuery(workspaceSlug, issue.projectId);
-  const statusesQuery = useWorkflowStatusesQuery(workspaceSlug, project?.workflowId ?? null);
+  const statusesQuery = useWorkflowStatusesQuery(
+    workspaceSlug,
+    project?.workflowId ?? client?.workflowId ?? null,
+  );
   const metadataQuery = useIssueMetadataQuery(workspaceSlug);
   const labelsMutation = useReplaceIssueLabelsMutation(workspaceSlug, issue.id);
   const commentsQuery = useIssueCommentsQuery(workspaceSlug, issue.id);
@@ -123,7 +128,7 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
 
           <aside className="min-w-0 self-start max-lg:border-t max-lg:pt-8 lg:sticky lg:top-6">
             <PropertySection title="Properties">
-              <IssueStatusProperty statuses={statusesQuery.data ?? []} statusColor={issue.statusColor} statusId={issue.statusId} statusName={issue.statusName} disabled={!issue.projectId} onChange={(status) => patch({ statusId: status.id }, { statusId: status.id, statusName: status.name, statusColor: status.color })} />
+              <IssueStatusProperty statuses={statusesQuery.data ?? []} statusColor={issue.statusColor} statusId={issue.statusId} statusName={issue.statusName} disabled={!statusesQuery.data?.length} onChange={(status) => patch({ statusId: status.id }, { statusId: status.id, statusName: status.name, statusColor: status.color })} />
               <IssuePriorityProperty value={issue.priority} onChange={(priority) => patch({ priority }, { priority })} />
               <AssigneeProperty members={membersQuery.data ?? []} value={issue.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
             </PropertySection>
@@ -133,7 +138,7 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
             </PropertySection>
 
             <PropertySection title="Project">
-              <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={issue.projectId} onChange={(projectId) => patch({ projectId }, { projectId, projectName: projects.find((item) => item.id === projectId)?.name ?? null, branchId: null, branchName: null, ...(projectId ? {} : { statusId: null, statusName: null, statusColor: null }) })} />
+              <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="No project" value={issue.projectId} onChange={(projectId) => patch({ projectId }, { projectId, projectName: projects.find((item) => item.id === projectId)?.name ?? null, branchId: null, branchName: null })} />
               {issue.projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={(branchesQuery.data ?? []).map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={issue.branchId} onChange={(branchId) => patch({ branchId }, { branchId, branchName: branchesQuery.data?.find((item) => item.id === branchId)?.name ?? null })} /> : null}
             </PropertySection>
 

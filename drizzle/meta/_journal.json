@@ -57,6 +57,13 @@
       "when": 1784233600770,
       "tag": "0007_giant_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784299801367,
+      "tag": "0008_wakeful_the_fury",
+      "breakpoints": true
     }
   ]
 }

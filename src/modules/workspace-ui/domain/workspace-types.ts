@@ -17,6 +17,7 @@ export interface ClientRecord {
   iconKey: string;
   iconColor: string;
   issuePrefix: string;
+  workflowId: string;
   permission: "view" | "comment" | "contribute" | null;
   canEdit: boolean;
   canManage: boolean;

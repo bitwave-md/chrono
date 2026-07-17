@@ -45,17 +45,7 @@ export class IssueContextResolver {
     transaction: DatabaseTransaction,
     workflowId: string,
     requestedStatusId: string | null,
-  ): Promise<string | null> {
-    if (!workflowId) {
-      if (requestedStatusId) {
-        throw new ValidationError(
-          "Client-backlog issues cannot have a workflow status.",
-        );
-      }
-
-      return null;
-    }
-
+  ): Promise<string> {
     const [status] = await transaction
       .select({ id: workflowStatuses.id })
       .from(workflowStatuses)
@@ -73,8 +63,8 @@ export class IssueContextResolver {
     if (!status) {
       throw new ValidationError(
         requestedStatusId
-          ? "The status does not belong to the project's workflow."
-          : "The project's workflow has no default status.",
+          ? "The status does not belong to this Issue's workflow."
+          : "The Issue workflow has no default status.",
       );
     }
 
@@ -161,25 +151,41 @@ export class IssueContextResolver {
     principal: Principal,
     clientId: string,
   ): Promise<ResolvedIssueContext> {
-    const [namespace] = await transaction
-      .select({
-        namespace_id: issueNamespaces.id,
-        prefix: issueNamespaces.prefix,
-      })
-      .from(issueNamespaces)
-      .where(
-        and(
-          eq(issueNamespaces.workspaceId, principal.workspaceId),
-          eq(issueNamespaces.clientId, clientId),
-          isNull(issueNamespaces.projectId),
-        ),
-      )
-      .limit(1);
+    const [namespaceRows, workflowRows] = await Promise.all([
+      transaction
+        .select({
+          namespace_id: issueNamespaces.id,
+          prefix: issueNamespaces.prefix,
+        })
+        .from(issueNamespaces)
+        .where(
+          and(
+            eq(issueNamespaces.workspaceId, principal.workspaceId),
+            eq(issueNamespaces.clientId, clientId),
+            isNull(issueNamespaces.projectId),
+          ),
+        )
+        .limit(1),
+      transaction
+        .select({ workflow_id: workflows.id })
+        .from(workflows)
+        .where(
+          and(
+            eq(workflows.workspaceId, principal.workspaceId),
+            eq(workflows.clientId, clientId),
+            isNull(workflows.projectId),
+          ),
+        )
+        .limit(1),
+    ]);
 
-    if (!namespace) {
-      throw new ConflictError("The client has no default issue namespace.");
+    const namespace = namespaceRows[0];
+    const workflow = workflowRows[0];
+
+    if (!namespace || !workflow) {
+      throw new ConflictError("The Client has no default Issue namespace or workflow.");
     }
 
-    return { ...namespace, workflow_id: "" };
+    return { ...namespace, workflow_id: workflow.workflow_id };
   }
 }

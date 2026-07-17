@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useCreateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
-import { useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { useClientsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
@@ -43,9 +43,14 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
   const [createMore, setCreateMore] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const project = props.projects.find((candidate) => candidate.id === projectId);
+  const clientsQuery = useClientsQuery(props.workspaceSlug);
+  const client = clientsQuery.data?.find((candidate) => candidate.id === props.clientId);
   const branchOptions = projectId === props.selectedProjectId ? props.branches : [];
   const branch = branchOptions.find((candidate) => candidate.id === branchId);
-  const statusesQuery = useWorkflowStatusesQuery(props.workspaceSlug, project?.workflowId ?? null);
+  const statusesQuery = useWorkflowStatusesQuery(
+    props.workspaceSlug,
+    project?.workflowId ?? client?.workflowId ?? null,
+  );
   const mutation = useCreateIssueMutation(props.workspaceSlug, props.clientId, props.filters);
   const statuses = statusesQuery.data ?? [];
   const defaultStatus = statuses.find((status) => status.isDefault);
@@ -79,9 +84,9 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
       visibility: "internal",
       projectName: project?.name ?? null,
       branchName: branch?.name ?? null,
-      statusId: projectId ? selectedStatusId : null,
-      statusName: projectId ? selectedStatus?.name ?? defaultStatus?.name ?? "Backlog" : null,
-      statusColor: projectId ? selectedStatus?.color ?? defaultStatus?.color ?? null : null,
+      statusId: selectedStatusId,
+      statusName: selectedStatus?.name ?? defaultStatus?.name ?? "Backlog",
+      statusColor: selectedStatus?.color ?? defaultStatus?.color ?? null,
     }, {
       onSuccess: () => {
         if (createMore) {
@@ -108,7 +113,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
           <div className="flex min-w-0 items-center gap-2">
             <span className="flex h-8 max-w-56 items-center gap-2 rounded-full border bg-secondary/45 px-3 text-sm text-muted-foreground">
               <FolderKanban className="size-4 shrink-0" />
-              <span className="truncate">{project?.name ?? "Client backlog"}</span>
+              <span className="truncate">{project?.name ?? client?.name ?? "No project"}</span>
             </span>
             <ChevronRight className="size-4 text-muted-foreground" />
             <DialogTitle className="truncate text-base font-medium">New issue</DialogTitle>
@@ -133,10 +138,10 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
             <Textarea className="mt-5 min-h-40 resize-none border-0 bg-transparent px-0 text-base leading-7 shadow-none placeholder:text-muted-foreground/45 focus-visible:ring-0" maxLength={20_000} placeholder="Add description..." value={description} onChange={(event) => setDescription(event.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-2 px-6 pb-5 max-md:px-5 [&_[data-slot=button]]:rounded-full [&_[data-slot=button]]:border [&_[data-slot=button]]:border-border [&_[data-slot=button]]:bg-secondary/45 [&_[data-slot=button]]:px-3 [&_[data-slot=button]]:text-sm [&_[data-slot=button]]:hover:bg-secondary/75">
-            {projectId ? <IssueStatusProperty statuses={statuses} statusColor={selectedStatus?.color ?? defaultStatus?.color ?? null} statusId={selectedStatusId} statusName={selectedStatus?.name ?? defaultStatus?.name ?? "Backlog"} onChange={(status) => setStatusId(status.id)} /> : null}
+            <IssueStatusProperty statuses={statuses} statusColor={selectedStatus?.color ?? defaultStatus?.color ?? null} statusId={selectedStatusId} statusName={selectedStatus?.name ?? defaultStatus?.name ?? "Backlog"} disabled={!statuses.length} onChange={(status) => setStatusId(status.id)} />
             <IssuePriorityProperty value={priority} onChange={setPriority} />
             <AssigneeProperty members={props.members} value={assignees} onChange={setAssignees} />
-            <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="Client backlog" value={projectId} onChange={(value) => { setProjectId(value); setBranchId(null); setStatusId(undefined); }} />
+            <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="No project" value={projectId} onChange={(value) => { setProjectId(value); setBranchId(null); setStatusId(undefined); }} />
             {projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={branchOptions.map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={branchId} onChange={setBranchId} /> : null}
           </div>
           {mutation.error ? <p className="px-6 pb-2 text-xs leading-5 text-destructive">{mutation.error.message}</p> : null}

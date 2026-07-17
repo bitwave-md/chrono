@@ -87,17 +87,17 @@ Create example:
 }
 ```
 
-A Project Issue receives its Project workflow default when `statusId` is
-omitted. A Client-backlog Issue uses `projectId: null` and has no persisted
-workflow status. Moving between workflows maps status by category. Moving to
-the Client backlog clears status and Branch. Moving to another Project clears
-Branch unless a valid destination `branchId` is supplied. A stale version
-returns `409 conflict`.
+An Issue receives the selected Project workflow default, or the Client workflow
+default when `projectId` is null, if `statusId` is omitted. Every Issue persists
+a workflow status. Moving between Client and Project workflows maps status by
+category and clears an incompatible Branch. Moving to another Project also
+clears Branch unless a valid destination `branchId` is supplied. A stale
+version returns `409 conflict`.
 
 ## Workflow statuses
 
 `GET /api/workspaces/:workspaceSlug/workflows/:workflowId/statuses` returns
-active statuses ordered by position for an accessible Project workflow.
+active statuses ordered by position for an accessible Client or Project workflow.
 
 ## Time tracking
 

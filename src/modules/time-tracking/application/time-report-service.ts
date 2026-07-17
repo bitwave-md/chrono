@@ -59,7 +59,7 @@ const reportDimensions: Record<TimeReportGroup, ReportDimension> = {
   project: {
     id: sql.raw("logs.project_id"),
     label: sql.raw("project_dimension.name"),
-    fallback: "Client backlog",
+    fallback: "No project",
   },
   branch: {
     id: sql.raw("logs.branch_id"),

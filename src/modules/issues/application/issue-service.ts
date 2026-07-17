@@ -338,11 +338,7 @@ export class IssueService {
           projectId,
         );
 
-        if (!context.workflow_id) {
-          if (input.statusId) throw new ValidationError("Client-backlog issues cannot have a workflow status.");
-          statusId = null;
-        } else if (input.statusId !== undefined) {
-          if (!input.statusId) throw new ValidationError("Project issues require a workflow status.");
+        if (input.statusId !== undefined) {
           statusId = await this.#contextResolver.resolveStatus(
             transaction,
             context.workflow_id,

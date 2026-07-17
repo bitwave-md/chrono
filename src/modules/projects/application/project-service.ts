@@ -255,6 +255,7 @@ export class ProjectService {
             .insert(workflows)
             .values({
               workspaceId: principal.workspaceId,
+              clientId: input.clientId,
               projectId: project.id,
               name: this.#workflowTemplate.name,
             })

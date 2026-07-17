@@ -161,13 +161,13 @@ tenant-protected workspace page.
 - [x] Add Client and ClientMembership.
 - [x] Add flat Client-owned Projects.
 - [x] Add Client-owned and Project-owned IssueNamespace records.
-- [x] Add Project-owned workflows and workflow statuses.
-- [x] Give every Project an independent workflow.
+- [x] Add Client-owned and Project-owned workflows and workflow statuses.
+- [x] Give every Client and Project an independent workflow.
 - [x] Add tenant-safe Project access policies.
 
 Phase 2 runtime verification completed on 2026-07-15. The authenticated tracer
 created DaCredit and multiple Projects. It verified Client and Project issue
-namespaces, Project-owned workflows, default workflow statuses,
+namespaces, Client-owned and Project-owned workflows, default workflow statuses,
 mutation-origin protection, and duplicate-key conflicts.
 
 ## Phase 3: Flexible issue engine
@@ -175,14 +175,14 @@ mutation-origin protection, and duplicate-key conflicts.
 - [x] Add Issue with required Workspace and Client relations.
 - [x] Keep Project and assignee relations nullable and independent.
 - [x] Allocate stable issue keys from the effective Client or Project namespace.
-- [x] Require workflow status only when a Project is assigned.
+- [x] Require a workflow status for every Issue.
 - [x] Add workspace-scoped Client issue lists with Project and assignee filters.
 - [x] Add optimistic issue mutations with version conflict handling.
 
 Phase 3 runtime verification completed on 2026-07-15. The authenticated tracer
 created individually assigned and unassigned issues.
 It verified atomic namespace counters, stable issue keys, Project workflow
-defaults, Client-backlog status clearing, cross-workflow category mapping,
+defaults, direct Client Issue statuses, cross-workflow category mapping,
 assignment/workflow independence, guest visibility boundaries, and stale-version
 conflicts.
 
@@ -361,3 +361,22 @@ Runtime verification on 2026-07-17 created three Clients, seven Projects,
 eight Branches, and forty Issues on the first replay. The second replay created
 zero records. Together with the existing DaCredit fixtures, the demo Workspace
 contains four Clients, eight Projects, eight Branches, and forty-two Issues.
+
+## First-class Client Issues
+
+Tracer bullet: replace the implicit null-status Client backlog with a real
+Client-owned workflow, then render Project context as a compact navigation chip
+in aggregate Client Issue lists.
+
+- [x] Give every Client a default workflow and migrate direct Issues to Backlog.
+- [x] Reuse status creation, mapping, authorization, and pickers for Client and Project workflows.
+- [x] Enable status changes in Client Issue rows, creation, and full Issue detail.
+- [x] Add clickable Project chips and tighten identifier-to-status spacing.
+- [x] Replay migrations and verify static checks, tests, production build, and Docker health.
+
+Migration 0008 was replayed through the complete migration chain and applied to
+the demo Workspace on 2026-07-17. A reversible service tracer moved a direct
+Client Issue from Backlog to In Progress and restored it, while database checks
+confirmed that no Issue retains a null status. The shared aggregate list now
+merges equivalent Client and Project status groups and links Project chips to
+their canonical Issue routes.

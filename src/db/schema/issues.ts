@@ -94,7 +94,7 @@ export const issues = pgTable(
     projectId: uuid("project_id"),
     branchId: uuid("branch_id"),
     issueTypeId: uuid("issue_type_id"),
-    statusId: uuid("status_id"),
+    statusId: uuid("status_id").notNull(),
     issueNamespaceId: uuid("issue_namespace_id").notNull(),
     number: integer("number").notNull(),
     title: text("title").notNull(),
@@ -201,10 +201,6 @@ export const issues = pgTable(
     index("issues_project_rank_idx").on(table.projectId, table.rank),
     index("issues_branch_rank_idx").on(table.branchId, table.rank),
     index("issues_type_idx").on(table.issueTypeId, table.updatedAt),
-    check(
-      "issues_project_status_check",
-      sql`(${table.projectId} is null and ${table.statusId} is null) or (${table.projectId} is not null and ${table.statusId} is not null)`,
-    ),
     check(
       "issues_branch_project_check",
       sql`${table.branchId} is null or ${table.projectId} is not null`,
