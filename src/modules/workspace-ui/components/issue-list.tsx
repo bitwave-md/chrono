@@ -270,14 +270,20 @@ function IssueRow(props: IssueRowProps) {
         />
         {props.showProject && props.project ? (
           <Link
-            className="flex h-7 max-w-40 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            href={`/app/${props.workspaceSlug}/projects/${props.project.id}/issues`}
-            title={`Open ${props.project.name} Issues`}
+            className="flex h-7 max-w-64 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            href={`/app/${props.workspaceSlug}/projects/${props.project.id}/issues${props.issue.branchId ? `?branch=${encodeURIComponent(props.issue.branchId)}` : ""}`}
+            title={`Open ${props.project.name}${props.issue.branchName ? ` / ${props.issue.branchName}` : ""} Issues`}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
           >
             <Box className="size-3.5 shrink-0" />
             <span className="truncate">{props.project.name}</span>
+            {props.issue.branchName ? (
+              <>
+                <span className="text-muted-foreground/50">/</span>
+                <span className="truncate">{props.issue.branchName}</span>
+              </>
+            ) : null}
           </Link>
         ) : null}
       </span>

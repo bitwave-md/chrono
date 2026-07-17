@@ -136,8 +136,9 @@ Every Issue list route uses one shared Linear-style row implementation grouped
 by non-empty workflow status. Priority, status, labels, and assignees mutate
 inline with optimistic TanStack Query updates; aggregate views resolve status
 options through deduplicated queries for each represented Client or Project workflow.
-Aggregate Client lists show a compact Project navigation chip only for Issues
-that belong to a Project.
+Aggregate Client lists retain direct, Project Main, and named-Branch Issues.
+Project Issues show a compact Project navigation chip; named-Branch Issues add
+the Branch name and route directly to that Branch scope.
 Project directory rows expose the same inline model for priority, lead, target
 date, and Project state while preserving row-level keyboard navigation.
 The workspace and Client Project directories use one flat Linear-style table

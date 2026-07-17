@@ -380,3 +380,19 @@ Client Issue from Backlog to In Progress and restored it, while database checks
 confirmed that no Issue retains a null status. The shared aggregate list now
 merges equivalent Client and Project status groups and links Project chips to
 their canonical Issue routes.
+
+## Client Issue aggregation context
+
+Tracer bullet: prove that the Client Issue surface retains direct, Project
+Main, and named-Branch Issues in one aggregate list, then expose the missing
+Project/Branch context and status-scoped creation controls.
+
+- [x] Guard aggregate grouping across direct, Main, and named-Branch Issues.
+- [x] Show `Project / Branch` in the Project chip for named Branch Issues.
+- [x] Add status-group creation controls to Client Issue views.
+- [x] Verify aggregate counts, static checks, production build, and Docker health.
+
+Runtime verification on 2026-07-17 confirmed that the application service and
+shared grouping retain every Client Issue across all three scopes. Demo Client
+counts ranged from ten to twelve Issues, including four named-Branch Issues per
+Client. The production Compose build and application health check remained green.

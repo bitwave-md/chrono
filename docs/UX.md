@@ -39,8 +39,14 @@ Workspace users and display overlapping avatars.
 
 Issue detail is a full page with breadcrumbs, editable title and description,
 comments, a right-side property column, labels, type, dates, estimate, timer,
-and manual logging. Client-backlog Issues display Backlog without a persisted
-workflow status.
+and manual logging. Direct Client Issues and Project Issues both persist real,
+switchable workflow statuses.
+
+The Client Issues tab is an aggregate of direct Client Issues, Project Main
+Issues, and named-Branch Issues. Project Issues display a compact navigation
+chip; named-Branch chips render `Project / Branch` and open that Branch scope.
+Every non-empty status group exposes a `+` action that creates a direct Client
+Issue in the equivalent Client workflow status.
 
 ## Shortcuts
 

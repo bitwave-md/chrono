@@ -1,15 +1,17 @@
 "use client";
 
 import { Columns3, List, Plus } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useIssuesQuery, useUpdateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
-import { useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { IssueBoard } from "@/modules/workspace-ui/components/issue-board";
+import { CreateIssueDialog } from "@/modules/workspace-ui/components/create-issue-dialog";
 import { IssueList } from "@/modules/workspace-ui/components/issue-list";
 import { RouteHeader, type BreadcrumbItem } from "@/modules/workspace-ui/components/route-header";
+import type { IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import { useWorkspaceOverlay, useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface IssueCollectionViewProps {
@@ -30,6 +32,7 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
   const setViewMode = useWorkspaceView((state) => state.setViewMode);
   const focusIssue = useWorkspaceView((state) => state.focusIssue);
   const openCreateIssue = useWorkspaceOverlay((state) => state.openCreateIssue);
+  const [createStatusId, setCreateStatusId] = useState<string | null>(null);
   const filters = useMemo(() => ({
     ...(props.projectId ? { projectId: props.projectId } : {}),
     ...(props.mine ? { mine: true } : {}),
@@ -37,10 +40,28 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
   const issuesQuery = useIssuesQuery(props.workspaceSlug, props.clientId ?? null, filters);
   const issues = issuesQuery.data ?? [];
   const projectsQuery = useProjectsQuery(props.workspaceSlug, props.clientId ?? null);
+  const clientsQuery = useClientsQuery(props.workspaceSlug);
+  const membersQuery = useMembersQuery(props.workspaceSlug);
   const projects = projectsQuery.data ?? [];
   const project = projects.find((candidate) => candidate.id === props.projectId);
+  const client = clientsQuery.data?.find((candidate) => candidate.id === props.clientId);
   const statusesQuery = useWorkflowStatusesQuery(props.workspaceSlug, project?.workflowId ?? null);
+  const clientStatusesQuery = useWorkflowStatusesQuery(
+    props.workspaceSlug,
+    client?.workflowId ?? null,
+  );
   const updateIssue = useUpdateIssueMutation(props.workspaceSlug, props.clientId ?? null, filters);
+  const clientAggregate = Boolean(
+    client && !props.projectId && clientStatusesQuery.data?.length,
+  );
+
+  const createInGroup = (group: IssueGroupRecord) => {
+    const statuses = clientStatusesQuery.data ?? [];
+    const status = statuses.find((candidate) => candidate.category === group.category)
+      ?? statuses.find((candidate) => candidate.name === group.name)
+      ?? statuses.find((candidate) => candidate.isDefault);
+    if (status) setCreateStatusId(status.id);
+  };
 
   const openIssue = (issueId: string) => {
     const issue = issues.find((candidate) => candidate.id === issueId);
@@ -94,11 +115,33 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
             issues={issues}
             statuses={statusesQuery.data ?? []}
             workspaceSlug={props.workspaceSlug}
+            onCreateEmpty={clientAggregate ? () => {
+              const defaultStatus = clientStatusesQuery.data?.find((status) => status.isDefault);
+              if (defaultStatus) setCreateStatusId(defaultStatus.id);
+            } : undefined}
+            onCreateInGroup={clientAggregate ? createInGroup : undefined}
             onFocus={focusIssue}
             onOpen={openIssue}
           />
         )}
       </section>
+      {client && createStatusId ? (
+        <CreateIssueDialog
+          branches={[]}
+          clientId={client.id}
+          filters={filters}
+          initialStatusId={createStatusId}
+          members={membersQuery.data ?? []}
+          open
+          projects={projects}
+          selectedBranchId={null}
+          selectedProjectId={null}
+          workspaceSlug={props.workspaceSlug}
+          onOpenChange={(open) => {
+            if (!open) setCreateStatusId(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }

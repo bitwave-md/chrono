@@ -41,6 +41,21 @@ test("aggregate Issue lists merge same-named statuses across workflows", () => {
   assert.equal(groups[1].color, "#0f0");
 });
 
+test("Client aggregation retains direct, Main, and named-Branch Issues", () => {
+  const direct = { ...issue("direct", "todo", "Todo"), projectId: null, projectName: null };
+  const main = issue("main", "todo", "Todo");
+  const branch = {
+    ...issue("branch", "todo", "Todo"),
+    branchId: "feature-branch",
+    branchName: "Feature branch",
+  };
+  const groups = buildIssueGroups([direct, main, branch], statuses);
+
+  assert.equal(groups.reduce((total, group) => total + group.issues.length, 0), 3);
+  assert.deepEqual(groups[0].issues.map((item) => item.id), ["direct", "main", "branch"]);
+  assert.equal(groups[0].issues[2].branchName, "Feature branch");
+});
+
 function issue(id: string, statusId: string | null, statusName: string | null): IssueRecord {
   return {
     id,
