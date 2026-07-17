@@ -243,7 +243,7 @@ function IssueRow(props: IssueRowProps) {
   return (
     <div
       className={cn(
-        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_max-content_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_max-content_28px_minmax(0,1fr)_32px] max-md:px-3",
+        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_64px_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_64px_28px_minmax(0,1fr)_32px] max-md:px-3",
       )}
       role="link"
       tabIndex={0}
@@ -253,7 +253,7 @@ function IssueRow(props: IssueRowProps) {
       onMouseEnter={props.onFocus}
     >
       <IssuePriorityTrigger disabled={props.disabled} value={props.issue.priority} onChange={props.onPriorityChange} />
-      <span className="truncate pr-0.5 font-mono text-xs text-muted-foreground">{props.issue.identifier}</span>
+      <span className="truncate pr-0.5 font-mono text-xs text-muted-foreground" title={props.issue.identifier}>{props.issue.identifier}</span>
       <IssueStatusTrigger
         disabled={props.disabled}
         issue={props.issue}
