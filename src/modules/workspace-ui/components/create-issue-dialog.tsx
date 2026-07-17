@@ -12,9 +12,11 @@ import { useCreateIssueMutation } from "@/modules/workspace-ui/application/use-i
 import { useClientsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
+import { showIssueCreatedToast } from "@/modules/workspace-ui/components/issue-created-toast";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import type { IssuePriority, MemberRecord, ProjectBranchRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
 
 interface CreateIssueDialogProps {
@@ -88,7 +90,21 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
       statusName: selectedStatus?.name ?? defaultStatus?.name ?? "Backlog",
       statusColor: selectedStatus?.color ?? defaultStatus?.color ?? null,
     }, {
-      onSuccess: () => {
+      onSuccess: (created, variables) => {
+        const status = statuses.find((candidate) => candidate.id === variables.statusId)
+          ?? defaultStatus;
+        showIssueCreatedToast({
+          identifier: created.identifier,
+          title: variables.title,
+          href: issueDetailPath(props.workspaceSlug, {
+            id: created.issue.id,
+            projectId: variables.projectId,
+          }),
+          status: {
+            category: status?.category ?? "backlog",
+            color: variables.statusColor,
+          },
+        });
         if (createMore) {
           setTitle("");
           setDescription("");

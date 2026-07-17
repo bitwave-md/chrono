@@ -396,3 +396,19 @@ Runtime verification on 2026-07-17 confirmed that the application service and
 shared grouping retain every Client Issue across all three scopes. Demo Client
 counts ranged from ten to twelve Issues, including four named-Branch Issues per
 Client. The production Compose build and application health check remained green.
+
+## Issue creation confirmation
+
+Tracer bullet: surface the authoritative created Issue identity in a single
+workspace-level toast with selected-status context and canonical navigation.
+
+- [x] Add the owned react-hot-toast primitive and Workspace Toaster.
+- [x] Type the Issue creation API response and emit a status-aware success toast.
+- [x] Link the toast to the canonical Client or Project Issue route.
+- [x] Verify repeated creation, static checks, production build, and Docker health.
+
+The workspace-level Toaster and status-aware confirmation were completed on
+2026-07-17. The creation callback uses the server-returned Issue ID and
+identifier, while the route helper is covered for both direct Client and
+Project Issue destinations. Static checks, twenty-four tests, the production
+Compose build, and container health remained green.

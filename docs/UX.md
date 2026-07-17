@@ -48,6 +48,11 @@ chip; named-Branch chips render `Project / Branch` and open that Branch scope.
 Every non-empty status group exposes a `+` action that creates a direct Client
 Issue in the equivalent Client workflow status.
 
+Successful Issue creation emits a bottom-right `react-hot-toast` confirmation
+with the selected workflow-status icon, authoritative Issue identifier, title,
+dismiss control, and a link to the canonical full Issue route. Create-more
+flows emit one confirmation per successfully persisted Issue.
+
 ## Shortcuts
 
 | Shortcut | Action |

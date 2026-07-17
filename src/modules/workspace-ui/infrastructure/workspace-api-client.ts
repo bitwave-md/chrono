@@ -47,6 +47,11 @@ export interface CreateIssueRequest {
   visibility: IssueVisibility;
 }
 
+export interface CreateIssueResponse {
+  issue: { id: string };
+  identifier: string;
+}
+
 export interface UpdateIssueRequest {
   issueId: string;
   expectedVersion: number;
@@ -205,7 +210,7 @@ export class WorkspaceApiClient {
     return this.#get(`/issues?${parameters.toString()}`);
   }
 
-  createIssue(input: CreateIssueRequest): Promise<unknown> {
+  createIssue(input: CreateIssueRequest): Promise<CreateIssueResponse> {
     return this.#request("/issues", {
       method: "POST",
       body: JSON.stringify({

@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/toaster";
 import { useActiveTimerQuery, useTimerSyncBridge } from "@/modules/workspace-ui/application/use-timer-query";
 import { useProjectsQuery, useClientsQuery, useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { useWorkspaceShortcuts } from "@/modules/workspace-ui/application/use-workspace-shortcuts";
@@ -101,6 +102,7 @@ function WorkspaceShell({ workspace, workspaces, children }: WorkspaceExperience
         />
       ) : null}
       <TimerDock state={activeTimerQuery.data} workspaceSlug={workspace.slug} />
+      <Toaster />
     </>
   );
 }

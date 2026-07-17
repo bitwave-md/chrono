@@ -12,6 +12,7 @@ import { CreateIssueDialog } from "@/modules/workspace-ui/components/create-issu
 import { IssueList } from "@/modules/workspace-ui/components/issue-list";
 import { RouteHeader, type BreadcrumbItem } from "@/modules/workspace-ui/components/route-header";
 import type { IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
+import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
 import { useWorkspaceOverlay, useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface IssueCollectionViewProps {
@@ -65,10 +66,10 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
 
   const openIssue = (issueId: string) => {
     const issue = issues.find((candidate) => candidate.id === issueId);
-    const path = issue?.projectId
-      ? `/app/${props.workspaceSlug}/projects/${issue.projectId}/issues/${issueId}`
-      : `/app/${props.workspaceSlug}/issues/${issueId}`;
-    router.push(path);
+    router.push(issueDetailPath(props.workspaceSlug, {
+      id: issueId,
+      projectId: issue?.projectId ?? null,
+    }));
   };
   const viewActions = (
     <>
