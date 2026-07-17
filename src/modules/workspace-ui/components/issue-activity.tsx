@@ -11,8 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatElapsed, useElapsedSeconds } from "@/modules/workspace-ui/application/use-elapsed-seconds";
 import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useStopTimerMutation } from "@/modules/workspace-ui/application/use-timer-query";
 import { useTimeCategoriesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { ManualTimeDatePicker } from "@/modules/workspace-ui/components/manual-time-date-picker";
 import { TimeEntryTypePicker } from "@/modules/workspace-ui/components/time-entry-type-picker";
 import { formatLoggedDuration } from "@/modules/workspace-ui/domain/issue-time-summary";
+import { manualTimeStartedAt } from "@/modules/workspace-ui/domain/manual-time-entry-date";
 import type { IssueCommentRecord, TimeLogRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
@@ -87,7 +89,7 @@ function TimeActivityItem({ log }: { log: TimeLogRecord }) {
       <Avatar className="mt-0.5 size-6"><AvatarImage alt="" src={log.workerAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm"><strong className="font-medium">{name}</strong><span className="text-muted-foreground">logged</span><strong className="font-medium">{formatLoggedDuration(log.durationSeconds)}</strong><span className="text-muted-foreground">as</span><span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2 py-0.5 text-xs"><span className="size-2 rounded-full" style={{ backgroundColor: log.categoryColor ?? "#6B7280" }} />{log.categoryName ?? "Uncategorized"}</span></div>
-        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3" />{log.source === "timer" ? "Timer" : "Manual entry"} · {new Date(log.endedAt).toLocaleString()}</div>
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3" />{log.source === "timer" ? "Timer" : "Manual entry"} · {log.source === "manual" ? new Date(log.endedAt).toLocaleDateString() : new Date(log.endedAt).toLocaleString()}</div>
         {log.note ? <p className="mt-1 text-sm text-foreground/80">{log.note}</p> : null}
       </div>
     </article>
@@ -106,6 +108,7 @@ function IssueTimeComposer({ issueId, issueTitle, workspaceSlug }: { issueId: st
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [hours, setHours] = useState("0");
   const [minutes, setMinutes] = useState("30");
+  const [entryDate, setEntryDate] = useState(() => new Date());
   const [note, setNote] = useState("");
   const preferred = categories.find((item) => item.key === "developing") ?? categories[0];
   const categoryId = selectedCategoryId ?? preferred?.id ?? null;
@@ -120,7 +123,13 @@ function IssueTimeComposer({ issueId, issueTitle, workspaceSlug }: { issueId: st
 
   const submitManual = () => {
     if (!categoryId || !validDuration) return;
-    manualTime.mutate({ issueId, categoryId, durationSeconds, note: note.trim() || null }, {
+    manualTime.mutate({
+      issueId,
+      categoryId,
+      durationSeconds,
+      note: note.trim() || null,
+      startedAt: manualTimeStartedAt(entryDate, durationSeconds),
+    }, {
       onSuccess: () => {
         setNote("");
         toast.success("Time entry added to activity");
@@ -149,7 +158,7 @@ function IssueTimeComposer({ issueId, issueTitle, workspaceSlug }: { issueId: st
         </div>
       ) : (
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t pt-3">
-          <div className="flex gap-2"><DurationInput label="Hours" max={24} value={hours} onChange={setHours} /><DurationInput label="Minutes" max={59} value={minutes} onChange={setMinutes} /></div>
+          <div className="flex flex-wrap items-end gap-2"><ManualTimeDatePicker value={entryDate} onChange={setEntryDate} /><DurationInput label="Hours" max={24} value={hours} onChange={setHours} /><DurationInput label="Minutes" max={59} value={minutes} onChange={setMinutes} /></div>
           <Button disabled={!categoryId || !validDuration || manualTime.isPending} size="sm" onClick={submitManual}>{manualTime.isPending ? <LoaderCircle className="animate-spin" /> : <Clock3 />}Add entry</Button>
         </div>
       )}

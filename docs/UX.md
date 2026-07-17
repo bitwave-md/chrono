@@ -50,8 +50,10 @@ editable from Project Overview using the shared icon/emoji picker.
 Issue detail is a full page with breadcrumbs, editable title and description,
 comments, a right-side property column, labels, type, dates, and estimate.
 Timer and manual-entry controls sit directly below the comment composer and
-require a Workspace time entry type. Finalized entries appear chronologically
-in Activity alongside comments with worker, duration, source, type, and note.
+require a Workspace time entry type. Manual entries include a shadcn Calendar
+picker for the work date and prevent future-date selection. Finalized entries
+appear chronologically in Activity alongside comments with worker, duration,
+source, type, date, and note.
 
 The lowest property-rail section summarizes finalized work with shadcn charts:
 a gradient area chart shows cumulative time and a stacked radial chart sizes

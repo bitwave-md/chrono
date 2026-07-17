@@ -9,6 +9,7 @@ Issue-level charts in the property rail.
 
 - [x] Provision Planning, Documenting, Developing, Testing, and Other for every Workspace.
 - [x] Add searchable time-entry type selection and authorized inline type creation.
+- [x] Add an explicit work-date picker to manual time entries.
 - [x] Move timer and manual-entry controls beneath the Issue comment composer.
 - [x] Merge finalized timer and manual entries into Issue Activity.
 - [x] Add gradient time history and stacked radial type-distribution charts.
@@ -21,6 +22,11 @@ a categorized Issue entry, confirmed category color/name projection into
 Activity, and retained authoritative timer behavior. TypeScript, ESLint, 26
 unit tests, the production build, and the rebuilt development Compose stack
 all passed; the application, PostgreSQL, and Mailpit are healthy.
+
+On 2026-07-18, manual logging gained a shadcn Calendar work-date picker. A
+reversible historical-entry tracer confirmed the selected local date survives
+server validation and persistence; the expanded 27-test suite, production
+build, and rebuilt Compose stack remained green.
 
 ## Linear-style Issue detail
 

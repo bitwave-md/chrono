@@ -380,12 +380,12 @@ export class WorkspaceApiClient {
     categoryId: string | null;
     durationSeconds: number;
     note: string | null;
+    startedAt: string;
   }): Promise<unknown> {
     return this.#request("/time-logs", {
       method: "POST",
       body: JSON.stringify({
         ...input,
-        startedAt: new Date(Date.now() - input.durationSeconds * 1_000).toISOString(),
         billable: null,
       }),
     });

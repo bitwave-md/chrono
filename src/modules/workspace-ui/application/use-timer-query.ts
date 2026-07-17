@@ -89,6 +89,7 @@ export function useManualTimeMutation(workspaceSlug: string) {
       categoryId: string | null;
       durationSeconds: number;
       note: string | null;
+      startedAt: string;
     }) =>
       new WorkspaceApiClient(workspaceSlug).addManualTime(input),
     onSuccess: async (_data, input) => {

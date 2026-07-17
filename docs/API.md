@@ -131,3 +131,7 @@ and Other. Owners and admins may add further categories; category keys remain
 unique within the Workspace. Issue-scoped log requests first authorize the
 Issue and then return its visible activity entries. Non-Issue report/list
 requests retain worker-level restrictions for regular members.
+
+Manual time-log creation accepts an explicit `startedAt` epoch. The Issue UI
+derives it from the selected local work date and duration so the finalized
+entry ends on that date while the server continues to reject future periods.
