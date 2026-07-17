@@ -10,6 +10,7 @@ interface RouteHeaderProps {
   title: string;
   description?: string;
   actions?: ReactNode;
+  showSearch?: boolean;
 }
 
 export interface BreadcrumbItem {
@@ -17,7 +18,7 @@ export interface BreadcrumbItem {
   href: string;
 }
 
-export function RouteHeader({ breadcrumbs = [], title, description, actions }: RouteHeaderProps) {
+export function RouteHeader({ breadcrumbs = [], title, description, actions, showSearch = true }: RouteHeaderProps) {
   return (
     <header className="border-b">
       <div className="flex h-12 items-center gap-2 px-4">
@@ -32,7 +33,7 @@ export function RouteHeader({ breadcrumbs = [], title, description, actions }: R
           <span className="truncate text-foreground">{title}</span>
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <Button aria-label="Search" size="icon-sm" variant="ghost"><Search /></Button>
+          {showSearch ? <Button aria-label="Search" size="icon-sm" variant="ghost"><Search /></Button> : null}
           {actions}
         </div>
       </div>

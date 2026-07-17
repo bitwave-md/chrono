@@ -1,5 +1,17 @@
 # Chrono Roadmap
 
+## Linear-style Issue detail
+
+Tracer bullet: open an Issue through a compact Client → Issues breadcrumb,
+edit its title and description in a centered reading column, update grouped
+properties from the right rail, comment in-place, and retain time tracking.
+
+- [x] Add the compact identifier/title route header and Issue actions.
+- [x] Center the Issue body with a whitespace-separated property rail.
+- [x] Group status, labels, Project, details, and time controls semantically.
+- [x] Rebuild Activity around an integrated comment composer.
+- [x] Preserve optimistic properties, comments, timers, and manual logging.
+
 ## Linear-style Project issue creation
 
 Tracer bullet: choose Branch scope from the Project tab row, click a status
