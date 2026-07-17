@@ -25,6 +25,10 @@ export const workspaceQueryKeys = {
   ) => ["workspace", workspaceSlug, "issues", clientId, filters] as const,
   activeTimer: (workspaceSlug: string) =>
     ["workspace", workspaceSlug, "active-timer"] as const,
+  timeLogsRoot: (workspaceSlug: string) =>
+    ["workspace", workspaceSlug, "time-logs"] as const,
+  issueTimeLogs: (workspaceSlug: string, issueId: string) =>
+    [...workspaceQueryKeys.timeLogsRoot(workspaceSlug), "issue", issueId] as const,
   project: (workspaceSlug: string, projectId: string) =>
     ["workspace", workspaceSlug, "project", projectId] as const,
   projectBranches: (workspaceSlug: string, projectId: string) =>

@@ -73,13 +73,35 @@ export function useStopTimerMutation(workspaceSlug: string) {
       await queryClient.invalidateQueries({
         queryKey: workspaceQueryKeys.activeTimer(workspaceSlug),
       });
+      await queryClient.invalidateQueries({
+        queryKey: workspaceQueryKeys.timeLogsRoot(workspaceSlug),
+      });
     },
   });
 }
 
 export function useManualTimeMutation(workspaceSlug: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: (input: { issueId: string; durationSeconds: number; note: string | null }) =>
+    mutationFn: (input: {
+      issueId: string;
+      categoryId: string | null;
+      durationSeconds: number;
+      note: string | null;
+    }) =>
       new WorkspaceApiClient(workspaceSlug).addManualTime(input),
+    onSuccess: async (_data, input) => {
+      await queryClient.invalidateQueries({
+        queryKey: workspaceQueryKeys.issueTimeLogs(workspaceSlug, input.issueId),
+      });
+    },
+  });
+}
+
+export function useIssueTimeLogsQuery(workspaceSlug: string, issueId: string) {
+  return useQuery({
+    queryKey: workspaceQueryKeys.issueTimeLogs(workspaceSlug, issueId),
+    queryFn: () => new WorkspaceApiClient(workspaceSlug).listIssueTimeLogs(issueId),
   });
 }

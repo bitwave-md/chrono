@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useStore } from "zustand";
 
+import type { WorkspaceIdentity } from "@/modules/workspace-ui/domain/workspace-types";
+
 import {
   createCommandMenuStore,
   type CommandMenuStore,
@@ -28,21 +30,36 @@ type CommandStoreApi = ReturnType<typeof createCommandMenuStore>;
 const ViewStoreContext = createContext<ViewStoreApi | null>(null);
 const OverlayStoreContext = createContext<OverlayStoreApi | null>(null);
 const CommandStoreContext = createContext<CommandStoreApi | null>(null);
+const WorkspaceIdentityContext = createContext<WorkspaceIdentity | null>(null);
 
-export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
+export function WorkspaceUiProvider({
+  children,
+  workspace,
+}: {
+  children: ReactNode;
+  workspace: WorkspaceIdentity;
+}) {
   const [viewStore] = useState(createWorkspaceViewStore);
   const [overlayStore] = useState(createWorkspaceOverlayStore);
   const [commandStore] = useState(createCommandMenuStore);
 
   return (
-    <ViewStoreContext.Provider value={viewStore}>
-      <OverlayStoreContext.Provider value={overlayStore}>
-        <CommandStoreContext.Provider value={commandStore}>
-          {children}
-        </CommandStoreContext.Provider>
-      </OverlayStoreContext.Provider>
-    </ViewStoreContext.Provider>
+    <WorkspaceIdentityContext.Provider value={workspace}>
+      <ViewStoreContext.Provider value={viewStore}>
+        <OverlayStoreContext.Provider value={overlayStore}>
+          <CommandStoreContext.Provider value={commandStore}>
+            {children}
+          </CommandStoreContext.Provider>
+        </OverlayStoreContext.Provider>
+      </ViewStoreContext.Provider>
+    </WorkspaceIdentityContext.Provider>
   );
+}
+
+export function useWorkspaceIdentity(): WorkspaceIdentity {
+  const workspace = useContext(WorkspaceIdentityContext);
+  if (!workspace) throw new Error("useWorkspaceIdentity requires WorkspaceUiProvider.");
+  return workspace;
 }
 
 export function useWorkspaceView<T>(

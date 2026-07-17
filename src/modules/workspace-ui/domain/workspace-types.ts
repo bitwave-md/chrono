@@ -170,6 +170,32 @@ export interface TimeCategoryRecord {
   position: number;
 }
 
+export interface TimeLogRecord {
+  id: string;
+  source: "timer" | "manual";
+  issueId: string;
+  identifier: string;
+  issueTitle: string;
+  clientId: string;
+  clientName: string;
+  projectId: string | null;
+  projectName: string | null;
+  branchId: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  categoryColor: string | null;
+  workerUserId: string;
+  workerName: string | null;
+  workerEmail: string;
+  workerAvatarUrl: string | null;
+  note: string | null;
+  billable: boolean;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  version: number;
+}
+
 export interface ActiveTimerRecord {
   id: string;
   issueId: string;

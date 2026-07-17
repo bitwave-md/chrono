@@ -23,7 +23,7 @@ interface WorkspaceExperienceProps {
 
 export function WorkspaceExperience(props: WorkspaceExperienceProps) {
   return (
-    <WorkspaceUiProvider>
+    <WorkspaceUiProvider workspace={props.workspace}>
       <WorkspaceSidebarProvider>
         <WorkspaceShell {...props} />
       </WorkspaceSidebarProvider>

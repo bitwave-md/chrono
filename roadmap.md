@@ -1,5 +1,27 @@
 # Chrono Roadmap
 
+## Issue time tracking experience
+
+Tracer bullet: classify Issue work with Workspace-wide time entry types, start
+or manually record work directly below the comment composer, see finalized
+entries in the shared Activity stream, and understand effort through compact
+Issue-level charts in the property rail.
+
+- [x] Provision Planning, Documenting, Developing, Testing, and Other for every Workspace.
+- [x] Add searchable time-entry type selection and authorized inline type creation.
+- [x] Move timer and manual-entry controls beneath the Issue comment composer.
+- [x] Merge finalized timer and manual entries into Issue Activity.
+- [x] Add gradient time history and stacked radial type-distribution charts.
+- [x] Verify authorization, timer recovery, responsive UX, build, and Docker runtime.
+
+The Issue time tracking experience was completed and runtime-verified on
+2026-07-17. Migration 0010 provisioned the five standard Workspace types while
+preserving custom categories. A reversible service tracer recorded and removed
+a categorized Issue entry, confirmed category color/name projection into
+Activity, and retained authoritative timer behavior. TypeScript, ESLint, 26
+unit tests, the production build, and the rebuilt development Compose stack
+all passed; the application, PostgreSQL, and Mailpit are healthy.
+
 ## Linear-style Issue detail
 
 Tracer bullet: open an Issue through a compact Client → Issues breadcrumb,

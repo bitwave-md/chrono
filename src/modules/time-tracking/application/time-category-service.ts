@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, max } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { isUniqueViolation } from "@/db/postgres-error";
@@ -55,6 +55,10 @@ export class TimeCategoryService {
     }
 
     try {
+      const [{ highestPosition }] = await db
+        .select({ highestPosition: max(timeCategories.position) })
+        .from(timeCategories)
+        .where(eq(timeCategories.workspaceId, principal.workspaceId));
       const [category] = await db
         .insert(timeCategories)
         .values({
@@ -63,6 +67,7 @@ export class TimeCategoryService {
           key,
           color,
           defaultBillable: input.defaultBillable,
+          position: (highestPosition ?? 0) + 10,
         })
         .returning();
 

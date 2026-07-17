@@ -101,6 +101,12 @@ also snapshot the Branch active when work begins. Reports aggregate by Issue,
 Project, Branch, Client, category, or worker while remaining
 historically stable after Issue movement.
 
+Time categories are Workspace-owned metadata. A data migration and the
+Workspace provisioner establish Planning, Documenting, Developing, Testing,
+and Other without removing custom categories. Issue detail loads finalized
+logs through an Issue-authorized query; the same TanStack cache drives Activity,
+the cumulative area chart, and the stacked radial category distribution.
+
 ## Authorization
 
 `WorkspaceMembership` is the tenant principal. Resource services enforce:
@@ -133,6 +139,12 @@ updates, and server mutations through custom hooks. Zustand owns synchronous
 UI state only: sidebar disclosure, Client submenu expansion, overlays, view
 mode, focus, and the command menu. Components never fetch server data through
 effects.
+
+Issue timer and manual-entry controls live below the comment composer rather
+than in the property rail. Starting a timer persists only its authoritative
+epoch; the browser derives the live counter. Stopping or manually logging work
+invalidates the Issue time-log query, which updates Activity and both charts
+without duplicated component state.
 
 `workspace_favorites` stores membership-scoped Client, Project, and Issue
 references with tenant-safe composite foreign keys and an exact-target check.

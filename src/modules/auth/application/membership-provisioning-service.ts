@@ -7,6 +7,7 @@ import {
   workspaces,
 } from "@/db/schema";
 import { EmailAddress } from "@/modules/auth/domain/email-address";
+import { TimeCategoryProvisioner } from "@/modules/time-tracking/application/time-category-provisioner";
 import { WorkspaceSlug } from "@/modules/workspaces/domain/workspace-slug";
 
 interface BootstrapWorkspace {
@@ -16,6 +17,8 @@ interface BootstrapWorkspace {
 }
 
 export class MembershipProvisioningService {
+  readonly #timeCategories = new TimeCategoryProvisioner();
+
   async provision(userId: string, inputEmail: string): Promise<void> {
     const email = new EmailAddress(inputEmail).value;
 
@@ -49,6 +52,8 @@ export class MembershipProvisioningService {
         if (!workspace) {
           throw new Error("The bootstrap workspace could not be provisioned.");
         }
+
+        await this.#timeCategories.ensureDefaults(transaction, workspace.id);
 
         await transaction
           .insert(workspaceMemberships)

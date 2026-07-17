@@ -125,3 +125,9 @@ Time-log filters are `issueId`, `clientId`, `projectId`, `categoryId`,
 `branchId`, `workerUserId`, `from`, and `to`. Report grouping accepts `issue`,
 `project`, `branch`, `client`, `category`, or `worker`; null Branch attribution
 is returned as `Main`.
+
+Every Workspace is provisioned with Planning, Documenting, Developing, Testing,
+and Other. Owners and admins may add further categories; category keys remain
+unique within the Workspace. Issue-scoped log requests first authorize the
+Issue and then return its visible activity entries. Non-Issue report/list
+requests retain worker-level restrictions for regular members.

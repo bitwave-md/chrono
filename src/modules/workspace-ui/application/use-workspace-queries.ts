@@ -3,7 +3,7 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
-import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ClientRecord, TimeCategoryRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { WorkspaceApiClient } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
 
 export function useClientsQuery(workspaceSlug: string) {
@@ -53,6 +53,23 @@ export function useTimeCategoriesQuery(workspaceSlug: string) {
   return useQuery({
     queryKey: workspaceQueryKeys.categories(workspaceSlug),
     queryFn: () => new WorkspaceApiClient(workspaceSlug).listCategories(),
+  });
+}
+
+export function useCreateTimeCategoryMutation(workspaceSlug: string) {
+  const queryClient = useQueryClient();
+  const queryKey = workspaceQueryKeys.categories(workspaceSlug);
+
+  return useMutation({
+    mutationFn: (input: { name: string; key: string; color: string }) =>
+      new WorkspaceApiClient(workspaceSlug).createCategory(input),
+    onSuccess: (category) => {
+      queryClient.setQueryData<TimeCategoryRecord[]>(queryKey, (current = []) =>
+        [...current, category].sort((left, right) =>
+          left.position - right.position || left.name.localeCompare(right.name),
+        ),
+      );
+    },
   });
 }
 

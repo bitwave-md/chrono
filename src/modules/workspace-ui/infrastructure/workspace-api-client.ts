@@ -18,6 +18,7 @@ import type {
   ProjectDetailRecord,
   ProjectRecord,
   TimeCategoryRecord,
+  TimeLogRecord,
   WorkflowStatusRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
 
@@ -200,6 +201,21 @@ export class WorkspaceApiClient {
     return this.#get("/time-categories");
   }
 
+  createCategory(input: {
+    name: string;
+    key: string;
+    color: string;
+  }): Promise<TimeCategoryRecord> {
+    return this.#request("/time-categories", {
+      method: "POST",
+      body: JSON.stringify({ ...input, defaultBillable: false }),
+    });
+  }
+
+  listIssueTimeLogs(issueId: string): Promise<TimeLogRecord[]> {
+    return this.#get(`/time-logs?issueId=${encodeURIComponent(issueId)}`);
+  }
+
   listWorkflowStatuses(workflowId: string): Promise<WorkflowStatusRecord[]> {
     return this.#get(
       `/workflows/${encodeURIComponent(workflowId)}/statuses`,
@@ -359,12 +375,16 @@ export class WorkspaceApiClient {
     return this.#request("/timers/active", { method: "DELETE" });
   }
 
-  addManualTime(input: { issueId: string; durationSeconds: number; note: string | null }): Promise<unknown> {
+  addManualTime(input: {
+    issueId: string;
+    categoryId: string | null;
+    durationSeconds: number;
+    note: string | null;
+  }): Promise<unknown> {
     return this.#request("/time-logs", {
       method: "POST",
       body: JSON.stringify({
         ...input,
-        categoryId: null,
         startedAt: new Date(Date.now() - input.durationSeconds * 1_000).toISOString(),
         billable: null,
       }),

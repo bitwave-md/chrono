@@ -11,6 +11,7 @@ import {
   users,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { IssueService } from "@/modules/issues/application/issue-service";
 import {
   ForbiddenError,
   ValidationError,
@@ -41,10 +42,16 @@ export interface TimeLogFilters {
 export class TimeLogService {
   readonly #attributionResolver = new TimeAttributionResolver();
   readonly #entryValidator = new TimeEntryValidator();
+  readonly #issues = new IssueService();
 
   async list(principal: Principal, filters: TimeLogFilters) {
     this.#assertDateRange(filters.from, filters.to);
-    const workerUserId = this.#visibleWorker(principal, filters.workerUserId);
+    if (filters.issueId) await this.#issues.get(principal, filters.issueId);
+    const workerUserId = this.#visibleWorker(
+      principal,
+      filters.workerUserId,
+      Boolean(filters.issueId),
+    );
     const conditions = [
       eq(timeLogs.workspaceId, principal.workspaceId),
       isNull(timeLogs.archivedAt),
@@ -90,9 +97,11 @@ export class TimeLogService {
         branchId: timeLogs.branchId,
         categoryId: timeLogs.categoryId,
         categoryName: timeCategories.name,
+        categoryColor: timeCategories.color,
         workerUserId: timeLogs.workerUserId,
         workerName: users.name,
         workerEmail: users.email,
+        workerAvatarUrl: users.image,
         note: timeLogs.note,
         billable: timeLogs.billable,
         startedAt: timeLogs.startedAt,
@@ -185,8 +194,13 @@ export class TimeLogService {
   #visibleWorker(
     principal: Principal,
     requestedWorkerUserId?: string,
+    issueScoped = false,
   ): string | undefined {
-    if (principal.role === "owner" || principal.role === "admin") {
+    if (
+      issueScoped ||
+      principal.role === "owner" ||
+      principal.role === "admin"
+    ) {
       return requestedWorkerUserId;
     }
 

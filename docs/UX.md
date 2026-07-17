@@ -48,9 +48,17 @@ editable from Project Overview using the shared icon/emoji picker.
 ## Issue experience
 
 Issue detail is a full page with breadcrumbs, editable title and description,
-comments, a right-side property column, labels, type, dates, estimate, timer,
-and manual logging. Direct Client Issues and Project Issues both persist real,
-switchable workflow statuses.
+comments, a right-side property column, labels, type, dates, and estimate.
+Timer and manual-entry controls sit directly below the comment composer and
+require a Workspace time entry type. Finalized entries appear chronologically
+in Activity alongside comments with worker, duration, source, type, and note.
+
+The lowest property-rail section summarizes finalized work with shadcn charts:
+a gradient area chart shows cumulative time and a stacked radial chart sizes
+each segment by time entry type with total duration centered in the ring.
+Owners and admins can add a new Workspace-wide type from the searchable type
+popover. Direct Client Issues and Project Issues both persist real, switchable
+workflow statuses.
 
 The Client Issues tab is an aggregate of direct Client Issues, Project Main
 Issues, and named-Branch Issues. Project Issues display a compact navigation

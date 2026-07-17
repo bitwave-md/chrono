@@ -1,19 +1,14 @@
 "use client";
 
 import {
-  ArrowUp,
-  CirclePlay,
   CircleDot,
   Clock3,
   FolderKanban,
   GitBranch,
-  LoaderCircle,
   Shapes,
-  Square,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,17 +17,19 @@ import { useAddIssueCommentMutation, useIssueCommentsQuery } from "@/modules/wor
 import { useIssueMetadataQuery, useReplaceIssueLabelsMutation } from "@/modules/workspace-ui/application/use-issue-metadata-queries";
 import { useIssueQuery, useUpdateIssueDetailMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
-import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useStopTimerMutation } from "@/modules/workspace-ui/application/use-timer-query";
+import { useIssueTimeLogsQuery } from "@/modules/workspace-ui/application/use-timer-query";
 import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
 import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
+import { IssueActivity } from "@/modules/workspace-ui/components/issue-activity";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
+import { IssueTimeCharts } from "@/modules/workspace-ui/components/issue-time-charts";
 import { LabelProperty } from "@/modules/workspace-ui/components/label-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 import { favoriteFromIssue } from "@/modules/workspace-ui/domain/favorite-target";
-import type { IssueCommentRecord, IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 export function IssueDetailView({ workspaceSlug, issueId }: { workspaceSlug: string; issueId: string }) {
   const issueQuery = useIssueQuery(workspaceSlug, issueId);
@@ -58,16 +55,10 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
   const metadataQuery = useIssueMetadataQuery(workspaceSlug);
   const labelsMutation = useReplaceIssueLabelsMutation(workspaceSlug, issue.id);
   const commentsQuery = useIssueCommentsQuery(workspaceSlug, issue.id);
+  const timeLogsQuery = useIssueTimeLogsQuery(workspaceSlug, issue.id);
   const addComment = useAddIssueCommentMutation(workspaceSlug, issue.id);
-  const timerQuery = useActiveTimerQuery(workspaceSlug);
-  const startTimer = useStartTimerMutation(workspaceSlug);
-  const stopTimer = useStopTimerMutation(workspaceSlug);
-  const manualTime = useManualTimeMutation(workspaceSlug);
   const [comment, setComment] = useState("");
-  const [manualMinutes, setManualMinutes] = useState("30");
   const patch = (request: Record<string, unknown>, optimistic: Partial<IssueRecord>) => update.mutate({ issueId: issue.id, expectedVersion: issue.version, ...request, optimistic });
-  const activeOnIssue = timerQuery.data?.timer?.issueId === issue.id;
-  const anotherTimerActive = Boolean(timerQuery.data?.timer && !activeOnIssue);
 
   const submitComment = (event: FormEvent) => {
     event.preventDefault();
@@ -115,8 +106,12 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
               comment={comment}
               comments={commentsQuery.data ?? []}
               error={addComment.error?.message}
-              loading={commentsQuery.isLoading}
+              issueId={issue.id}
+              issueTitle={issue.title}
+              loading={commentsQuery.isLoading || timeLogsQuery.isLoading}
+              logs={timeLogsQuery.data ?? []}
               pending={addComment.isPending}
+              workspaceSlug={workspaceSlug}
               onCommentChange={setComment}
               onSubmit={submitComment}
             />
@@ -147,77 +142,13 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
               <EstimateProperty value={issue.estimateMinutes} onChange={(estimateMinutes) => patch({ estimateMinutes }, { estimateMinutes })} />
             </PropertySection>
 
-            <section className="mt-8 border-t pt-5">
-              <h2 className="text-xs font-medium text-muted-foreground">Time tracking</h2>
-              <div className="mt-3 grid gap-2">
-                {activeOnIssue ? (
-                  <Button className="justify-start" disabled={stopTimer.isPending} size="sm" variant="destructive" onClick={() => stopTimer.mutate()}>
-                    {stopTimer.isPending ? <LoaderCircle className="animate-spin" /> : <Square fill="currentColor" />}Stop timer
-                  </Button>
-                ) : (
-                  <Button className="justify-start" disabled={anotherTimerActive || startTimer.isPending} size="sm" variant="secondary" onClick={() => startTimer.mutate({ issueId: issue.id, categoryId: null, note: issue.title })}>
-                    {startTimer.isPending ? <LoaderCircle className="animate-spin" /> : <CirclePlay />}{anotherTimerActive ? "Another timer is active" : "Start timer"}
-                  </Button>
-                )}
-                <div className="flex gap-2">
-                  <Input aria-label="Manual minutes" className="h-8" min={1} type="number" value={manualMinutes} onChange={(event) => setManualMinutes(event.target.value)} />
-                  <Button disabled={manualTime.isPending || Number(manualMinutes) < 1} size="sm" variant="outline" onClick={() => manualTime.mutate({ issueId: issue.id, durationSeconds: Number(manualMinutes) * 60, note: issue.title })}>Log</Button>
-                </div>
-                {manualTime.isSuccess ? <span className="text-xs text-emerald-500">Time logged.</span> : null}
-              </div>
-            </section>
+            <IssueTimeCharts logs={timeLogsQuery.data ?? []} />
 
             {update.error || labelsMutation.error ? <p className="mt-4 text-xs text-destructive">{update.error?.message ?? labelsMutation.error?.message}</p> : null}
           </aside>
         </div>
       </div>
     </>
-  );
-}
-
-function IssueActivity({
-  comments,
-  comment,
-  loading,
-  pending,
-  error,
-  onCommentChange,
-  onSubmit,
-}: {
-  comments: IssueCommentRecord[];
-  comment: string;
-  loading: boolean;
-  pending: boolean;
-  error?: string;
-  onCommentChange: (value: string) => void;
-  onSubmit: (event: FormEvent) => void;
-}) {
-  return (
-    <section className="mt-12 border-t pt-7">
-      <h2 className="text-base font-semibold">Activity</h2>
-      <div className="mt-6 grid gap-5">
-        {comments.map((item) => (
-          <article className="flex gap-3" key={item.id}>
-            <Avatar className="mt-0.5 size-6"><AvatarFallback className="text-[0.55rem]">{(item.authorName ?? item.authorEmail).slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <strong className="text-sm font-medium">{item.authorName ?? item.authorEmail}</strong>
-                <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</span>
-              </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-foreground/90">{item.body}</p>
-            </div>
-          </article>
-        ))}
-        {!loading && !comments.length ? <p className="text-sm text-muted-foreground">No activity yet.</p> : null}
-      </div>
-      <form className="relative mt-6" onSubmit={onSubmit}>
-        <Textarea className="min-h-28 resize-none bg-card/55 p-4 pb-12 leading-6" placeholder="Leave a comment..." value={comment} onChange={(event) => onCommentChange(event.target.value)} />
-        <Button aria-label="Post comment" className="absolute right-3 bottom-3 rounded-full" disabled={!comment.trim() || pending} size="icon-sm" type="submit">
-          {pending ? <LoaderCircle className="animate-spin" /> : <ArrowUp />}
-        </Button>
-      </form>
-      {error ? <p className="mt-2 text-xs text-destructive">{error}</p> : null}
-    </section>
   );
 }
 
