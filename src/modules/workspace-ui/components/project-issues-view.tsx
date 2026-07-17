@@ -1,8 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GitBranch, Plus } from "lucide-react";
+import { GitBranch } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -11,6 +10,7 @@ import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-
 import { useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { CreateIssueDialog } from "@/modules/workspace-ui/components/create-issue-dialog";
 import { IssueList } from "@/modules/workspace-ui/components/issue-list";
+import { ProjectTabs } from "@/modules/workspace-ui/components/project-tabs";
 import type { ProjectDetailRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
@@ -38,7 +38,7 @@ export function ProjectIssuesView({
   const projectsQuery = useProjectsQuery(workspaceSlug, project.clientId);
   const focusedIssueId = useWorkspaceView((state) => state.focusedIssueId);
   const focusIssue = useWorkspaceView((state) => state.focusIssue);
-  const [creating, setCreating] = useState(false);
+  const [createTarget, setCreateTarget] = useState<{ statusId: string | null } | null>(null);
   const filters = {
     projectId: project.id,
     ...(isAll ? {} : selectedBranchId ? { branchId: selectedBranchId } : { mainBranch: true }),
@@ -65,53 +65,70 @@ export function ProjectIssuesView({
   };
 
   return (
-    <div className="py-4">
-      <div className="flex items-center gap-2 border-b px-5 pb-3">
-        <Select value={selectedScope} onValueChange={selectBranch}>
-          <SelectTrigger aria-label="Branch scope" className="w-52" size="sm">
-            <GitBranch className="size-4" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="start">
-            <SelectItem value="main">Main</SelectItem>
-            <SelectItem value="all">All branches</SelectItem>
-            {branches.map((branch) => (
-              <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button className="ml-auto shrink-0" size="sm" onClick={() => setCreating(true)}><Plus />New issue</Button>
+    <>
+      <ProjectTabs
+        projectId={project.id}
+        tab="issues"
+        workspaceSlug={workspaceSlug}
+        actions={(
+          <Select value={selectedScope} onValueChange={selectBranch}>
+            <SelectTrigger aria-label="Branch scope" className="h-8 w-auto min-w-28 max-w-48 rounded-full border-0 bg-secondary/35 px-2.5 text-xs shadow-none hover:bg-secondary/70 [&>svg:last-child]:size-3.5" size="sm">
+              <GitBranch className="size-3.5" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="main">Main</SelectItem>
+              <SelectItem value="all">All branches</SelectItem>
+              {branches.map((branch) => (
+                <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      <div className="pb-4">
+        {issuesQuery.isLoading ? (
+          <div className="p-6 text-sm text-muted-foreground">Loading issues...</div>
+        ) : issuesQuery.error ? (
+          <div className="p-6 text-sm text-destructive">{issuesQuery.error.message}</div>
+        ) : (
+          <IssueList
+            clientId={project.clientId}
+            filters={filters}
+            focusedIssueId={focusedIssueId}
+            issues={issues}
+            statuses={statusesQuery.data ?? []}
+            workspaceSlug={workspaceSlug}
+            onCreateEmpty={() => setCreateTarget({
+              statusId: statusesQuery.data?.find((status) => status.isDefault)?.id ?? null,
+            })}
+            onCreateInGroup={(group) => setCreateTarget({
+              statusId: group.key === "backlog"
+                ? statusesQuery.data?.find((status) => status.isDefault)?.id ?? null
+                : group.key,
+            })}
+            onFocus={focusIssue}
+            onOpen={(issueId) => router.push(`/app/${workspaceSlug}/projects/${project.id}/issues/${issueId}`)}
+          />
+        )}
+        {createTarget ? (
+          <CreateIssueDialog
+            branches={branches}
+            clientId={project.clientId}
+            filters={filters}
+            initialStatusId={createTarget.statusId}
+            members={membersQuery.data ?? []}
+            open
+            projects={projectsQuery.data ?? []}
+            selectedBranchId={selectedBranchId}
+            selectedProjectId={project.id}
+            workspaceSlug={workspaceSlug}
+            onOpenChange={(open) => {
+              if (!open) setCreateTarget(null);
+            }}
+          />
+        ) : null}
       </div>
-      {issuesQuery.isLoading ? (
-        <div className="p-6 text-sm text-muted-foreground">Loading issues...</div>
-      ) : issuesQuery.error ? (
-        <div className="p-6 text-sm text-destructive">{issuesQuery.error.message}</div>
-      ) : (
-        <IssueList
-          clientId={project.clientId}
-          filters={filters}
-          focusedIssueId={focusedIssueId}
-          issues={issues}
-          statuses={statusesQuery.data ?? []}
-          workspaceSlug={workspaceSlug}
-          onFocus={focusIssue}
-          onOpen={(issueId) => router.push(`/app/${workspaceSlug}/projects/${project.id}/issues/${issueId}`)}
-        />
-      )}
-      {creating ? (
-        <CreateIssueDialog
-          branches={branches}
-          clientId={project.clientId}
-          filters={filters}
-          members={membersQuery.data ?? []}
-          open
-          projects={projectsQuery.data ?? []}
-          selectedBranchId={selectedBranchId}
-          selectedProjectId={project.id}
-          workspaceSlug={workspaceSlug}
-          onOpenChange={setCreating}
-        />
-      ) : null}
-    </div>
+    </>
   );
 }

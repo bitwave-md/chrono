@@ -1,5 +1,17 @@
 # Chrono Roadmap
 
+## Linear-style Project issue creation
+
+Tracer bullet: choose Branch scope from the Project tab row, click a status
+group’s add button, and create an Issue through a wide Linear-style composer
+with Project, Branch, and workflow status already selected.
+
+- [x] Move the compact Branch selector into the rounded Project tab row.
+- [x] Remove the separate Branch/New Issue toolbar.
+- [x] Add per-status-group Issue creation actions.
+- [x] Persist the selected workflow status during Issue creation.
+- [x] Rebuild the composer with property pills, expand, and Create more.
+
 ## Linear-style application chrome
 
 Tracer bullet: navigate the full Workspace inside near-black application chrome,

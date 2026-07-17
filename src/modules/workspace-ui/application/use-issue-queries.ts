@@ -17,6 +17,7 @@ export interface CreateIssueVariables extends CreateIssueRequest {
   assignees: IssueRecord["assignees"];
   statusId: string | null;
   statusName: string | null;
+  statusColor: string | null;
 }
 
 export interface UpdateIssueVariables extends UpdateIssueRequest {
@@ -50,6 +51,7 @@ export function useCreateIssueMutation(
         projectId: variables.projectId,
         branchId: variables.branchId,
         assigneeMembershipIds: variables.assigneeMembershipIds,
+        statusId: variables.statusId,
         title: variables.title,
         description: variables.description,
         priority: variables.priority,
@@ -79,7 +81,7 @@ export function useCreateIssueMutation(
         issueTypeColor: null,
         statusId: variables.statusId,
         statusName: variables.statusName,
-        statusColor: null,
+        statusColor: variables.statusColor,
         estimateMinutes: null,
         dueAt: null,
         version: 1,

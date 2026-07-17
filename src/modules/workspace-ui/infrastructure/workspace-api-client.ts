@@ -40,6 +40,7 @@ export interface CreateIssueRequest {
   projectId: string | null;
   branchId: string | null;
   assigneeMembershipIds: string[];
+  statusId: string | null;
   title: string;
   description: string | null;
   priority: IssuePriority;
@@ -209,7 +210,6 @@ export class WorkspaceApiClient {
       method: "POST",
       body: JSON.stringify({
         ...input,
-        statusId: null,
         parentIssueId: null,
       }),
     });

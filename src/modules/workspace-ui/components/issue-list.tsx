@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronRight, CircleDashed, Clock3 } from "lucide-react";
+import { ChevronRight, CircleDashed, Clock3, Plus } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useReplaceIssueListLabelsMutation, useIssueMetadataQuery } from "@/modules/workspace-ui/application/use-issue-metadata-queries";
 import { useUpdateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
@@ -28,6 +29,8 @@ interface IssueListProps {
   focusedIssueId: string | null;
   onFocus: (issueId: string) => void;
   onOpen: (issueId: string) => void;
+  onCreateInGroup?: (group: IssueGroupRecord) => void;
+  onCreateEmpty?: () => void;
 }
 
 export function IssueList(props: IssueListProps) {
@@ -68,6 +71,11 @@ export function IssueList(props: IssueListProps) {
         <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
           Create an Issue to start tracking work here.
         </p>
+        {props.onCreateEmpty ? (
+          <Button className="mt-4 rounded-full" size="sm" onClick={props.onCreateEmpty}>
+            <Plus />New issue
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -78,6 +86,7 @@ export function IssueList(props: IssueListProps) {
         <IssueGroup
           group={group}
           key={group.key}
+          onCreate={props.onCreateInGroup}
           renderIssue={(issue) => {
             const project = issue.projectId ? projectById.get(issue.projectId) : null;
             const disabled = Boolean(issue.optimistic);
@@ -131,25 +140,43 @@ export function IssueList(props: IssueListProps) {
 function IssueGroup({
   group,
   renderIssue,
+  onCreate,
 }: {
   group: IssueGroupRecord;
   renderIssue: (issue: IssueRecord) => React.ReactNode;
+  onCreate?: (group: IssueGroupRecord) => void;
 }) {
   const [open, setOpen] = useState(true);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <button
-          className="mx-2 mt-2 flex h-10 w-[calc(100%-1rem)] items-center gap-2 rounded-md bg-muted/40 px-4 text-left text-xs font-medium transition-colors hover:bg-muted/70"
-          style={issueGroupHeaderStyle(group.color)}
-          type="button"
-        >
-          <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-90")} />
-          <WorkflowStatusIcon category={group.category} color={group.color} />
-          <span>{group.name}</span>
-          <span className="text-muted-foreground">{group.issues.length}</span>
-        </button>
-      </CollapsibleTrigger>
+      <div
+        className="group/issue-header mx-2 mt-2 flex h-10 w-[calc(100%-1rem)] items-center rounded-md bg-muted/40 transition-colors hover:bg-muted/70"
+        style={issueGroupHeaderStyle(group.color)}
+      >
+        <CollapsibleTrigger asChild>
+          <button
+            className="flex h-full min-w-0 flex-1 items-center gap-2 px-4 text-left text-xs font-medium"
+            type="button"
+          >
+            <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-90")} />
+            <WorkflowStatusIcon category={group.category} color={group.color} />
+            <span>{group.name}</span>
+            <span className="text-muted-foreground">{group.issues.length}</span>
+          </button>
+        </CollapsibleTrigger>
+        {onCreate ? (
+          <Button
+            aria-label={`New issue in ${group.name}`}
+            className="mr-2 size-7 rounded-full opacity-60 hover:opacity-100"
+            size="icon-xs"
+            type="button"
+            variant="ghost"
+            onClick={() => onCreate(group)}
+          >
+            <Plus />
+          </Button>
+        ) : null}
+      </div>
       <CollapsibleContent className="px-2">
         {group.issues.map(renderIssue)}
       </CollapsibleContent>

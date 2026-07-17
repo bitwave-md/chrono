@@ -12,7 +12,6 @@ import {
   MessageSquareText,
   Plus,
 } from "lucide-react";
-import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -21,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useProjectActivityQuery, useProjectQuery, usePublishProjectUpdateMutation, useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
 import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
@@ -31,10 +29,9 @@ import { OptionProperty } from "@/modules/workspace-ui/components/option-propert
 import { ProjectBranchSection } from "@/modules/workspace-ui/components/project-branch-section";
 import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
 import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
+import { ProjectTabs, type ProjectTab } from "@/modules/workspace-ui/components/project-tabs";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
 import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
-
-type ProjectTab = "overview" | "activity" | "issues";
 
 const visibilityOptions = [
   { value: "internal", label: "Internal", color: "#94a3b8" },
@@ -59,13 +56,7 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
         { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/overview` },
         { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
       ]} title={project.name} />
-      <nav className="flex h-12 items-center gap-1 px-3">
-        {(["overview", "activity", "issues"] as const).map((item) => (
-          <Button asChild className={cn("rounded-full bg-secondary/35 capitalize text-muted-foreground hover:bg-secondary/70 hover:text-foreground", tab === item && "bg-secondary text-secondary-foreground")} key={item} size="sm" variant="secondary">
-            <Link href={`/app/${workspaceSlug}/projects/${projectId}/${item}`}>{item}</Link>
-          </Button>
-        ))}
-      </nav>
+      {tab !== "issues" ? <ProjectTabs projectId={projectId} tab={tab} workspaceSlug={workspaceSlug} /> : null}
       {tab === "overview" ? <ProjectOverview project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "activity" ? <ProjectActivity project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "issues" ? <ProjectIssuesView project={project} workspaceSlug={workspaceSlug} /> : null}
