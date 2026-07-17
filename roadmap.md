@@ -10,6 +10,7 @@ typography, and icon-complete Client navigation.
 - [x] Add the rounded, bordered, shadowed desktop content inset.
 - [x] Refine Sidebar typography, density, active states, and icon proportions.
 - [x] Render persisted Client icons and icons for every Client subroute.
+- [x] Keep Project identity in Overview and use rounded Project tabs.
 - [x] Verify responsive behavior, static checks, tests, build, and Docker health.
 
 ## Unified semantic property pickers

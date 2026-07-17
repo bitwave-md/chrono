@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useProjectActivityQuery, useProjectQuery, usePublishProjectUpdateMutation, useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
 import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
@@ -58,17 +59,13 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
         { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/overview` },
         { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
       ]} title={project.name} />
-      <div className="border-b px-5 pt-4">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 grid size-9 place-items-center rounded-md bg-muted"><FolderKanban className="size-5" /></span>
-          <div className="min-w-0"><h1 className="truncate text-xl font-semibold">{project.name}</h1><p className="mt-1 text-sm text-muted-foreground">{project.summary ?? "Add a short project summary"}</p></div>
-        </div>
-        <nav className="mt-5 flex gap-5 text-sm">
-          {(["overview", "activity", "issues"] as const).map((item) => (
-            <Link className={`border-b-2 pb-2 capitalize ${tab === item ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`} href={`/app/${workspaceSlug}/projects/${projectId}/${item}`} key={item}>{item}</Link>
-          ))}
-        </nav>
-      </div>
+      <nav className="flex h-12 items-center gap-1 px-3">
+        {(["overview", "activity", "issues"] as const).map((item) => (
+          <Button asChild className={cn("rounded-full bg-secondary/35 capitalize text-muted-foreground hover:bg-secondary/70 hover:text-foreground", tab === item && "bg-secondary text-secondary-foreground")} key={item} size="sm" variant="secondary">
+            <Link href={`/app/${workspaceSlug}/projects/${projectId}/${item}`}>{item}</Link>
+          </Button>
+        ))}
+      </nav>
       {tab === "overview" ? <ProjectOverview project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "activity" ? <ProjectActivity project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "issues" ? <ProjectIssuesView project={project} workspaceSlug={workspaceSlug} /> : null}
@@ -88,11 +85,17 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-7">
       <section>
-        <Input className="h-auto border-0 px-0 text-lg font-semibold shadow-none focus-visible:ring-0" defaultValue={project.summary ?? ""} placeholder="Add a short project summary" onBlur={(event) => {
-          const summary = event.target.value.trim() || null;
-          if (summary !== project.summary) patch({ summary }, { summary });
-        }} />
-        <div className="mt-3 flex flex-wrap items-center gap-1 border-y py-2">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><FolderKanban className="size-5" /></span>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-xl font-semibold">{project.name}</h1>
+            <Input className="mt-0.5 h-7 border-0 px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0" defaultValue={project.summary ?? ""} placeholder="Add a short project summary" onBlur={(event) => {
+              const summary = event.target.value.trim() || null;
+              if (summary !== project.summary) patch({ summary }, { summary });
+            }} />
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-1 border-y py-2">
           <OptionProperty icon={CircleDashed} label="Status" options={projectStateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
           <OptionProperty icon={Circle} label="Priority" options={projectPriorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
           <MemberProperty label="Lead" members={membersQuery.data ?? []} value={project.lead} onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })} />
