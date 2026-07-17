@@ -412,3 +412,21 @@ The workspace-level Toaster and status-aware confirmation were completed on
 identifier, while the route helper is covered for both direct Client and
 Project Issue destinations. Static checks, twenty-four tests, the production
 Compose build, and container health remained green.
+
+## Shared entity headers and favorites
+
+Tracer bullet: favorite one Client, Project, and Issue from a shared header and
+navigate to all three through a conditional membership-scoped sidebar section.
+
+- [x] Add tenant-safe membership favorites and Project icon identity.
+- [x] Add authorized list/toggle APIs with optimistic TanStack Query hooks.
+- [x] Recompose Client, Project, and Issue headers from one shared standard.
+- [x] Make the entity actions popover functional and context-aware.
+- [x] Render Favorites conditionally with Client, Project, and Issue icons.
+- [x] Replay migrations and verify tests, production build, and Docker health.
+
+Migration 0009 and the shared entity header were completed on 2026-07-17. A
+reversible service tracer favorited and resolved one Client, Project, and Issue,
+then removed all three. All existing Projects received icon identity, favorites
+remained membership-scoped, and the section stayed absent after cleanup.
+Twenty-five tests, the production Compose build, and container health passed.

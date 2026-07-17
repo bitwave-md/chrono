@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { ClientIcon, clientIconNames } from "@/modules/workspace-ui/components/client-icon";
+import { clientIconNames } from "@/modules/workspace-ui/components/client-icon";
+import { EntityIcon, type EntityIconIdentity } from "@/modules/workspace-ui/components/entity-icon";
 import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 const colors = [
@@ -40,7 +41,21 @@ export function ClientIconPicker({
   disabled?: boolean;
   onChange: (appearance: Pick<ClientRecord, "iconType" | "iconKey" | "iconColor">) => void;
 }) {
-  const [tab, setTab] = useState<ClientRecord["iconType"]>(client.iconType);
+  return <EntityIconPicker disabled={disabled} entity={client} label="Client" onChange={onChange} />;
+}
+
+export function EntityIconPicker({
+  entity,
+  label,
+  disabled,
+  onChange,
+}: {
+  entity: EntityIconIdentity;
+  label: string;
+  disabled?: boolean;
+  onChange: (appearance: Pick<EntityIconIdentity, "iconType" | "iconKey" | "iconColor">) => void;
+}) {
+  const [tab, setTab] = useState<EntityIconIdentity["iconType"]>(entity.iconType);
   const [search, setSearch] = useState("");
   const visibleIcons = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -48,23 +63,23 @@ export function ClientIconPicker({
       .filter((name) => !query || name.includes(query))
       .slice(0, 180);
   }, [search]);
-  const update = (values: Partial<Pick<ClientRecord, "iconType" | "iconKey" | "iconColor">>) =>
+  const update = (values: Partial<Pick<EntityIconIdentity, "iconType" | "iconKey" | "iconColor">>) =>
     onChange({
-      iconType: values.iconType ?? client.iconType,
-      iconKey: values.iconKey ?? client.iconKey,
-      iconColor: values.iconColor ?? client.iconColor,
+      iconType: values.iconType ?? entity.iconType,
+      iconKey: values.iconKey ?? entity.iconKey,
+      iconColor: values.iconColor ?? entity.iconColor,
     });
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          aria-label="Change Client icon"
+          aria-label={`Change ${label} icon`}
           className="size-12 rounded-xl p-0"
           disabled={disabled}
           variant="ghost"
         >
-          <ClientIcon className="size-12 rounded-xl" client={client} iconClassName={client.iconType === "emoji" ? "text-2xl" : "size-7"} />
+          <EntityIcon className="size-12 rounded-xl" entity={entity} iconClassName={entity.iconType === "emoji" ? "text-2xl" : "size-7"} />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[560px] max-w-[calc(100vw-2rem)] overflow-hidden p-0">
@@ -93,7 +108,7 @@ export function ClientIconPicker({
               type="button"
               onClick={() => update({ iconColor: color })}
             >
-              {client.iconColor.toLowerCase() === color.toLowerCase() ? <Check className="size-4 text-black/70" /> : null}
+              {entity.iconColor.toLowerCase() === color.toLowerCase() ? <Check className="size-4 text-black/70" /> : null}
             </button>
           ))}
           <span className="mx-1 h-9 w-px bg-border" />
@@ -103,7 +118,7 @@ export function ClientIconPicker({
               aria-label="Custom icon color"
               className="absolute inset-0 cursor-pointer opacity-0"
               type="color"
-              value={client.iconColor}
+              value={entity.iconColor}
               onChange={(event) => update({ iconColor: event.target.value })}
             />
           </label>
@@ -119,14 +134,14 @@ export function ClientIconPicker({
                   aria-label={name}
                   className={cn(
                     "relative grid aspect-square place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                    client.iconType === "icon" && client.iconKey === name && "bg-accent text-foreground",
+                    entity.iconType === "icon" && entity.iconKey === name && "bg-accent text-foreground",
                   )}
                   key={name}
                   title={name}
                   type="button"
                   onClick={() => update({ iconType: "icon", iconKey: name })}
                 >
-                  <DynamicIcon color={client.iconColor} name={name as IconName} size={20} />
+                  <DynamicIcon color={entity.iconColor} name={name as IconName} size={20} />
                 </button>
               ))}
             </div>
@@ -138,7 +153,7 @@ export function ClientIconPicker({
                 aria-label={`Use ${emoji}`}
                 className={cn(
                   "grid aspect-square place-items-center rounded-md text-xl hover:bg-accent",
-                  client.iconType === "emoji" && client.iconKey === emoji && "bg-accent",
+                  entity.iconType === "emoji" && entity.iconKey === emoji && "bg-accent",
                 )}
                 key={emoji}
                 type="button"

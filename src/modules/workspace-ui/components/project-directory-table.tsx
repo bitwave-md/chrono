@@ -16,6 +16,7 @@ import { DateProperty } from "@/modules/workspace-ui/components/date-property";
 import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
+import { ProjectIcon } from "@/modules/workspace-ui/components/project-icon";
 import type {
   MemberRecord,
   ProjectDetailRecord,
@@ -110,7 +111,7 @@ function ProjectDirectoryRow({
       onKeyDown={openWithKeyboard}
     >
       <span className="flex min-w-0 items-center gap-3 font-medium">
-        <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
+        <ProjectIcon className="size-6" iconClassName={project.iconType === "emoji" ? "text-xs" : "size-3.5"} project={project} />
         <span className="truncate">{project.name}</span>
       </span>
       {showClient ? <span className="truncate text-muted-foreground">{project.clientName}</span> : null}

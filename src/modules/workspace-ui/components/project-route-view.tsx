@@ -6,7 +6,6 @@ import {
   Circle,
   CircleDashed,
   Eye,
-  FolderKanban,
   Link2,
   LoaderCircle,
   MessageSquareText,
@@ -23,14 +22,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useProjectActivityQuery, useProjectQuery, usePublishProjectUpdateMutation, useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
 import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
+import { EntityIconPicker } from "@/modules/workspace-ui/components/client-icon-picker";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { ProjectBranchSection } from "@/modules/workspace-ui/components/project-branch-section";
+import { ProjectIcon } from "@/modules/workspace-ui/components/project-icon";
 import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
 import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import { ProjectTabs, type ProjectTab } from "@/modules/workspace-ui/components/project-tabs";
-import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
+import { favoriteFromProject } from "@/modules/workspace-ui/domain/favorite-target";
 import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 const visibilityOptions = [
@@ -52,10 +54,16 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
 
   return (
     <>
-      <RouteHeader breadcrumbs={[
-        { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/overview` },
-        { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
-      ]} title={project.name} />
+      <EntityHeader
+        breadcrumbs={[
+          { label: project.clientName, href: `/app/${workspaceSlug}/clients/${project.clientId}/overview` },
+          { label: "Projects", href: `/app/${workspaceSlug}/clients/${project.clientId}/projects` },
+        ]}
+        favoriteTarget={favoriteFromProject(project)}
+        icon={<ProjectIcon className="size-6" iconClassName="size-3.5" project={project} />}
+        title={project.name}
+        workspaceSlug={workspaceSlug}
+      />
       {tab !== "issues" ? <ProjectTabs projectId={projectId} tab={tab} workspaceSlug={workspaceSlug} /> : null}
       {tab === "overview" ? <ProjectOverview project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "activity" ? <ProjectActivity project={project} workspaceSlug={workspaceSlug} /> : null}
@@ -77,7 +85,11 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
     <div className="mx-auto w-full max-w-5xl px-5 py-7">
       <section>
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><FolderKanban className="size-5" /></span>
+          <EntityIconPicker
+            entity={project}
+            label="Project"
+            onChange={(appearance) => patch(appearance, appearance)}
+          />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-semibold">{project.name}</h1>
             <Input className="mt-0.5 h-7 border-0 px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0" defaultValue={project.summary ?? ""} placeholder="Add a short project summary" onBlur={(event) => {

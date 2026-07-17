@@ -11,6 +11,7 @@ import {
 import { EntityId } from "@/modules/shared/domain/entity-id";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
 import { JsonInput } from "@/modules/shared/infrastructure/json-input";
+import { clientIconTypes } from "@/modules/clients/domain/client-icon";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,9 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
         ...(input.has("startDate") ? { startDate: input.optionalDateTime("startDate") } : {}),
         ...(input.has("targetDate") ? { targetDate: input.optionalDateTime("targetDate") } : {}),
         ...(input.has("assigneeMembershipIds") ? { assigneeMembershipIds: input.uuidArray("assigneeMembershipIds", 20) } : {}),
+        ...(input.has("iconType") ? { iconType: input.requiredEnum("iconType", clientIconTypes) } : {}),
+        ...(input.has("iconKey") ? { iconKey: input.requiredString("iconKey", 80) } : {}),
+        ...(input.has("iconColor") ? { iconColor: input.requiredString("iconColor", 7) } : {}),
       },
     );
     return Response.json({ data: project });

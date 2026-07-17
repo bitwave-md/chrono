@@ -24,6 +24,11 @@ Your clients
 The Workspace switcher is searchable. Sidebar and Client disclosure state are
 ephemeral Zustand state; active items derive from canonical routes.
 
+The Favorites section appears only when the current membership has at least one
+favorite. It links Clients with their owned icons, Projects with their owned
+icons, and Issues with the standard Issue icon. Favorite state is optimistic
+TanStack Query server state rather than sidebar disclosure state.
+
 ## Project experience
 
 Projects expose Overview, Activity, and Issues tabs. Overview contains summary,
@@ -34,6 +39,11 @@ events. Issues are grouped by workflow status.
 Properties are icon/value triggers with semantic colors. They open a popover or
 searchable command list only when clicked. Assignees support zero, one, or many
 Workspace users and display overlapping avatars.
+
+Client, Project, and Issue pages use one shared entity header standard with
+clickable breadcrumbs, entity icon, title, favorite toggle, and actions menu.
+The menu copies the canonical link or opens it in a new tab. Project icons are
+editable from Project Overview using the shared icon/emoji picker.
 
 ## Issue experience
 

@@ -1,12 +1,13 @@
 "use client";
 
-import { MoreHorizontal, Plus, Star } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
+import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
+import { favoriteFromClient } from "@/modules/workspace-ui/domain/favorite-target";
 import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 export type ClientTab = "overview" | "issues" | "projects" | "members";
@@ -32,14 +33,12 @@ export function ClientHeader({
         : null;
 
   return (
-    <header className="border-b">
-      <div className="flex h-12 items-center gap-2 border-b px-4">
-        <SidebarTrigger />
-        <ClientIcon className="size-6" client={client} iconClassName={client.iconType === "emoji" ? "text-xs" : "size-3.5"} />
-        <span className="truncate text-sm font-medium">{client.name}</span>
-        <Button aria-label="Favorite Client" size="icon-sm" variant="ghost"><Star /></Button>
-        <Button aria-label="Client actions" size="icon-sm" variant="ghost"><MoreHorizontal /></Button>
-      </div>
+    <EntityHeader
+      favoriteTarget={favoriteFromClient(client)}
+      icon={<ClientIcon className="size-6" client={client} iconClassName={client.iconType === "emoji" ? "text-xs" : "size-3.5"} />}
+      title={client.name}
+      workspaceSlug={workspaceSlug}
+    >
       <div className="flex h-12 items-center gap-1 px-3">
         {(["overview", "issues", "projects", "members"] as const).map((item) => (
           <Button asChild className={cn("rounded-full bg-secondary/35 capitalize text-muted-foreground hover:bg-secondary/70 hover:text-foreground", tab === item && "bg-secondary text-secondary-foreground")} key={item} size="sm" variant="secondary">
@@ -52,6 +51,6 @@ export function ClientHeader({
           </Button>
         ) : null}
       </div>
-    </header>
+    </EntityHeader>
   );
 }

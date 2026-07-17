@@ -16,6 +16,7 @@ links.
 ```text
 Workspace
 ├── Workspace memberships
+│   └── Client, Project, and Issue favorites
 └── Clients
     ├── Icon or emoji identity
     ├── Default issue namespace
@@ -24,6 +25,7 @@ Workspace
     ├── Pinned resources
     └── Projects
         ├── Optional issue namespace override
+        ├── Icon or emoji identity
         ├── Owned workflow
         ├── Branches
         ├── Priority and one optional lead
@@ -44,6 +46,8 @@ through `issue_assignees` and `project_assignees`, allowing zero, one, or many
 active Workspace members without duplicating columns on the work item.
 
 Clients store an independent icon-or-emoji identity with a validated hex color.
+Projects use the same owned icon identity model, with an independently editable
+icon or emoji and color.
 `client_memberships` is both the guest access boundary and the explicit roster
 shown in the Client workspace. `client_resources` stores ordered, tenant-safe
 HTTP/HTTPS links authored by Workspace memberships.
@@ -129,6 +133,12 @@ updates, and server mutations through custom hooks. Zustand owns synchronous
 UI state only: sidebar disclosure, Client submenu expansion, overlays, view
 mode, focus, and the command menu. Components never fetch server data through
 effects.
+
+`workspace_favorites` stores membership-scoped Client, Project, and Issue
+references with tenant-safe composite foreign keys and an exact-target check.
+Favorite target authorization is re-evaluated when listing and mutating; stale
+or inaccessible targets are not exposed. The conditional sidebar section is a
+projection of this TanStack-owned server state.
 
 Project and Issue properties are compact icon/value triggers. Each trigger
 opens an appropriate shadcn/Radix popover or command list only after activation.

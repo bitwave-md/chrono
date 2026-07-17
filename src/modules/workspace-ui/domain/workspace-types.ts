@@ -40,12 +40,30 @@ export interface ClientMemberRecord extends MemberRecord {
   permission: "view" | "comment" | "contribute";
 }
 
+export type FavoriteTargetType = "client" | "project" | "issue";
+
+export interface FavoriteRecord {
+  id: string;
+  targetType: FavoriteTargetType;
+  targetId: string;
+  title: string;
+  clientId: string;
+  projectId: string | null;
+  identifier: string | null;
+  iconType: "icon" | "emoji" | null;
+  iconKey: string | null;
+  iconColor: string | null;
+}
+
 export interface ProjectRecord {
   id: string;
   clientId: string;
   clientName: string;
   name: string;
   slug: string;
+  iconType: "icon" | "emoji";
+  iconKey: string;
+  iconColor: string;
   visibility: "internal" | "client_shared" | "restricted";
   position: number;
   namespacePrefix: string | null;
@@ -184,6 +202,9 @@ export interface ProjectDetailRecord {
   clientName: string;
   name: string;
   slug: string;
+  iconType: "icon" | "emoji";
+  iconKey: string;
+  iconColor: string;
   summary: string | null;
   description: string | null;
   state: "planned" | "active" | "paused" | "completed" | "canceled";

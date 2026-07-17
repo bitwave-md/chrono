@@ -4,6 +4,7 @@ import {
   Building2,
   Check,
   ChevronRight,
+  CircleDot,
   FolderKanban,
   House,
   Inbox,
@@ -36,9 +37,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useSignOutMutation } from "@/modules/auth/presentation/use-auth-mutations";
+import { useFavoritesQuery } from "@/modules/workspace-ui/application/use-favorite-queries";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { CreateClientDialog } from "@/modules/workspace-ui/components/create-client-dialog";
-import type { ClientRecord, WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
+import { EntityIcon } from "@/modules/workspace-ui/components/entity-icon";
+import { favoritePath } from "@/modules/workspace-ui/domain/favorite-target";
+import type { ClientRecord, FavoriteRecord, WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface WorkspaceSidebarProps {
@@ -51,6 +55,8 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
   const pathname = usePathname();
   const router = useRouter();
   const signOut = useSignOutMutation();
+  const favoritesQuery = useFavoritesQuery(workspace.slug);
+  const favorites = favoritesQuery.data ?? [];
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
   const workspaceOpen = useWorkspaceView((state) => state.workspaceSectionOpen);
@@ -117,6 +123,29 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {favorites.length ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Favorites</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {favorites.map((favorite) => {
+                  const href = favoritePath(workspace.slug, favorite);
+                  return (
+                    <SidebarMenuItem key={favorite.id}>
+                      <SidebarMenuButton asChild isActive={active(href)} tooltip={favorite.title}>
+                        <Link href={href} onClick={finishNavigation}>
+                          <FavoriteIcon favorite={favorite} />
+                          <span className="truncate">{favorite.identifier ? `${favorite.identifier} ${favorite.title}` : favorite.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
 
         <Collapsible open={workspaceOpen} onOpenChange={setWorkspaceOpen}>
           <SidebarGroup>
@@ -212,6 +241,24 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
         />
       ) : null}
     </Sidebar>
+  );
+}
+
+function FavoriteIcon({ favorite }: { favorite: FavoriteRecord }) {
+  if (favorite.targetType === "issue") {
+    return <CircleDot className="size-4" style={{ color: favorite.iconColor ?? undefined }} />;
+  }
+  return (
+    <EntityIcon
+      className="size-5 rounded-[5px]"
+      entity={{
+        name: favorite.title,
+        iconType: favorite.iconType ?? "icon",
+        iconKey: favorite.iconKey ?? "hash",
+        iconColor: favorite.iconColor ?? "#71717a",
+      }}
+      iconClassName={favorite.iconType === "emoji" ? "text-[0.6rem]" : "size-3"}
+    />
   );
 }
 

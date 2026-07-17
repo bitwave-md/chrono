@@ -3,6 +3,8 @@ import type {
   ClientRecord,
   ClientMemberRecord,
   ClientResourceRecord,
+  FavoriteRecord,
+  FavoriteTargetType,
   IssuePriority,
   IssueRecord,
   IssueCommentRecord,
@@ -95,6 +97,21 @@ export class WorkspaceApiClient {
 
   listClients(): Promise<ClientRecord[]> {
     return this.#get("/clients");
+  }
+
+  listFavorites(): Promise<FavoriteRecord[]> {
+    return this.#get("/favorites");
+  }
+
+  setFavorite(input: {
+    targetType: FavoriteTargetType;
+    targetId: string;
+    favorite: boolean;
+  }): Promise<FavoriteRecord | null> {
+    return this.#request("/favorites", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
   }
 
   listProjects(clientId: string | null): Promise<ProjectRecord[]> {

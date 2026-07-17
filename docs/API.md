@@ -37,7 +37,7 @@ database session, an accessible Workspace membership, and a trusted `Origin`.
   overview data, assignees, progress, latest update, resources, and milestones.
 - `PATCH /api/workspaces/:workspaceSlug/projects/:projectId` updates state,
   priority, singular `leadMembershipId`, summary, description, visibility,
-  dates, or the atomic assignee collection.
+  dates, icon identity, or the atomic assignee collection.
 - `GET|POST /api/workspaces/:workspaceSlug/projects/:projectId/activity`
   reads activity or publishes an authored update.
 - `POST /api/workspaces/:workspaceSlug/projects/:projectId/resources` adds a
@@ -98,6 +98,17 @@ version returns `409 conflict`.
 
 `GET /api/workspaces/:workspaceSlug/workflows/:workflowId/statuses` returns
 active statuses ordered by position for an accessible Client or Project workflow.
+
+## Favorites
+
+- `GET /api/workspaces/:workspaceSlug/favorites` lists the current membership's
+  accessible Client, Project, and Issue favorites.
+- `PUT /api/workspaces/:workspaceSlug/favorites` idempotently sets favorite
+  state with `targetType`, `targetId`, and `favorite`.
+
+Favorites are membership-scoped and reapply normal target visibility rules.
+The response includes current labels, context IDs, and entity icon metadata for
+sidebar rendering.
 
 ## Time tracking
 

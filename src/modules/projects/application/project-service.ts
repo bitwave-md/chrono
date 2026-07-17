@@ -63,6 +63,9 @@ export class ProjectService {
       client_name: string;
       name: string;
       slug: string;
+      icon_type: "icon" | "emoji";
+      icon_key: string;
+      icon_color: string;
       visibility: ProjectVisibility;
       position: number;
       namespace_prefix: string | null;
@@ -87,6 +90,9 @@ export class ProjectService {
         client.name as client_name,
         project.name,
         project.slug,
+        project.icon_type,
+        project.icon_key,
+        project.icon_color,
         project.visibility,
         project.position,
         project_namespace.prefix as namespace_prefix,
@@ -154,6 +160,9 @@ export class ProjectService {
       clientName: row.client_name,
       name: row.name,
       slug: row.slug,
+      iconType: row.icon_type,
+      iconKey: row.icon_key,
+      iconColor: row.icon_color,
       visibility: row.visibility,
       position: row.position,
       namespacePrefix: row.namespace_prefix,

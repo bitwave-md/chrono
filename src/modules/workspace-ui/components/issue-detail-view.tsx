@@ -3,14 +3,13 @@
 import {
   ArrowUp,
   CirclePlay,
+  CircleDot,
   Clock3,
   FolderKanban,
   GitBranch,
   LoaderCircle,
-  MoreHorizontal,
   Shapes,
   Square,
-  Star,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
 
@@ -27,11 +26,12 @@ import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useS
 import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
 import { LabelProperty } from "@/modules/workspace-ui/components/label-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
-import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
+import { favoriteFromIssue } from "@/modules/workspace-ui/domain/favorite-target";
 import type { IssueCommentRecord, IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 export function IssueDetailView({ workspaceSlug, issueId }: { workspaceSlug: string; issueId: string }) {
@@ -77,19 +77,15 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
 
   return (
     <>
-      <RouteHeader
-        actions={(
-          <>
-            <Button aria-label="Favorite Issue" size="icon-sm" variant="ghost"><Star /></Button>
-            <Button aria-label="Issue actions" size="icon-sm" variant="ghost"><MoreHorizontal /></Button>
-          </>
-        )}
+      <EntityHeader
         breadcrumbs={[
           { label: issue.clientName, href: `/app/${workspaceSlug}/clients/${issue.clientId}/overview` },
           { label: "Issues", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
         ]}
-        showSearch={false}
+        favoriteTarget={favoriteFromIssue(issue)}
+        icon={<span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground"><CircleDot className="size-3.5" /></span>}
         title={`${issue.identifier} ${issue.title}`}
+        workspaceSlug={workspaceSlug}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">

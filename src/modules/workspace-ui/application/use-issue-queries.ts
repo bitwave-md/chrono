@@ -100,10 +100,12 @@ export function useCreateIssueMutation(
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(queryKey, context?.previous);
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({
-        queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug),
-      }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug) }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.favorites(workspaceSlug) }),
+      ]);
+    },
   });
 }
 
@@ -157,10 +159,12 @@ export function useUpdateIssueMutation(
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(queryKey, context?.previous);
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({
-        queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug),
-      }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug) }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.favorites(workspaceSlug) }),
+      ]);
+    },
   });
 }
 
@@ -193,6 +197,7 @@ export function useUpdateIssueDetailMutation(workspaceSlug: string, issueId: str
       await Promise.all([
         queryClient.invalidateQueries({ queryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug) }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.favorites(workspaceSlug) }),
       ]);
     },
   });

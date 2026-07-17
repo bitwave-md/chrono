@@ -64,6 +64,13 @@
       "when": 1784299801367,
       "tag": "0008_wakeful_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784314364336,
+      "tag": "0009_magenta_marvel_zombies",
+      "breakpoints": true
     }
   ]
 }

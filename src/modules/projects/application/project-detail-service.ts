@@ -17,6 +17,7 @@ import {
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
+import { ClientIcon, type ClientIconType } from "@/modules/clients/domain/client-icon";
 import type { ProjectPriority } from "@/modules/projects/application/project-service";
 import {
   NotFoundError,
@@ -42,6 +43,9 @@ export interface UpdateProjectInput {
   startDate?: Date | null;
   targetDate?: Date | null;
   assigneeMembershipIds?: string[];
+  iconType?: ClientIconType;
+  iconKey?: string;
+  iconColor?: string;
 }
 
 export class ProjectDetailService {
@@ -129,6 +133,14 @@ export class ProjectDetailService {
   async update(principal: Principal, projectId: string, input: UpdateProjectInput) {
     const current = await this.#project(principal, projectId);
     await this.#clientAccess.assertCanContribute(principal, current.clientId);
+    const iconFields = [input.iconType, input.iconKey, input.iconColor];
+    const icon = iconFields.some((value) => value !== undefined)
+      ? new ClientIcon(
+          input.iconType ?? current.iconType,
+          input.iconKey ?? current.iconKey,
+          input.iconColor ?? current.iconColor,
+        )
+      : null;
 
     return db.transaction(async (transaction) => {
       if (input.assigneeMembershipIds) {
@@ -155,6 +167,11 @@ export class ProjectDetailService {
           ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
           ...(input.startDate !== undefined ? { startDate: input.startDate } : {}),
           ...(input.targetDate !== undefined ? { targetDate: input.targetDate } : {}),
+          ...(icon ? {
+            iconType: icon.type,
+            iconKey: icon.key,
+            iconColor: icon.color,
+          } : {}),
           updatedAt: new Date(),
         })
         .where(and(
@@ -256,6 +273,9 @@ export class ProjectDetailService {
         clientName: clients.name,
         name: projects.name,
         slug: projects.slug,
+        iconType: projects.iconType,
+        iconKey: projects.iconKey,
+        iconColor: projects.iconColor,
         summary: projects.summary,
         description: projects.description,
         state: projects.state,

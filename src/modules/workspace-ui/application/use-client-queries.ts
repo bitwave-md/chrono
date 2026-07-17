@@ -30,7 +30,12 @@ export function useUpdateClientMutation(workspaceSlug: string, clientId: string)
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(queryKey, context?.previous);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.favorites(workspaceSlug) }),
+      ]);
+    },
   });
 }
 

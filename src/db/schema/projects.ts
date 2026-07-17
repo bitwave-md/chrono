@@ -14,7 +14,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { clients } from "./clients";
+import { clientIconType, clients } from "./clients";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
 export const projectVisibility = pgEnum("project_visibility", [
@@ -89,6 +89,9 @@ export const projects = pgTable(
     leadMembershipId: uuid("lead_membership_id"),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    iconType: clientIconType("icon_type").default("icon").notNull(),
+    iconKey: text("icon_key").default("folder-kanban").notNull(),
+    iconColor: text("icon_color").default("#8b5cf6").notNull(),
     summary: text("summary"),
     description: text("description"),
     position: integer("position").default(0).notNull(),
@@ -127,6 +130,10 @@ export const projects = pgTable(
     index("projects_lead_membership_idx").on(
       table.workspaceId,
       table.leadMembershipId,
+    ),
+    check(
+      "projects_icon_color_check",
+      sql`${table.iconColor} ~ '^#[0-9A-Fa-f]{6}$'`,
     ),
   ],
 );
