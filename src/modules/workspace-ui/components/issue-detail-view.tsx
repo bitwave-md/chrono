@@ -62,10 +62,10 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
   return (
     <>
       <RouteHeader breadcrumbs={[
-        { label: issue.clientName, href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
+        { label: issue.clientName, href: `/app/${workspaceSlug}/clients/${issue.clientId}/overview` },
         issue.projectId
           ? { label: issue.projectName ?? "Project", href: `/app/${workspaceSlug}/projects/${issue.projectId}/issues` }
-          : { label: "Client backlog", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
+          : { label: "Issues", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
       ]} title={issue.identifier} />
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] max-lg:grid-cols-1">
         <main className="min-w-0 border-r px-6 py-7 max-lg:border-r-0 max-md:px-4">

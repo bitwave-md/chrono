@@ -23,8 +23,8 @@ export function RouteHeader({ breadcrumbs = [], title, description, actions }: R
       <div className="flex h-12 items-center gap-2 px-4">
         <SidebarTrigger />
         <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
-          {breadcrumbs.map((item) => (
-            <span className="contents" key={item.href}>
+          {breadcrumbs.map((item, index) => (
+            <span className="contents" key={`${item.href}:${item.label}:${index}`}>
               <Link className="max-w-40 truncate rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={item.href}>{item.label}</Link>
               <ChevronRight className="size-3" />
             </span>
