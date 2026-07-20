@@ -47,8 +47,8 @@ export function EntityHeader({
   )) ?? false;
 
   return (
-    <header className="shrink-0">
-      <div className="flex h-14 min-w-0 items-center gap-1.5 border-b px-4">
+    <header className="shrink-0 bg-background">
+      <div className="flex h-12 min-w-0 items-center gap-1.5 border-b px-4">
         <SidebarTrigger className="mr-1 text-muted-foreground" />
         {breadcrumbs.map((item) => (
           <span className="contents" key={`${item.href}:${item.label}`}>
@@ -60,7 +60,7 @@ export function EntityHeader({
           </span>
         ))}
         {icon}
-        <span className="min-w-0 truncate text-sm font-medium text-foreground">{title}</span>
+        <span className="min-w-0 truncate text-[13px] font-medium text-foreground">{title}</span>
         <Button
           aria-label={selected ? "Remove from favorites" : "Add to favorites"}
           className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
