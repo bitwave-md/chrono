@@ -114,6 +114,7 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
             filters={filters}
             focusedIssueId={focusedIssueId}
             issues={issues}
+            showClient={Boolean(props.mine)}
             statuses={statusesQuery.data ?? []}
             workspaceSlug={props.workspaceSlug}
             onCreateEmpty={clientAggregate ? () => {

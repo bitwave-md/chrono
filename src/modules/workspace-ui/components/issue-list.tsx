@@ -16,6 +16,7 @@ import {
   IssuePriorityTrigger,
   IssueStatusTrigger,
 } from "@/modules/workspace-ui/components/issue-row-properties";
+import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { WorkflowStatusIcon } from "@/modules/workspace-ui/components/issue-property-picker-content";
 import { buildIssueGroups, type IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import type { IssueRecord, WorkflowStatusRecord } from "@/modules/workspace-ui/domain/workspace-types";
@@ -30,6 +31,7 @@ interface IssueListProps {
   focusedIssueId: string | null;
   onFocus: (issueId: string) => void;
   onOpen: (issueId: string) => void;
+  showClient?: boolean;
   onCreateInGroup?: (group: IssueGroupRecord) => void;
   onCreateEmpty?: () => void;
 }
@@ -104,7 +106,8 @@ export function IssueList(props: IssueListProps) {
                 labelOptions={metadataQuery.data?.labels ?? []}
                 members={membersQuery.data ?? []}
                 project={project}
-                showProject={Boolean(props.clientId && !props.filters.projectId)}
+                showClient={Boolean(props.showClient)}
+                showProject={Boolean(!props.filters.projectId && (props.clientId || props.showClient))}
                 statuses={workflowStatuses.get(
                   project?.workflowId ?? clientById.get(issue.clientId)?.workflowId ?? "",
                 ) ?? []}
@@ -221,6 +224,7 @@ interface IssueRowProps {
   focused: boolean;
   disabled: boolean;
   project: { id: string; name: string } | null | undefined;
+  showClient: boolean;
   showProject: boolean;
   workspaceSlug: string;
   onFocus: () => void;
@@ -262,6 +266,27 @@ function IssueRow(props: IssueRowProps) {
       />
       <span className="min-w-0 truncate font-medium">{props.issue.title}</span>
       <span className="flex min-w-0 items-center justify-self-end gap-1 max-md:hidden">
+        {props.showClient ? (
+          <Link
+            className="flex h-7 max-w-48 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            href={`/app/${props.workspaceSlug}/clients/${props.issue.clientId}/issues`}
+            title={`Open ${props.issue.clientName} Issues`}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <ClientIcon
+              className="size-4 shrink-0 rounded"
+              client={{
+                name: props.issue.clientName,
+                iconType: props.issue.clientIconType,
+                iconKey: props.issue.clientIconKey,
+                iconColor: props.issue.clientIconColor,
+              }}
+              iconClassName={props.issue.clientIconType === "emoji" ? "text-[0.55rem]" : "size-2.5"}
+            />
+            <span className="truncate">{props.issue.clientName}</span>
+          </Link>
+        ) : null}
         <IssueLabelsTrigger
           disabled={props.disabled}
           options={props.labelOptions}
