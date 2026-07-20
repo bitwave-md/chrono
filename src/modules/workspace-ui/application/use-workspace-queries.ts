@@ -4,7 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
 import type { ClientRecord, TimeCategoryRecord } from "@/modules/workspace-ui/domain/workspace-types";
-import { WorkspaceApiClient } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
+import { type CreateProjectRequest, WorkspaceApiClient } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
 
 export function useClientsQuery(workspaceSlug: string) {
   return useQuery({
@@ -39,6 +39,18 @@ export function useProjectsQuery(
   return useQuery({
     queryKey: workspaceQueryKeys.projects(workspaceSlug, clientId),
     queryFn: () => new WorkspaceApiClient(workspaceSlug).listProjects(clientId),
+  });
+}
+
+export function useCreateProjectMutation(workspaceSlug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateProjectRequest) =>
+      new WorkspaceApiClient(workspaceSlug).createProject(input),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: workspaceQueryKeys.projectsRoot(workspaceSlug),
+    }),
   });
 }
 

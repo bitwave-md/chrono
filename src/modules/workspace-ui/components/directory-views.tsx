@@ -1,11 +1,15 @@
 "use client";
 
-import { Building2, ChevronRight, FolderKanban } from "lucide-react";
+import { Building2, ChevronRight, FolderKanban, Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useClientsQuery, useProjectsQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
+import { CreateProjectDialog } from "@/modules/workspace-ui/components/create-project-dialog";
 import { EmptyView } from "@/modules/workspace-ui/components/empty-view";
 import { ProjectDirectoryTable } from "@/modules/workspace-ui/components/project-directory-table";
 import { RouteHeader } from "@/modules/workspace-ui/components/route-header";
@@ -36,21 +40,33 @@ export function ClientDirectoryView({ workspaceSlug }: { workspaceSlug: string }
 }
 
 export function ProjectDirectoryView({ workspaceSlug, client, embedded = false }: { workspaceSlug: string; client?: ClientRecord; embedded?: boolean }) {
+  const router = useRouter();
+  const [createOpen, setCreateOpen] = useState(false);
   const projectsQuery = useProjectsQuery(workspaceSlug, client?.id ?? null);
+  const clientsQuery = useClientsQuery(workspaceSlug);
   const projects = projectsQuery.data ?? [];
+  const editableClients = client
+    ? client.canEdit ? [client] : []
+    : (clientsQuery.data ?? []).filter((candidate) => candidate.canEdit);
+  const canCreate = editableClients.length > 0;
+  const createButton = canCreate ? (
+    <Button className="rounded-full" size="sm" onClick={() => setCreateOpen(true)}><Plus />New Project</Button>
+  ) : null;
   return (
     <>
       {!embedded ? <RouteHeader breadcrumbs={client ? [
         { label: "Clients", href: `/app/${workspaceSlug}/clients` },
         { label: client.name, href: `/app/${workspaceSlug}/clients/${client.id}/overview` },
       ] : undefined} title="Projects" /> : null}
-      <div className="border-b px-5 py-3">
+      <div className="flex items-center justify-between gap-3 border-b px-5 py-3">
         <span className="inline-flex h-8 items-center rounded-full bg-secondary px-3 text-sm font-medium">All projects</span>
+        {projects.length ? createButton : null}
       </div>
       {projectsQuery.isLoading ? <DirectoryLoading label="Loading Projects..." /> : null}
       {projectsQuery.error ? <DirectoryError message={projectsQuery.error.message} /> : null}
       {!projectsQuery.isLoading && !projectsQuery.error && !projects.length ? (
         <EmptyView
+          action={createButton}
           className={embedded ? "min-h-[calc(100svh-205px)]" : undefined}
           description={client ? `Create a Project to start organizing work for ${client.name}.` : "Create a Project inside a Client to start organizing work."}
           icon={FolderKanban}
@@ -58,6 +74,16 @@ export function ProjectDirectoryView({ workspaceSlug, client, embedded = false }
         />
       ) : null}
       {projects.length ? <ProjectDirectoryTable projects={projects} showClient={!client} workspaceSlug={workspaceSlug} /> : null}
+      {createOpen ? (
+        <CreateProjectDialog
+          clients={editableClients}
+          initialClientId={client?.id ?? null}
+          open
+          workspaceSlug={workspaceSlug}
+          onCreated={(projectId) => router.push(`/app/${workspaceSlug}/projects/${projectId}/overview`)}
+          onOpenChange={setCreateOpen}
+        />
+      ) : null}
     </>
   );
 }

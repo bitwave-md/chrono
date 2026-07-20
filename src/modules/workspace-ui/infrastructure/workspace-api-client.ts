@@ -56,6 +56,21 @@ export interface CreateIssueResponse {
   identifier: string;
 }
 
+export interface CreateProjectRequest {
+  clientId: string;
+  visibility: ProjectRecord["visibility"];
+  priority: ProjectRecord["priority"];
+  leadMembershipId: string | null;
+  name: string;
+  slug: string;
+  description: string | null;
+  namespacePrefix: string | null;
+}
+
+export interface CreateProjectResponse {
+  project: { id: string; clientId: string; name: string };
+}
+
 export interface UpdateIssueRequest {
   issueId: string;
   expectedVersion: number;
@@ -128,6 +143,13 @@ export class WorkspaceApiClient {
     return this.#get(
       clientId ? `/projects?clientId=${encodeURIComponent(clientId)}` : "/projects",
     );
+  }
+
+  createProject(input: CreateProjectRequest): Promise<CreateProjectResponse> {
+    return this.#request("/projects", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   createClient(input: {

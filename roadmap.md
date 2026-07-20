@@ -229,6 +229,7 @@ tenant-protected workspace page.
 - [x] Add Client-owned and Project-owned workflows and workflow statuses.
 - [x] Give every Client and Project an independent workflow.
 - [x] Add tenant-safe Project access policies.
+- [x] Add permission-aware Project creation UI to empty and populated directories.
 
 Phase 2 runtime verification completed on 2026-07-15. The authenticated tracer
 created DaCredit and multiple Projects. It verified Client and Project issue
