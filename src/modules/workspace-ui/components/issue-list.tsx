@@ -162,7 +162,7 @@ function IssueGroup({
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <div
-        className="group/issue-header mx-2 mt-2 flex h-10 w-[calc(100%-1rem)] items-center rounded-md bg-muted/40 transition-colors hover:bg-muted/70"
+        className="group/issue-header mx-2 mt-0.5 flex h-10 w-[calc(100%-1rem)] items-center rounded-md bg-muted/40 transition-colors hover:bg-muted/70"
         style={issueGroupHeaderStyle(group.color)}
       >
         <CollapsibleTrigger asChild>
@@ -246,7 +246,7 @@ function IssueRow(props: IssueRowProps) {
   return (
     <div
       className={cn(
-        "group/issue relative grid min-h-12 cursor-pointer grid-cols-[28px_64px_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_64px_28px_minmax(0,1fr)_32px] max-md:px-3",
+        "group/issue relative mt-0.5 grid min-h-11 cursor-pointer grid-cols-[28px_64px_28px_minmax(160px,1fr)_minmax(0,auto)_32px] items-center rounded-md px-10 text-sm hover:bg-accent/15 focus-visible:outline-none max-md:grid-cols-[28px_64px_28px_minmax(0,1fr)_32px] max-md:px-3",
       )}
       role="link"
       tabIndex={0}
