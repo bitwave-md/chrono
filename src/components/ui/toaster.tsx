@@ -1,16 +1,22 @@
 "use client";
 
-import { CircleAlert, CircleCheck, Info, LoaderCircle, X } from "lucide-react";
 import { resolveValue, toast, Toaster as HotToaster, type Toast } from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
 import { ToastSurface } from "@/components/ui/toast-surface";
 
 function ToastIndicator({ item }: { item: Toast }) {
-  if (item.type === "success") return <CircleCheck className="size-5 text-emerald-400" />;
-  if (item.type === "error") return <CircleAlert className="size-5 text-red-400" />;
-  if (item.type === "loading") return <LoaderCircle className="size-5 animate-spin text-muted-foreground" />;
-  return <Info className="size-5 text-muted-foreground" />;
+  if (item.type === "success") return <span className="size-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/10" />;
+  if (item.type === "error") return <span className="size-2 rounded-full bg-red-400 ring-4 ring-red-400/10" />;
+  if (item.type === "loading") return <span className="size-2 animate-pulse rounded-full bg-amber-400 ring-4 ring-amber-400/10" />;
+  return <span className="size-2 rounded-full bg-sky-400 ring-4 ring-sky-400/10" />;
+}
+
+function toastLabel(item: Toast): string {
+  if (item.type === "success") return "Success";
+  if (item.type === "error") return "Error";
+  if (item.type === "loading") return "Working";
+  return "Notice";
 }
 
 export function Toaster() {
@@ -29,17 +35,17 @@ export function Toaster() {
           action={item.type === "loading" ? null : (
             <Button
               aria-label="Dismiss notification"
-              className="rounded-full text-muted-foreground hover:text-foreground"
-              size="icon-sm"
-              variant="ghost"
+              size="sm"
+              variant="secondary"
               onClick={() => toast.dismiss(item.id)}
             >
-              <X className="size-4" />
+              Dismiss
             </Button>
           )}
           indicator={<ToastIndicator item={item} />}
         >
-          <div className="text-sm font-medium leading-5">{resolveValue(item.message, item)}</div>
+          <span className="block font-mono text-[0.62rem] text-muted-foreground">{toastLabel(item)}</span>
+          <strong className="mt-0.5 block text-xs font-semibold">{resolveValue(item.message, item)}</strong>
         </ToastSurface>
       )}
     </HotToaster>

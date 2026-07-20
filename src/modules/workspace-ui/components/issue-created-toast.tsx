@@ -19,14 +19,14 @@ export function showIssueCreatedToast(input: IssueCreatedToastInput): void {
   toast.custom((current) => (
     <ToastSurface
       action={(
-        <Button asChild className="h-10 rounded-xl border-indigo-400/35 bg-indigo-400/10 px-4 text-indigo-300 hover:bg-indigo-400/15 hover:text-indigo-200" variant="outline">
+        <Button asChild size="sm" variant="secondary">
           <Link href={input.href} onClick={() => toast.dismiss(current.id)}>View issue</Link>
         </Button>
       )}
       indicator={<WorkflowStatusIcon category={input.status.category} color={input.status.color} />}
     >
-      <p className="truncate text-sm font-medium text-muted-foreground">{input.identifier}</p>
-      <p className="truncate text-base font-semibold text-foreground">{input.title}</p>
+      <span className="block truncate font-mono text-[0.62rem] text-muted-foreground">{input.identifier}</span>
+      <strong className="mt-0.5 block truncate text-xs">{input.title}</strong>
     </ToastSurface>
   ), {
     ariaProps: { role: "status", "aria-live": "polite" },
