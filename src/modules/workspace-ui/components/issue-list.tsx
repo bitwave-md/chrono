@@ -17,6 +17,7 @@ import {
   IssueStatusTrigger,
 } from "@/modules/workspace-ui/components/issue-row-properties";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
+import { EmptyView } from "@/modules/workspace-ui/components/empty-view";
 import { WorkflowStatusIcon } from "@/modules/workspace-ui/components/issue-property-picker-content";
 import { buildIssueGroups, type IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import type { IssueRecord, WorkflowStatusRecord } from "@/modules/workspace-ui/domain/workspace-types";
@@ -72,18 +73,16 @@ export function IssueList(props: IssueListProps) {
 
   if (!props.issues.length) {
     return (
-      <div className="grid min-h-[calc(100svh-190px)] place-content-center justify-items-center text-center">
-        <CircleDashed className="mb-4 size-10 text-muted-foreground" />
-        <h2 className="text-sm font-medium">No issues in this view</h2>
-        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-          Create an Issue to start tracking work here.
-        </p>
-        {props.onCreateEmpty ? (
-          <Button className="mt-4 rounded-full" size="sm" onClick={props.onCreateEmpty}>
+      <EmptyView
+        action={props.onCreateEmpty ? (
+          <Button className="rounded-full" size="sm" onClick={props.onCreateEmpty}>
             <Plus />New issue
           </Button>
         ) : null}
-      </div>
+        description="Create an Issue to start tracking work here."
+        icon={CircleDashed}
+        title="No issues in this view"
+      />
     );
   }
 

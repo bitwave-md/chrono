@@ -9,6 +9,7 @@ import { useMembersQuery, useProjectsQuery, useTimeCategoriesQuery } from "@/mod
 import { ClientTimeEntryTable } from "@/modules/workspace-ui/components/client-time-entry-table";
 import { ClientTimeReportCharts } from "@/modules/workspace-ui/components/client-time-report-charts";
 import { ClientTimeReportFilters } from "@/modules/workspace-ui/components/client-time-report-filters";
+import { EmptyView } from "@/modules/workspace-ui/components/empty-view";
 import {
   aggregateClientTimeReport,
   parseClientReportRange,
@@ -91,10 +92,22 @@ export function ClientTimeReportView({
       <div className="mx-auto grid w-full max-w-[1500px] gap-4 p-5 md:p-7">
         <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Time report</h1><p className="mt-1 text-sm text-muted-foreground">{reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}.` : `Recorded work across ${client.name} Projects and Issues.`}</p></div>{reportQuery.isFetching ? <span className="text-xs text-muted-foreground">Updating…</span> : null}</div>
         {reportQuery.error ? <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">{reportQuery.error.message}</div> : null}
-        <SummaryCards report={report} />
-        <ClientTimeReportCharts categories={report.categories} daily={report.daily} projects={report.projects} />
-        {reportQuery.data?.truncated ? <p className="rounded-lg border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">This view is limited to the newest 1,000 matching entries. Narrow the period for a complete reconciliation.</p> : null}
-        <ClientTimeEntryTable entries={entries} workspaceSlug={workspaceSlug} />
+        {!reportQuery.isLoading && !reportQuery.error && !entries.length ? (
+          <EmptyView
+            className="min-h-[calc(100svh-300px)]"
+            description="Try another date range or record time on one of this Client’s Issues."
+            icon={Clock3}
+            title="No time entries in this period"
+          />
+        ) : null}
+        {entries.length ? (
+          <>
+            <SummaryCards report={report} />
+            <ClientTimeReportCharts categories={report.categories} daily={report.daily} projects={report.projects} />
+            {reportQuery.data?.truncated ? <p className="rounded-lg border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">This view is limited to the newest 1,000 matching entries. Narrow the period for a complete reconciliation.</p> : null}
+            <ClientTimeEntryTable entries={entries} workspaceSlug={workspaceSlug} />
+          </>
+        ) : null}
       </div>
     </div>
   );
