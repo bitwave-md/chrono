@@ -5,6 +5,7 @@ import {
   Check,
   ChevronRight,
   CircleDot,
+  Clock3,
   FolderKanban,
   House,
   Inbox,
@@ -206,6 +207,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
                                 { label: "Home", segment: "overview", icon: House },
                                 { label: "Issues", segment: "issues", icon: ListTodo },
                                 { label: "Projects", segment: "projects", icon: FolderKanban },
+                                { label: "Time", segment: "time", icon: Clock3 },
                               ].map(({ label, segment, icon: Icon }) => {
                                 const href = `${clientRoot}/${segment}`;
                                 return (
