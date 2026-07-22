@@ -107,6 +107,13 @@ Run `./update.sh <release-version>`. It creates a backup, updates
 the stack, and waits for a healthy application. Settings → Updates displays the
 same command and release notes but cannot execute it.
 
+Release checks use `CHRONO_RELEASE_REPOSITORY` in `owner/repository` form. For
+a private repository, set `CHRONO_GITHUB_TOKEN` to a fine-grained, read-only
+token with repository metadata/content access, then recreate the app service.
+The token is sent only to `api.github.com` and is never returned to the browser.
+A repository without a published GitHub Release is reported separately from a
+network or rate-limit failure.
+
 To move a source-fallback installation onto published images, set
 `CHRONO_INSTALL_MODE=image`, `CHRONO_PULL_POLICY=always`, and the desired
 `CHRONO_VERSION` in `.env`, then use the standard pull and startup commands

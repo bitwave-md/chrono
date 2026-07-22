@@ -67,6 +67,8 @@ for (const path of ["personal/profile", "personal/preferences", "personal/notifi
   const page = await authenticated(`/app/${workspace}/settings/${path}`);
   assert.equal(page.status, 200, `Settings page failed: ${path}`);
 }
+const updateStatus = await data<{ releaseState: string; releaseMessage: string }>(`/api/workspaces/${workspace}/settings/updates`);
+assert.ok(updateStatus.releaseState && updateStatus.releaseMessage, "Release lookup diagnostics are missing.");
 const notifications = await data<{ assignments: boolean }>(`/api/workspaces/${workspace}/settings/notifications`);
 await data(`/api/workspaces/${workspace}/settings/notifications`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignments: !notifications.assignments }) });
 await data(`/api/workspaces/${workspace}/settings/notifications`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignments: notifications.assignments }) });

@@ -87,6 +87,7 @@ services:
       STORAGE_PERSONAL_QUOTA_MB: ${STORAGE_PERSONAL_QUOTA_MB:-100}
       CHRONO_VERSION: ${CHRONO_VERSION:-latest}
       CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
+      CHRONO_GITHUB_TOKEN: ${CHRONO_GITHUB_TOKEN:-}
     depends_on:
       migrate:
         condition: service_completed_successfully

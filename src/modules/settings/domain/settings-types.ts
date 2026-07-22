@@ -52,5 +52,10 @@ export interface UpdateStatusRecord {
   publishedAt: string | null;
   releaseUrl: string | null;
   repository: string;
+  releaseState: "available" | "not_found" | "unauthorized" | "rate_limited" | "unavailable" | "invalid_configuration";
+  releaseMessage: string;
+  releaseAuthentication: "token" | "anonymous";
+  rateLimitReset: string | null;
+  checkedAt: string;
   command: string;
 }

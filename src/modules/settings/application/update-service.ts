@@ -1,23 +1,18 @@
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { InstanceOperatorPolicy } from "@/modules/settings/application/instance-operator-policy";
-
-interface ReleaseRecord {
-  tag_name: string;
-  name: string | null;
-  body: string | null;
-  published_at: string | null;
-  html_url: string;
-}
+import { GitHubReleaseClient, type ReleaseLookup } from "@/modules/settings/infrastructure/github-release-client";
 
 export class UpdateService {
-  static #cached: { expiresAt: number; value: ReleaseRecord | null } | null = null;
+  static #cached: { expiresAt: number; value: ReleaseLookup } | null = null;
   readonly #operators = new InstanceOperatorPolicy();
+  readonly #releases = new GitHubReleaseClient();
 
   async status(principal: Principal) {
     this.#operators.assertOperator(principal);
     const installedVersion = process.env.CHRONO_VERSION?.trim() || "development";
     const repository = process.env.CHRONO_RELEASE_REPOSITORY?.trim() || "bitwave-md/chrono";
-    const release = await this.#latest(repository);
+    const lookup = await this.#latest(repository);
+    const release = lookup.release;
     const latestVersion = release?.tag_name ?? null;
     return {
       installedVersion,
@@ -28,26 +23,21 @@ export class UpdateService {
       publishedAt: release?.published_at ?? null,
       releaseUrl: release?.html_url ?? null,
       repository,
+      releaseState: lookup.state,
+      releaseMessage: lookup.message,
+      releaseAuthentication: this.#releases.authenticationMode,
+      rateLimitReset: lookup.rateLimitReset,
+      checkedAt: new Date().toISOString(),
       command: latestVersion ? `./update.sh ${latestVersion}` : "./update.sh <release-version>",
     };
   }
 
-  async #latest(repository: string): Promise<ReleaseRecord | null> {
+  async #latest(repository: string): Promise<ReleaseLookup> {
     const now = Date.now();
     if (UpdateService.#cached && UpdateService.#cached.expiresAt > now) return UpdateService.#cached.value;
-    try {
-      const response = await fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
-        headers: { Accept: "application/vnd.github+json", "User-Agent": "chrono-self-hosted" },
-        cache: "no-store",
-        signal: AbortSignal.timeout(5_000),
-      });
-      const value = response.ok ? await response.json() as ReleaseRecord : null;
-      UpdateService.#cached = { value, expiresAt: now + 15 * 60_000 };
-      return value;
-    } catch {
-      UpdateService.#cached = { value: null, expiresAt: now + 60_000 };
-      return null;
-    }
+    const value = await this.#releases.latest(repository);
+    UpdateService.#cached = { value, expiresAt: now + (value.state === "available" ? 15 * 60_000 : 60_000) };
+    return value;
   }
 }
 

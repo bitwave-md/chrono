@@ -108,6 +108,10 @@ history. Public responses are attachment-only with `nosniff`, `no-referrer`,
 `noindex`, no-store caching, and rate limiting. The app has no Docker socket,
 and application updates remain host-side operations.
 
+Private GitHub release checks may use `CHRONO_GITHUB_TOKEN`. Use a fine-grained
+read-only token limited to the Chrono repository, keep it in the mode-`0600`
+installation environment, and rotate it independently of application secrets.
+
 ## Upgrade review
 
 React and React DOM were advanced to the current compatible 19.2.7 patch, and
