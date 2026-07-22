@@ -59,6 +59,9 @@ export interface ProjectRecord {
   id: string;
   clientId: string;
   clientName: string;
+  clientIconType: "icon" | "emoji";
+  clientIconKey: string;
+  clientIconColor: string;
   name: string;
   slug: string;
   iconType: "icon" | "emoji";

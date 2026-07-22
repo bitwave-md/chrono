@@ -181,10 +181,12 @@ Aggregate Client lists retain direct, Project Main, and named-Branch Issues.
 Project Issues show a compact Project navigation chip; named-Branch Issues add
 the Branch name and route directly to that Branch scope.
 Project directory rows expose the same inline model for priority, lead, target
-date, and Project state while preserving row-level keyboard navigation.
-The workspace and Client Project directories use one flat Linear-style table
-with latest-update health, priority, lead, target date, Issue count, and derived
-completion progress. Project Issue Branch scope is URL-backed: no query means
+date, and Project state while preserving row-level keyboard navigation. The
+workspace and Client directories group non-empty Project states beneath shared
+gradient-tinted, collapsible headers. Their compact rows retain latest-update
+health and derived completion progress; context chips link to the owning Client
+and Project Issues without triggering row navigation. Project Issue Branch
+scope is URL-backed: no query means
 Main, `branch=all` means all Branches, and `branch=:branchId` selects one named
 Branch through a compact Select.
 Animations use `@gsap/react` and compositor-friendly transform/opacity values.

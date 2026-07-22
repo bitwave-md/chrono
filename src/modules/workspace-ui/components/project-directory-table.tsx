@@ -1,27 +1,23 @@
 "use client";
 
-import {
-  Activity,
-  Circle,
-  CircleDashed,
-  FolderKanban,
-  Gauge,
-} from "lucide-react";
+import { Activity, ChevronRight, Circle, CircleDashed, CircleDot, Gauge } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { KeyboardEvent, MouseEvent } from "react";
+import { type KeyboardEvent, type MouseEvent, useState } from "react";
 
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import { useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
 import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
+import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
+import { groupHeaderGradient } from "@/modules/workspace-ui/components/group-header-gradient";
 import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import { ProjectIcon } from "@/modules/workspace-ui/components/project-icon";
-import type {
-  MemberRecord,
-  ProjectDetailRecord,
-  ProjectRecord,
-} from "@/modules/workspace-ui/domain/workspace-types";
+import { buildProjectListGroups, type ProjectListGroup } from "@/modules/workspace-ui/domain/project-list-groups";
+import type { MemberRecord, ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 const healthMetadata = {
   on_track: { label: "On track", className: "text-emerald-500" },
@@ -39,52 +35,78 @@ export function ProjectDirectoryTable({
   showClient: boolean;
 }) {
   const membersQuery = useMembersQuery(workspaceSlug);
-  const gridTemplateColumns = showClient
-    ? "minmax(250px, 1fr) 140px 140px 150px 180px 170px 70px 190px"
-    : "minmax(270px, 1fr) 140px 150px 180px 170px 70px 190px";
-  const gridStyle = { gridTemplateColumns };
+  const groups = buildProjectListGroups(projects);
 
   return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[1050px] items-center gap-2 px-5 py-3 text-xs text-muted-foreground" style={gridStyle}>
-        <span>Name</span>
-        {showClient ? <span>Client</span> : null}
-        <span>Health</span><span>Priority</span><span>Lead</span>
-        <span>Target date</span><span>Issues</span><span>Status</span>
+    <div className="pb-4" role="list">
+      {groups.map((group) => (
+        <ProjectGroup
+          group={group}
+          key={group.state}
+          members={membersQuery.data ?? []}
+          showClient={showClient}
+          workspaceSlug={workspaceSlug}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ProjectGroup({
+  group,
+  members,
+  showClient,
+  workspaceSlug,
+}: {
+  group: ProjectListGroup<ProjectRecord>;
+  members: MemberRecord[];
+  showClient: boolean;
+  workspaceSlug: string;
+}) {
+  const [open, setOpen] = useState(true);
+  const stateOption = projectStateOptions.find((option) => option.value === group.state);
+  const StateIcon = stateOption?.icon ?? CircleDashed;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div
+        className="group/project-header mx-2 mt-0.5 flex h-10 w-[calc(100%-1rem)] items-center rounded-md bg-muted/40 transition-colors hover:bg-muted/70"
+        style={groupHeaderGradient(group.color)}
+      >
+        <CollapsibleTrigger asChild>
+          <button className="flex h-full min-w-0 flex-1 items-center gap-2 px-4 text-left text-xs font-medium" type="button">
+            <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-90")} />
+            <StateIcon className="size-4" style={{ color: group.color }} />
+            <span>{group.label}</span>
+            <span className="text-muted-foreground">{group.projects.length}</span>
+          </button>
+        </CollapsibleTrigger>
       </div>
-      <div>
-        {projects.map((project) => (
-          <ProjectDirectoryRow
-            gridStyle={gridStyle}
+      <CollapsibleContent className="px-2">
+        {group.projects.map((project) => (
+          <ProjectRow
             key={project.id}
-            members={membersQuery.data ?? []}
+            members={members}
             project={project}
             showClient={showClient}
             workspaceSlug={workspaceSlug}
           />
         ))}
-        {!projects.length ? (
-          <div className="flex min-h-24 items-center gap-2 border-t px-5 text-sm text-muted-foreground">
-            <FolderKanban className="size-4" />No Projects found.
-          </div>
-        ) : null}
-      </div>
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
-function ProjectDirectoryRow({
+function ProjectRow({
   project,
   workspaceSlug,
   showClient,
   members,
-  gridStyle,
 }: {
   project: ProjectRecord;
   workspaceSlug: string;
   showClient: boolean;
   members: MemberRecord[];
-  gridStyle: { gridTemplateColumns: string };
 }) {
   const router = useRouter();
   const update = useUpdateProjectMutation(workspaceSlug, project.id);
@@ -103,55 +125,44 @@ function ProjectDirectoryRow({
 
   return (
     <div
-      className="grid min-h-14 min-w-[1050px] cursor-pointer items-center gap-2 border-t px-5 text-sm hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none"
-      role="link"
-      style={gridStyle}
+      className="group/project relative mt-0.5 flex min-h-12 cursor-pointer items-center gap-2 rounded-md px-4 text-sm hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/50 max-md:px-3"
+      role="listitem"
       tabIndex={0}
       onClick={() => router.push(href)}
       onKeyDown={openWithKeyboard}
     >
-      <span className="flex min-w-0 items-center gap-3 font-medium">
+      <span className="flex min-w-40 flex-1 items-center gap-2.5 font-medium">
         <ProjectIcon className="size-6" iconClassName={project.iconType === "emoji" ? "text-xs" : "size-3.5"} project={project} />
         <span className="truncate">{project.name}</span>
       </span>
-      {showClient ? <span className="truncate text-muted-foreground">{project.clientName}</span> : null}
-      <ProjectHealth project={project} />
-      <PropertyCell>
-        <OptionProperty
-          disabled={update.isPending}
-          icon={Circle}
-          label="Priority"
-          options={projectPriorityOptions}
-          placeholder="No priority"
-          value={project.priority}
-          onChange={(priority) => priority && patch(
-            { priority },
-            { priority: priority as ProjectRecord["priority"] },
-          )}
-        />
-      </PropertyCell>
-      <PropertyCell>
-        <MemberProperty
-          disabled={update.isPending}
-          label="Lead"
-          members={members}
-          value={project.lead}
-          onChange={(lead) => patch(
-            { leadMembershipId: lead?.membershipId ?? null },
-            { lead },
-          )}
-        />
-      </PropertyCell>
-      <PropertyCell>
-        <DateProperty
-          label="Target date"
-          value={project.targetDate}
-          onChange={(targetDate) => patch({ targetDate }, { targetDate })}
-        />
-      </PropertyCell>
-      <span className="tabular-nums text-muted-foreground">{project.issueCount}</span>
-      <PropertyCell>
-        <div className="flex min-w-0 items-center gap-1">
+      <span className="flex min-w-0 shrink items-center justify-end gap-1 max-md:gap-0.5">
+        {showClient ? <ClientChip project={project} workspaceSlug={workspaceSlug} /> : null}
+        <span className="max-xl:hidden"><ProjectHealth project={project} /></span>
+        <PropertyCell className="max-lg:hidden">
+          <OptionProperty
+            disabled={update.isPending}
+            icon={Circle}
+            label="Priority"
+            options={projectPriorityOptions}
+            placeholder="No priority"
+            value={project.priority}
+            onChange={(priority) => priority && patch({ priority }, { priority: priority as ProjectRecord["priority"] })}
+          />
+        </PropertyCell>
+        <PropertyCell className="max-xl:hidden">
+          <MemberProperty
+            disabled={update.isPending}
+            label="Lead"
+            members={members}
+            value={project.lead}
+            onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })}
+          />
+        </PropertyCell>
+        <PropertyCell className="max-xl:hidden">
+          <DateProperty label="Target date" value={project.targetDate} onChange={(targetDate) => patch({ targetDate }, { targetDate })} />
+        </PropertyCell>
+        <ProjectIssuesChip project={project} workspaceSlug={workspaceSlug} />
+        <PropertyCell>
           <OptionProperty
             disabled={update.isPending}
             icon={CircleDashed}
@@ -159,34 +170,57 @@ function ProjectDirectoryRow({
             options={projectStateOptions}
             placeholder="Planned"
             value={project.state}
-            onChange={(state) => state && patch(
-              { state },
-              { state: state as ProjectRecord["state"] },
-            )}
+            onChange={(state) => state && patch({ state }, { state: state as ProjectRecord["state"] })}
           />
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-            {project.progressPercentage}%
-          </span>
-        </div>
-      </PropertyCell>
+        </PropertyCell>
+      </span>
     </div>
   );
 }
 
-function PropertyCell({ children }: { children: React.ReactNode }) {
-  return <span className="min-w-0" onClick={stopRowClick}>{children}</span>;
+function ClientChip({ project, workspaceSlug }: { project: ProjectRecord; workspaceSlug: string }) {
+  return (
+    <Link
+      className="flex h-7 max-w-44 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground max-lg:hidden"
+      href={`/app/${workspaceSlug}/clients/${project.clientId}/projects`}
+      title={`Open ${project.clientName} Projects`}
+      onClick={stopLinkClick}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <ClientIcon className="size-4 shrink-0 rounded" client={{ name: project.clientName, iconType: project.clientIconType, iconKey: project.clientIconKey, iconColor: project.clientIconColor }} iconClassName={project.clientIconType === "emoji" ? "text-[0.55rem]" : "size-2.5"} />
+      <span className="truncate">{project.clientName}</span>
+    </Link>
+  );
+}
+
+function ProjectIssuesChip({ project, workspaceSlug }: { project: ProjectRecord; workspaceSlug: string }) {
+  return (
+    <Link
+      className="flex h-7 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground max-sm:hidden"
+      href={`/app/${workspaceSlug}/projects/${project.id}/issues`}
+      title={`Open ${project.name} Issues`}
+      onClick={stopLinkClick}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <CircleDot className="size-3.5" />
+      <span className="tabular-nums">{project.issueCount}</span>
+      {project.issueCount ? <span className="text-muted-foreground/60">· {project.progressPercentage}%</span> : null}
+    </Link>
+  );
+}
+
+function PropertyCell({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <span className={cn("min-w-0", className)} onClick={(event) => event.stopPropagation()}>{children}</span>;
 }
 
 function ProjectHealth({ project }: { project: ProjectRecord }) {
-  if (!project.health) {
-    return <span className="flex items-center gap-2 text-muted-foreground"><Activity className="size-4" />No health</span>;
-  }
+  if (!project.health) return <span className="flex h-7 items-center gap-1.5 px-2 text-xs text-muted-foreground"><Activity className="size-3.5" />No health</span>;
   const metadata = healthMetadata[project.health];
   return (
-    <span className={`flex items-center gap-2 ${metadata.className}`}>
-      <Gauge className="size-4" />
+    <span className={cn("flex h-7 items-center gap-1.5 px-2 text-xs", metadata.className)}>
+      <Gauge className="size-3.5" />
       <span>{metadata.label}</span>
-      {project.healthUpdatedAt ? <span className="text-xs opacity-80">· {relativeAge(project.healthUpdatedAt)}</span> : null}
+      {project.healthUpdatedAt ? <span className="opacity-70">· {relativeAge(project.healthUpdatedAt)}</span> : null}
     </span>
   );
 }
@@ -198,6 +232,6 @@ function relativeAge(value: string) {
   return `${Math.floor(days / 7)}w`;
 }
 
-function stopRowClick(event: MouseEvent<HTMLSpanElement>) {
+function stopLinkClick(event: MouseEvent<HTMLAnchorElement>) {
   event.stopPropagation();
 }

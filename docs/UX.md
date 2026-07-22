@@ -36,6 +36,15 @@ a compact property row, derived progress, latest update, description,
 resources, and milestones. Activity contains an update composer and immutable
 events. Issues are grouped by workflow status.
 
+Workspace-wide and Client Project directories use the same dense list language
+as Issue collections. Projects are grouped by non-empty delivery state under
+collapsible, softly tinted headers with semantic icons and counts. Compact rows
+keep the Project identity visually dominant while exposing health, priority,
+lead, target date, state, Issue count, and completion progress as contextual
+controls. Property controls mutate inline; changing state optimistically moves
+the row to its new group. Workspace-wide rows add an owned-icon Client chip,
+and every row has an Issue-count/progress chip that opens the Project's Issues.
+
 Properties are icon/value triggers with semantic colors. They open a popover or
 searchable command list only when clicked. Assignees support zero, one, or many
 Workspace users and display overlapping avatars.

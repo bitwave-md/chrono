@@ -18,6 +18,7 @@ import {
 } from "@/modules/workspace-ui/components/issue-row-properties";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { EmptyView } from "@/modules/workspace-ui/components/empty-view";
+import { groupHeaderGradient } from "@/modules/workspace-ui/components/group-header-gradient";
 import { WorkflowStatusIcon } from "@/modules/workspace-ui/components/issue-property-picker-content";
 import { buildIssueGroups, type IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import type { IssueRecord, WorkflowStatusRecord } from "@/modules/workspace-ui/domain/workspace-types";
@@ -163,7 +164,7 @@ function IssueGroup({
     <Collapsible open={open} onOpenChange={setOpen}>
       <div
         className="group/issue-header mx-2 mt-0.5 flex h-10 w-[calc(100%-1rem)] items-center rounded-md bg-muted/40 transition-colors hover:bg-muted/70"
-        style={issueGroupHeaderStyle(group.color)}
+        style={groupHeaderGradient(group.color)}
       >
         <CollapsibleTrigger asChild>
           <button
@@ -194,25 +195,6 @@ function IssueGroup({
       </CollapsibleContent>
     </Collapsible>
   );
-}
-
-function issueGroupHeaderStyle(color: string | null): React.CSSProperties | undefined {
-  const rgb = parseHexColor(color);
-  if (!rgb) return undefined;
-  const [red, green, blue] = rgb;
-  return {
-    backgroundImage: `linear-gradient(90deg, rgba(${red}, ${green}, ${blue}, 0.11), rgba(${red}, ${green}, ${blue}, 0.035) 46%, transparent 100%)`,
-  };
-}
-
-function parseHexColor(color: string | null) {
-  const match = color?.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
-  if (!match) return null;
-  return [
-    Number.parseInt(match[1], 16),
-    Number.parseInt(match[2], 16),
-    Number.parseInt(match[3], 16),
-  ] as const;
 }
 
 interface IssueRowProps {

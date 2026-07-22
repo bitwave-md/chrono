@@ -1,5 +1,22 @@
 # Chrono Roadmap
 
+## Linear-style Project lists
+
+Tracer bullet: open Workspace and Client Project directories, scan Projects in
+non-empty status groups, update row properties inline, and follow Client or
+Issue-count context chips without triggering the row’s Overview navigation.
+
+- [x] Group Projects by state with collapsible gradient headers and counts.
+- [x] Replace the spreadsheet treatment with compact Issue-list-style rows.
+- [x] Keep health, priority, lead, target date, progress, and state visible.
+- [x] Add clickable custom-icon Client and Project Issues context chips.
+- [x] Verify optimistic regrouping, navigation, builds, tests, and Docker runtime.
+
+Completed and runtime-verified on 2026-07-22. Workspace and Client directories
+rendered grouped Project data from the authenticated API, including Client icon
+identity, and preserved optimistic inline property changes. TypeScript, ESLint,
+33 domain tests, the production build, and a clean Docker source rebuild passed.
+
 ## Self-hosting appliance
 
 Tracer bullet: install Chrono on a clean Docker host without Node.js,

@@ -61,6 +61,9 @@ export class ProjectService {
       id: string;
       client_id: string;
       client_name: string;
+      client_icon_type: "icon" | "emoji";
+      client_icon_key: string;
+      client_icon_color: string;
       name: string;
       slug: string;
       icon_type: "icon" | "emoji";
@@ -88,6 +91,9 @@ export class ProjectService {
         project.id,
         project.client_id,
         client.name as client_name,
+        client.icon_type as client_icon_type,
+        client.icon_key as client_icon_key,
+        client.icon_color as client_icon_color,
         project.name,
         project.slug,
         project.icon_type,
@@ -158,6 +164,9 @@ export class ProjectService {
       id: row.id,
       clientId: row.client_id,
       clientName: row.client_name,
+      clientIconType: row.client_icon_type,
+      clientIconKey: row.client_icon_key,
+      clientIconColor: row.client_icon_color,
       name: row.name,
       slug: row.slug,
       iconType: row.icon_type,
