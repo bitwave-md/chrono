@@ -1,17 +1,17 @@
 "use client";
 
-import { ChevronRight, FolderKanban, GitBranch, LoaderCircle, Maximize2, Minimize2, Plus, X } from "lucide-react";
-import { type FormEvent, useRef, useState } from "react";
+import { FolderKanban, GitBranch, LoaderCircle, Plus } from "lucide-react";
+import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useCreateIssueMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useClientsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
-import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
+import { CreationDialogFrame } from "@/modules/workspace-ui/components/creation-dialog-frame";
 import { showIssueCreatedToast } from "@/modules/workspace-ui/components/issue-created-toast";
 import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
@@ -34,7 +34,6 @@ interface CreateIssueDialogProps {
 }
 
 export function CreateIssueDialog(props: CreateIssueDialogProps) {
-  const contentRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string | null>(props.selectedProjectId);
@@ -43,7 +42,6 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
   const [priority, setPriority] = useState<IssuePriority>("none");
   const [statusId, setStatusId] = useState<string | null | undefined>(undefined);
   const [createMore, setCreateMore] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const project = props.projects.find((candidate) => candidate.id === projectId);
   const clientsQuery = useClientsQuery(props.workspaceSlug);
   const client = clientsQuery.data?.find((candidate) => candidate.id === props.clientId);
@@ -60,15 +58,6 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
     ? props.initialStatusId ?? defaultStatus?.id ?? null
     : statusId;
   const selectedStatus = statuses.find((status) => status.id === selectedStatusId);
-
-  useGSAP(
-    () => {
-      if (props.open) {
-        gsap.fromTo(contentRef.current, { opacity: 0, y: 18, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: "power2.out" });
-      }
-    },
-    { dependencies: [props.open], revertOnUpdate: true },
-  );
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -117,32 +106,17 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent
-        className={cn(
-          "top-[7svh] h-[min(560px,86svh)] grid-rows-[auto_minmax(0,1fr)] translate-y-0 gap-0 overflow-hidden rounded-3xl border-white/10 bg-card p-0 shadow-2xl will-change-transform sm:max-w-4xl max-md:top-[3svh] max-md:h-[94svh]",
-          expanded && "top-3 left-3 h-[calc(100svh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-none translate-x-0 translate-y-0 rounded-2xl sm:max-w-none",
+      <CreationDialogFrame
+        context={(
+          <span className="flex h-8 max-w-56 items-center gap-2 rounded-full border bg-secondary/45 px-3 text-sm text-muted-foreground">
+            <FolderKanban className="size-4 shrink-0" />
+            <span className="truncate">{project?.name ?? client?.name ?? "No project"}</span>
+          </span>
         )}
-        ref={contentRef}
-        showCloseButton={false}
+        description="Create an Issue with Project, status, priority, and assignees."
+        open={props.open}
+        title="New issue"
       >
-        <DialogHeader className="flex-row items-center justify-between px-6 pt-5">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-8 max-w-56 items-center gap-2 rounded-full border bg-secondary/45 px-3 text-sm text-muted-foreground">
-              <FolderKanban className="size-4 shrink-0" />
-              <span className="truncate">{project?.name ?? client?.name ?? "No project"}</span>
-            </span>
-            <ChevronRight className="size-4 text-muted-foreground" />
-            <DialogTitle className="truncate text-base font-medium">New issue</DialogTitle>
-            <DialogDescription className="sr-only">Create an Issue with Project, status, priority, and assignees.</DialogDescription>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button aria-label={expanded ? "Exit expanded view" : "Expand dialog"} size="icon-sm" type="button" variant="ghost" onClick={() => setExpanded((value) => !value)}>
-              {expanded ? <Minimize2 /> : <Maximize2 />}
-            </Button>
-            <DialogClose asChild><Button aria-label="Close" size="icon-sm" variant="ghost"><X /></Button></DialogClose>
-          </div>
-        </DialogHeader>
-
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit} onKeyDown={(event) => {
           if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
             event.preventDefault();
@@ -174,7 +148,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
             </Button>
           </div>
         </form>
-      </DialogContent>
+      </CreationDialogFrame>
     </Dialog>
   );
 }

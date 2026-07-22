@@ -234,6 +234,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
       {createClientOpen ? (
         <CreateClientDialog
           open
+          workspaceName={workspace.name}
           workspaceSlug={workspace.slug}
           onCreated={(client) => {
             setClientExpanded(client.id, true);

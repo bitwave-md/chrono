@@ -1,5 +1,24 @@
 # Chrono Roadmap
 
+## Canonical creation-dialog UX
+
+Tracer bullet: create a Client from the sidebar using the same focused composer
+used for Issues and Projects, while keeping one documented source of truth for
+Chrono's list and creation-dialog interaction language.
+
+- [x] Extract the shared animated creation-dialog frame.
+- [x] Reuse compact text-property popovers across Project and Client creation.
+- [x] Rebuild Client creation with the canonical composer and keyboard submit.
+- [x] Document authoritative list and creation-dialog UI/UX patterns.
+- [x] Verify creation flows, builds, tests, file limits, and Docker runtime.
+
+Completed and runtime-verified on 2026-07-22. Client, Project, and Issue
+creation now share one animated composer frame, while Client and Project text
+metadata reuse one popover primitive. Client creation suggests valid namespace
+codes from its name and keeps all server state in the existing TanStack Query
+mutation. TypeScript, ESLint, 33 tests, the production build, the 500-line
+audit, and a clean Docker source rebuild passed; all services reached healthy.
+
 ## Linear-style Project lists
 
 Tracer bullet: open Workspace and Client Project directories, scan Projects in

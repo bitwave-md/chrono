@@ -1,22 +1,20 @@
 "use client";
 
-import { ChevronRight, Eye, Hash, Link2, LoaderCircle, Maximize2, Minimize2, Plus, X } from "lucide-react";
-import { type FormEvent, useRef, useState } from "react";
+import { Eye, Hash, Link2, LoaderCircle, Plus } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { gsap, useGSAP } from "@/modules/workspace-ui/application/workspace-animation";
 import { useCreateProjectMutation } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
+import { CreationDialogFrame } from "@/modules/workspace-ui/components/creation-dialog-frame";
+import { CreationTextProperty } from "@/modules/workspace-ui/components/creation-text-property";
 import { IssuePriorityProperty } from "@/modules/workspace-ui/components/issue-status-priority-properties";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
-import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 import type { ClientRecord, ProjectPriority, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 type ProjectVisibility = ProjectRecord["visibility"];
@@ -35,7 +33,6 @@ export function CreateProjectDialog(props: {
   onCreated: (projectId: string) => void;
   onOpenChange: (open: boolean) => void;
 }) {
-  const contentRef = useRef<HTMLDivElement>(null);
   const mutation = useCreateProjectMutation(props.workspaceSlug);
   const [clientId, setClientId] = useState(props.initialClientId ?? props.clients[0]?.id ?? "");
   const [name, setName] = useState("");
@@ -45,17 +42,10 @@ export function CreateProjectDialog(props: {
   const [namespacePrefix, setNamespacePrefix] = useState("");
   const [visibility, setVisibility] = useState<ProjectVisibility>("internal");
   const [priority, setPriority] = useState<ProjectPriority>("none");
-  const [expanded, setExpanded] = useState(false);
   const client = props.clients.find((candidate) => candidate.id === clientId);
   const validSlug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && slug.length >= 2;
   const validPrefix = !namespacePrefix || /^[A-Z][A-Z0-9]{1,9}$/.test(namespacePrefix);
   const canSubmit = Boolean(clientId && name.trim().length >= 2 && validSlug && validPrefix);
-
-  useGSAP(() => {
-    if (props.open) {
-      gsap.fromTo(contentRef.current, { opacity: 0, y: 18, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: "power2.out" });
-    }
-  }, { dependencies: [props.open], revertOnUpdate: true });
 
   const changeName = (value: string) => {
     setName(value);
@@ -84,29 +74,12 @@ export function CreateProjectDialog(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent
-        className={cn(
-          "top-[7svh] h-[min(560px,86svh)] grid-rows-[auto_minmax(0,1fr)] translate-y-0 gap-0 overflow-hidden rounded-3xl border-white/10 bg-card p-0 shadow-2xl will-change-transform sm:max-w-4xl max-md:top-[3svh] max-md:h-[94svh]",
-          expanded && "top-3 left-3 h-[calc(100svh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-none translate-x-0 translate-y-0 rounded-2xl sm:max-w-none",
-        )}
-        ref={contentRef}
-        showCloseButton={false}
+      <CreationDialogFrame
+        context={<ClientContext clients={props.clients} client={client} fixed={Boolean(props.initialClientId)} value={clientId} onChange={setClientId} />}
+        description="Create a Client-owned Project with workflow, priority, visibility, and Issue namespace settings."
+        open={props.open}
+        title="New project"
       >
-        <DialogHeader className="flex-row items-center justify-between px-6 pt-5">
-          <div className="flex min-w-0 items-center gap-2">
-            <ClientContext clients={props.clients} client={client} fixed={Boolean(props.initialClientId)} value={clientId} onChange={setClientId} />
-            <ChevronRight className="size-4 text-muted-foreground" />
-            <DialogTitle className="truncate text-base font-medium">New project</DialogTitle>
-            <DialogDescription className="sr-only">Create a Client-owned Project with workflow, priority, visibility, and Issue namespace settings.</DialogDescription>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button aria-label={expanded ? "Exit expanded view" : "Expand dialog"} size="icon-sm" type="button" variant="ghost" onClick={() => setExpanded((value) => !value)}>
-              {expanded ? <Minimize2 /> : <Maximize2 />}
-            </Button>
-            <DialogClose asChild><Button aria-label="Close" size="icon-sm" variant="ghost"><X /></Button></DialogClose>
-          </div>
-        </DialogHeader>
-
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit} onKeyDown={(event) => {
           if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
             event.preventDefault();
@@ -120,8 +93,8 @@ export function CreateProjectDialog(props: {
           <div className="flex flex-wrap items-center gap-2 px-6 pb-5 max-md:px-5 [&_[data-slot=button]]:rounded-full [&_[data-slot=button]]:border [&_[data-slot=button]]:border-border [&_[data-slot=button]]:bg-secondary/45 [&_[data-slot=button]]:px-3 [&_[data-slot=button]]:text-sm [&_[data-slot=button]]:hover:bg-secondary/75">
             <IssuePriorityProperty value={priority} onChange={setPriority} />
             <OptionProperty icon={Eye} label="Visibility" options={visibilityOptions} placeholder="Internal" value={visibility} onChange={(value) => value && setVisibility(value as ProjectVisibility)} />
-            <TextProperty icon={Link2} label="Project slug" placeholder="Project slug" value={slug} onChange={(value) => { setSlugEdited(true); setSlug(normalizeSlugInput(value)); }} />
-            <TextProperty icon={Hash} label="Issue prefix" placeholder="Client prefix" value={namespacePrefix} uppercase onChange={setNamespacePrefix} />
+            <CreationTextProperty help="Used in Project URLs." icon={Link2} label="Project slug" maxLength={63} placeholder="Project slug" value={slug} onChange={(value) => { setSlugEdited(true); setSlug(normalizeSlugInput(value)); }} />
+            <CreationTextProperty help="Leave empty to inherit the Client Issue prefix." icon={Hash} label="Issue prefix" maxLength={10} placeholder="Client prefix" value={namespacePrefix} onChange={(value) => setNamespacePrefix(normalizePrefixInput(value))} />
           </div>
           {mutation.error ? <p className="px-6 pb-2 text-xs leading-5 text-destructive">{mutation.error.message}</p> : null}
           <div className="flex items-center justify-end border-t px-6 py-4 max-md:px-5">
@@ -131,7 +104,7 @@ export function CreateProjectDialog(props: {
             </Button>
           </div>
         </form>
-      </DialogContent>
+      </CreationDialogFrame>
     </Dialog>
   );
 }
@@ -147,26 +120,14 @@ function ClientContext({ clients, client, fixed, value, onChange }: { clients: C
   );
 }
 
-function TextProperty({ icon, label, placeholder, uppercase = false, value, onChange }: { icon: typeof Link2; label: string; placeholder: string; uppercase?: boolean; value: string; onChange: (value: string) => void }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild><span><PropertyTrigger icon={icon} label={label} value={value || placeholder} /></span></PopoverTrigger>
-      <PopoverContent align="start" className="grid w-72 gap-2 p-3">
-        <strong className="text-sm">{label}</strong>
-        <Input autoFocus maxLength={label === "Project slug" ? 63 : 10} placeholder={placeholder} value={value} onChange={(event) => {
-          const next = uppercase ? event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") : event.target.value;
-          onChange(next);
-        }} />
-        <p className="text-xs leading-5 text-muted-foreground">{label === "Project slug" ? "Used in Project URLs." : "Leave empty to inherit the Client Issue prefix."}</p>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 function slugFromName(value: string): string {
   return normalizeSlugInput(value.normalize("NFKD").replace(/[\u0300-\u036f]/g, ""));
 }
 
 function normalizeSlugInput(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
+}
+
+function normalizePrefixInput(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
 }

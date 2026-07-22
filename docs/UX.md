@@ -3,6 +3,9 @@
 Chrono is a dense, keyboard-first Workspace using Tailwind, owned shadcn
 components, Lucide icons, and original assets.
 
+The normative list and creation-dialog patterns are tracked in
+`docs/UI_STANDARDS.md`; this document describes the broader product experience.
+
 ## Navigation
 
 The sidebar contains exactly:

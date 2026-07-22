@@ -127,4 +127,5 @@ application uses the internal address `smtp://mailpit:1025` from the override.
 - `docs/API.md` — HTTP endpoints
 - `docs/PERFORMANCE.md` — measured performance notes
 - `docs/UX.md` — interaction and layout conventions
+- `docs/UI_STANDARDS.md` — canonical list and creation-dialog patterns
 - `roadmap.md` — completed implementation tracer bullets
