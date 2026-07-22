@@ -247,6 +247,12 @@ function IssueRow(props: IssueRowProps) {
       />
       <span className="min-w-0 truncate font-medium">{props.issue.title}</span>
       <span className="flex min-w-0 items-center justify-self-end gap-1 max-md:hidden">
+        <IssueLabelsTrigger
+          disabled={props.disabled}
+          options={props.labelOptions}
+          value={props.issue.labels}
+          onChange={props.onLabelsChange}
+        />
         {props.showClient ? (
           <Link
             className="flex h-7 max-w-48 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -268,12 +274,6 @@ function IssueRow(props: IssueRowProps) {
             <span className="truncate">{props.issue.clientName}</span>
           </Link>
         ) : null}
-        <IssueLabelsTrigger
-          disabled={props.disabled}
-          options={props.labelOptions}
-          value={props.issue.labels}
-          onChange={props.onLabelsChange}
-        />
         {props.showProject && props.project ? (
           <Link
             className="flex h-7 max-w-64 items-center gap-1.5 rounded-full border border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
