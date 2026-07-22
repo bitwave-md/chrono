@@ -43,7 +43,7 @@ function TimeEntryRow({ entry, workspaceSlug }: { entry: TimeLogRecord; workspac
     <div className={`grid ${columns} min-h-14 items-center gap-3 border-b px-5 py-2 text-xs last:border-b-0 hover:bg-accent/20`}>
       <div><span className="block">{new Date(entry.endedAt).toLocaleDateString()}</span><span className="mt-0.5 block capitalize text-muted-foreground">{entry.source}</span></div>
       <div className="flex min-w-0 items-center gap-2"><Avatar className="size-6"><AvatarImage alt="" src={entry.workerAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{worker.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><span className="truncate">{worker}</span></div>
-      <Link className="min-w-0 rounded-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={issueDetailPath(workspaceSlug, entry)}>
+      <Link className="min-w-0 rounded-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={issueDetailPath(workspaceSlug, entry.issueId, entry.projectId)}>
         <span className="font-mono text-[0.65rem] text-muted-foreground">{entry.identifier}</span><strong className="ml-2 font-medium">{entry.issueTitle}</strong>{entry.note ? <span className="mt-0.5 block truncate text-muted-foreground">{entry.note}</span> : null}
       </Link>
       {entry.projectId ? <Link className="truncate hover:text-primary" href={`/app/${workspaceSlug}/projects/${entry.projectId}/issues${entry.branchId ? `?branch=${entry.branchId}` : ""}`}>{entry.projectName}{entry.branchName ? ` / ${entry.branchName}` : ""}</Link> : <span className="text-muted-foreground">Client work</span>}

@@ -1,15 +1,11 @@
-export interface IssueRouteIdentity {
-  id: string;
-  projectId: string | null;
-}
-
 export function issueDetailPath(
   workspaceSlug: string,
-  issue: IssueRouteIdentity,
+  issueIdValue: string,
+  projectId: string | null,
 ): string {
   const workspace = encodeURIComponent(workspaceSlug);
-  const issueId = encodeURIComponent(issue.id);
-  return issue.projectId
-    ? `/app/${workspace}/projects/${encodeURIComponent(issue.projectId)}/issues/${issueId}`
+  const issueId = encodeURIComponent(issueIdValue);
+  return projectId
+    ? `/app/${workspace}/projects/${encodeURIComponent(projectId)}/issues/${issueId}`
     : `/app/${workspace}/issues/${issueId}`;
 }

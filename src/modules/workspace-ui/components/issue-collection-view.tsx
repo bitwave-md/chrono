@@ -66,10 +66,7 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
 
   const openIssue = (issueId: string) => {
     const issue = issues.find((candidate) => candidate.id === issueId);
-    router.push(issueDetailPath(props.workspaceSlug, {
-      id: issueId,
-      projectId: issue?.projectId ?? null,
-    }));
+    router.push(issueDetailPath(props.workspaceSlug, issueId, issue?.projectId ?? null));
   };
   const viewActions = (
     <>

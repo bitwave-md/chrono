@@ -85,10 +85,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
         showIssueCreatedToast({
           identifier: created.identifier,
           title: variables.title,
-          href: issueDetailPath(props.workspaceSlug, {
-            id: created.issue.id,
-            projectId: variables.projectId,
-          }),
+          href: issueDetailPath(props.workspaceSlug, created.issue.id, variables.projectId),
           status: {
             category: status?.category ?? "backlog",
             color: variables.statusColor,
