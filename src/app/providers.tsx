@@ -6,6 +6,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { ThemeProvider } from "next-themes";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -36,8 +37,10 @@ function getQueryClient(): QueryClient {
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <QueryClientProvider client={getQueryClient()}>
-      <TooltipProvider>{children}</TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <QueryClientProvider client={getQueryClient()}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

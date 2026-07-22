@@ -12,6 +12,7 @@ import {
   ListTodo,
   LogOut,
   Plus,
+  Settings,
   Waves,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +22,7 @@ import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +42,7 @@ import {
 import { useSignOutMutation } from "@/modules/auth/presentation/use-auth-mutations";
 import { useFavoritesQuery } from "@/modules/workspace-ui/application/use-favorite-queries";
 import { useInboxQuery } from "@/modules/workspace-ui/application/use-inbox-queries";
+import { useWorkspaceGeneralQuery } from "@/modules/settings/application/use-settings-queries";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { CreateClientDialog } from "@/modules/workspace-ui/components/create-client-dialog";
 import { EntityIcon } from "@/modules/workspace-ui/components/entity-icon";
@@ -60,6 +63,8 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
   const favoritesQuery = useFavoritesQuery(workspace.slug);
   const favorites = favoritesQuery.data ?? [];
   const inboxQuery = useInboxQuery(workspace.slug);
+  const generalQuery = useWorkspaceGeneralQuery(workspace.slug);
+  const general = generalQuery.data;
   const inboxUnreadCount = inboxQuery.data?.filter((item) => !item.readAt).length ?? 0;
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
@@ -84,8 +89,8 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
         <Popover>
           <PopoverTrigger asChild>
             <SidebarMenuButton className="h-9" tooltip={workspace.name}>
-              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Waves className="size-4" /></span>
-              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold group-data-[collapsible=icon]:hidden">{workspace.name}</span>
+              <WorkspaceMark appearance={general} name={workspace.name} />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold group-data-[collapsible=icon]:hidden">{general?.name ?? workspace.name}</span>
               <ChevronRight className="rotate-90 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </PopoverTrigger>
@@ -101,13 +106,16 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
                       value={candidate.name}
                       onSelect={() => router.push(`/app/${candidate.slug}/inbox`)}
                     >
-                      <span className="grid size-6 place-items-center rounded bg-muted"><Waves className="size-3.5" /></span>
+                      {candidate.id === workspace.id ? <WorkspaceMark appearance={general} name={candidate.name} small /> : <span className="grid size-6 place-items-center rounded bg-muted"><Waves className="size-3.5" /></span>}
                       <span className="flex-1 truncate">{candidate.name}</span>
                       {candidate.id === workspace.id ? <Check className="size-4" /> : null}
                     </CommandItem>
                   ))}
                 </CommandGroup>
                 <CommandGroup>
+                  <CommandItem onSelect={() => router.push(`${root}/settings/personal/profile`)}>
+                    <Settings /> Settings
+                  </CommandItem>
                   <CommandItem disabled={signOut.isPending} onSelect={() => signOut.mutate()}>
                     <LogOut /> Sign out
                   </CommandItem>
@@ -266,6 +274,17 @@ function FavoriteIcon({ favorite }: { favorite: FavoriteRecord }) {
       iconClassName={favorite.iconType === "emoji" ? "text-[0.6rem]" : "size-3"}
     />
   );
+}
+
+function WorkspaceMark({ appearance, name, small = false }: {
+  appearance?: { iconType: "icon" | "emoji"; iconKey: string; iconColor: string; imageUrl: string | null };
+  name: string;
+  small?: boolean;
+}) {
+  const size = small ? "size-6" : "size-7";
+  if (appearance?.imageUrl) return <Avatar className={`${size} shrink-0 rounded-md`}><AvatarImage alt="" src={appearance.imageUrl} /><AvatarFallback className="rounded-md text-[0.55rem]">{name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>;
+  if (appearance) return <EntityIcon className={`${size} rounded-md`} entity={{ name, iconType: appearance.iconType, iconKey: appearance.iconKey, iconColor: appearance.iconColor }} iconClassName={appearance.iconType === "emoji" ? "text-xs" : "size-3.5"} />;
+  return <span className={`grid ${size} shrink-0 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground`}><Waves className="size-4" /></span>;
 }
 
 function SidebarLink({ href, icon: Icon, isActive, label, badge, onNavigate }: {

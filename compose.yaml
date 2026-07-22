@@ -1,6 +1,44 @@
 name: chrono
 
 services:
+  storage:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chrono-root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chrono-minio-development-password}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - chrono_object_data:/data
+
+  storage-init:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set chrono http://storage:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing chrono/$${S3_BUCKET} &&
+        (mc admin user add chrono "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}" || mc admin user info chrono "$${S3_ACCESS_KEY}") &&
+        printf '%s' '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket","s3:GetBucketLocation"],"Resource":["arn:aws:s3:::'"$${S3_BUCKET}"'"]},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":["arn:aws:s3:::'"$${S3_BUCKET}"'/*"]}]}' > /tmp/chrono-policy.json &&
+        (mc admin policy create chrono chrono-app /tmp/chrono-policy.json || mc admin policy info chrono chrono-app) &&
+        mc admin policy attach chrono chrono-app --user "$${S3_ACCESS_KEY}"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chrono-root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chrono-minio-development-password}
+      S3_BUCKET: ${S3_BUCKET:-chrono}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://storage:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-chrono-app}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-chrono-storage-development-password}
+    depends_on:
+      storage:
+        condition: service_healthy
+    restart: "no"
+
   db:
     image: postgres:17-alpine
     environment:
@@ -39,8 +77,20 @@ services:
       AUTH_BOOTSTRAP_TOKEN: ${AUTH_BOOTSTRAP_TOKEN:-}
       AUTH_BOOTSTRAP_WORKSPACE_NAME: ${AUTH_BOOTSTRAP_WORKSPACE_NAME:-Bitwave}
       AUTH_BOOTSTRAP_WORKSPACE_SLUG: ${AUTH_BOOTSTRAP_WORKSPACE_SLUG:-bitwave}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://storage:9000}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-chrono}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-chrono-app}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-chrono-storage-development-password}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      STORAGE_WORKSPACE_QUOTA_GB: ${STORAGE_WORKSPACE_QUOTA_GB:-10}
+      STORAGE_PERSONAL_QUOTA_MB: ${STORAGE_PERSONAL_QUOTA_MB:-100}
+      CHRONO_VERSION: ${CHRONO_VERSION:-latest}
+      CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
     depends_on:
       migrate:
+        condition: service_completed_successfully
+      storage-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
@@ -50,6 +100,8 @@ services:
     ports:
       - "${CHRONO_BIND_ADDRESS:-127.0.0.1}:${CHRONO_PORT:-3000}:3000"
     restart: unless-stopped
+    volumes:
+      - ${CHRONO_STATUS_DIR:-./data/status}:/var/lib/chrono:ro
 
   caddy:
     image: caddy:2-alpine
@@ -68,6 +120,7 @@ services:
       - chrono_caddy_config:/config
 
 volumes:
+  chrono_object_data:
   chrono_postgres_data:
   chrono_caddy_data:
   chrono_caddy_config:

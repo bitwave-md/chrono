@@ -33,6 +33,7 @@ import { ProjectIcon } from "@/modules/workspace-ui/components/project-icon";
 import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
 import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import { ProjectTabs, type ProjectTab } from "@/modules/workspace-ui/components/project-tabs";
+import { AttachmentSection } from "@/modules/workspace-ui/components/attachment-section";
 import { favoriteFromProject } from "@/modules/workspace-ui/domain/favorite-target";
 import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
@@ -81,6 +82,7 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
 }
 
 function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRecord; workspaceSlug: string }) {
+  const workspace = useWorkspaceIdentity();
   const membersQuery = useMembersQuery(workspaceSlug);
   const update = useUpdateProjectMutation(workspaceSlug, project.id);
   const addResource = useAddProjectResourceMutation(workspaceSlug, project.id);
@@ -129,6 +131,8 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
       <ProjectBranchSection projectId={project.id} workspaceSlug={workspaceSlug} />
 
       <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Resources</h2><ResourceCreator pending={addResource.isPending} onCreate={(input) => addResource.mutate(input)} /></div>{project.resources.length ? <div className="mt-2 divide-y">{project.resources.map((resource) => <a className="flex items-center gap-2 py-2 text-sm hover:underline" href={resource.url} key={resource.id} rel="noreferrer" target="_blank"><Link2 className="size-4 text-muted-foreground" />{resource.title}</a>)}</div> : <EmptyLine icon={Link2} text="No resources linked." />}</section>
+
+      <AttachmentSection canUpload={workspace.role !== "guest"} targetId={project.id} targetType="project" workspaceSlug={workspaceSlug} />
 
       <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Milestones</h2><MilestoneCreator pending={addMilestone.isPending} onCreate={(input) => addMilestone.mutate(input)} /></div>{project.milestones.length ? <div className="mt-2 divide-y">{project.milestones.map((milestone) => <div className="flex items-center gap-3 py-2 text-sm" key={milestone.id}><CheckCircle2 className="size-4 text-muted-foreground" /><span className="flex-1">{milestone.name}</span>{milestone.targetDate ? <span className="text-xs text-muted-foreground">{new Date(milestone.targetDate).toLocaleDateString()}</span> : null}</div>)}</div> : <EmptyLine icon={CalendarDays} text="No milestones defined." />}</section>
       {update.error ? <p className="mt-4 text-xs text-destructive">{update.error.message}</p> : null}

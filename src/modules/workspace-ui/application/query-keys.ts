@@ -47,6 +47,8 @@ export const workspaceQueryKeys = {
     ["workspace", workspaceSlug, "issue", issueId] as const,
   issueComments: (workspaceSlug: string, issueId: string) =>
     ["workspace", workspaceSlug, "issue", issueId, "comments"] as const,
+  issueActivity: (workspaceSlug: string, issueId: string) =>
+    ["workspace", workspaceSlug, "issue", issueId, "activity"] as const,
   issueMetadata: (workspaceSlug: string) =>
     ["workspace", workspaceSlug, "issue-metadata"] as const,
 };

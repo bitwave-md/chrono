@@ -4,6 +4,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -308,5 +309,31 @@ export const issueComments = pgTable(
       foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
     }).onDelete("restrict"),
     index("issue_comments_issue_created_idx").on(table.issueId, table.createdAt),
+  ],
+);
+
+export const issueActivityEvents = pgTable(
+  "issue_activity_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull(),
+    issueId: uuid("issue_id").notNull(),
+    actorMembershipId: uuid("actor_membership_id").notNull(),
+    eventType: text("event_type").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "issue_activity_events_issue_tenant_fk",
+      columns: [table.workspaceId, table.issueId],
+      foreignColumns: [issues.workspaceId, issues.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "issue_activity_events_actor_tenant_fk",
+      columns: [table.workspaceId, table.actorMembershipId],
+      foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
+    }).onDelete("restrict"),
+    index("issue_activity_events_issue_created_idx").on(table.issueId, table.createdAt),
   ],
 );

@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 
 import type { DatabaseTransaction } from "@/db/client";
-import { inboxNotifications, issueAssignees, issues } from "@/db/schema";
+import { inboxNotifications, issueAssignees, issues, workspaceMemberships, workspaceNotificationPreferences } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { notificationRecipients } from "@/modules/inbox/domain/notification-recipients";
 
@@ -31,10 +31,11 @@ export class IssueNotificationWriter {
     detail: string | null,
     interestedMembershipIds: readonly string[],
   ): Promise<void> {
-    const recipients = notificationRecipients(
+    const interested = notificationRecipients(
       interestedMembershipIds,
       principal.membershipId,
     );
+    const recipients = await this.#enabledRecipients(transaction, principal.workspaceId, interested, kind);
     if (!recipients.length) return;
 
     await transaction.insert(inboxNotifications).values(recipients.map((recipientMembershipId) => ({
@@ -45,6 +46,32 @@ export class IssueNotificationWriter {
       kind,
       detail,
     })));
+  }
+
+  async #enabledRecipients(
+    transaction: DatabaseTransaction,
+    workspaceId: string,
+    membershipIds: string[],
+    kind: IssueNotificationKind,
+  ) {
+    if (!membershipIds.length) return [];
+    const preference = kind === "assigned"
+      ? workspaceNotificationPreferences.assignments
+      : kind === "status_changed"
+        ? workspaceNotificationPreferences.statusChanges
+        : workspaceNotificationPreferences.comments;
+    const rows = await transaction.select({ id: workspaceMemberships.id }).from(workspaceMemberships)
+      .leftJoin(workspaceNotificationPreferences, and(
+        eq(workspaceNotificationPreferences.workspaceId, workspaceMemberships.workspaceId),
+        eq(workspaceNotificationPreferences.membershipId, workspaceMemberships.id),
+      ))
+      .where(and(
+        eq(workspaceMemberships.workspaceId, workspaceId),
+        inArray(workspaceMemberships.id, membershipIds),
+        eq(workspaceMemberships.status, "active"),
+        or(isNull(workspaceNotificationPreferences.membershipId), eq(preference, true)),
+      ));
+    return rows.map((row) => row.id);
   }
 
   async #interestedMembershipIds(

@@ -21,6 +21,7 @@ export const membershipStatus = pgEnum("membership_status", [
   "invited",
   "active",
   "suspended",
+  "removed",
 ]);
 
 export const workspaces = pgTable(

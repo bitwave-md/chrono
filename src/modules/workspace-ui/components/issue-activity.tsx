@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, CirclePlay, Clock3, LoaderCircle, Square } from "lucide-react";
+import { ArrowUp, CirclePlay, Clock3, LoaderCircle, Paperclip, Square } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -15,13 +15,14 @@ import { ManualTimeDatePicker } from "@/modules/workspace-ui/components/manual-t
 import { TimeEntryTypePicker } from "@/modules/workspace-ui/components/time-entry-type-picker";
 import { formatLoggedDuration } from "@/modules/workspace-ui/domain/issue-time-summary";
 import { manualTimeStartedAt } from "@/modules/workspace-ui/domain/manual-time-entry-date";
-import type { IssueCommentRecord, TimeLogRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { IssueActivityEventRecord, IssueCommentRecord, TimeLogRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 export function IssueActivity({
   comment,
   comments,
   error,
+  events,
   issueId,
   issueTitle,
   loading,
@@ -34,6 +35,7 @@ export function IssueActivity({
   comment: string;
   comments: IssueCommentRecord[];
   error?: string;
+  events: IssueActivityEventRecord[];
   issueId: string;
   issueTitle: string;
   loading: boolean;
@@ -46,6 +48,7 @@ export function IssueActivity({
   const activity = [
     ...comments.map((item) => ({ kind: "comment" as const, date: item.createdAt, item })),
     ...logs.map((item) => ({ kind: "time" as const, date: item.endedAt, item })),
+    ...events.map((item) => ({ kind: "event" as const, date: item.createdAt, item })),
   ].sort((left, right) => left.date.localeCompare(right.date));
 
   return (
@@ -54,7 +57,8 @@ export function IssueActivity({
       <div className="mt-6 grid gap-5">
         {activity.map((entry) => entry.kind === "comment"
           ? <CommentActivityItem comment={entry.item} key={`comment-${entry.item.id}`} />
-          : <TimeActivityItem key={`time-${entry.item.id}`} log={entry.item} />)}
+          : entry.kind === "time" ? <TimeActivityItem key={`time-${entry.item.id}`} log={entry.item} />
+            : <EventActivityItem event={entry.item} key={`event-${entry.item.id}`} />)}
         {!loading && !activity.length ? <p className="text-sm text-muted-foreground">No activity yet.</p> : null}
       </div>
       <form className="relative mt-6" onSubmit={onSubmit}>
@@ -66,6 +70,17 @@ export function IssueActivity({
       {error ? <p className="mt-2 text-xs text-destructive">{error}</p> : null}
       <IssueTimeComposer issueId={issueId} issueTitle={issueTitle} workspaceSlug={workspaceSlug} />
     </section>
+  );
+}
+
+function EventActivityItem({ event }: { event: IssueActivityEventRecord }) {
+  const name = event.actorName ?? event.actorEmail;
+  const filename = typeof event.payload.filename === "string" ? event.payload.filename : "a file";
+  return (
+    <article className="flex gap-3">
+      <Avatar className="mt-0.5 size-6"><AvatarImage alt="" src={event.actorAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5 text-sm"><strong className="font-medium">{name}</strong><span className="text-muted-foreground">attached</span><span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5"><Paperclip className="size-3" /><span className="truncate">{filename}</span></span></div><span className="mt-1 block text-xs text-muted-foreground">{new Date(event.createdAt).toLocaleString()}</span></div>
+    </article>
   );
 }
 

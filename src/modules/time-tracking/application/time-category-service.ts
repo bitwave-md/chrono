@@ -18,6 +18,14 @@ export interface CreateTimeCategoryInput {
   defaultBillable: boolean;
 }
 
+export interface UpdateTimeCategoryInput {
+  name?: string;
+  color?: string | null;
+  defaultBillable?: boolean;
+  position?: number;
+  archived?: boolean;
+}
+
 export class TimeCategoryService {
   readonly #policy = new WorkspacePolicy();
 
@@ -81,6 +89,30 @@ export class TimeCategoryService {
 
       throw error;
     }
+  }
+
+  async update(principal: Principal, categoryId: string, input: UpdateTimeCategoryInput) {
+    this.#policy.assertCanManageTimeCategories(principal);
+    const values: Partial<typeof timeCategories.$inferInsert> = { updatedAt: new Date() };
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      if (name.length < 2 || name.length > 120) throw new ValidationError("Time category names must contain 2-120 characters.");
+      values.name = name;
+    }
+    if (input.color !== undefined) values.color = this.#normalizeColor(input.color);
+    if (input.defaultBillable !== undefined) values.defaultBillable = input.defaultBillable;
+    if (input.position !== undefined) {
+      if (!Number.isInteger(input.position) || input.position < 0) throw new ValidationError("Position must be a non-negative integer.");
+      values.position = input.position;
+    }
+    if (input.archived !== undefined) values.archivedAt = input.archived ? new Date() : null;
+
+    const [category] = await db.update(timeCategories).set(values).where(and(
+      eq(timeCategories.workspaceId, principal.workspaceId),
+      eq(timeCategories.id, categoryId),
+    )).returning();
+    if (!category) throw new ValidationError("Time entry type not found.");
+    return category;
   }
 
   #normalizeKey(input: string): string {

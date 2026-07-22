@@ -1,7 +1,8 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +13,8 @@ import { CommandMenu } from "@/modules/workspace-ui/components/command-menu";
 import { CreateIssueDialog } from "@/modules/workspace-ui/components/create-issue-dialog";
 import { TimerDock } from "@/modules/workspace-ui/components/timer-dock";
 import { WorkspaceSidebar } from "@/modules/workspace-ui/components/workspace-sidebar";
+import { SettingsShell } from "@/modules/settings/components/settings-shell";
+import { usePreferencesQuery } from "@/modules/settings/application/use-settings-queries";
 import type { WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
 import { useCommandMenu, useWorkspaceOverlay, useWorkspaceView, WorkspaceUiProvider } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
@@ -25,10 +28,26 @@ export function WorkspaceExperience(props: WorkspaceExperienceProps) {
   return (
     <WorkspaceUiProvider workspace={props.workspace}>
       <WorkspaceSidebarProvider>
+        <WorkspacePreferenceBridge workspaceSlug={props.workspace.slug} />
         <WorkspaceShell {...props} />
       </WorkspaceSidebarProvider>
     </WorkspaceUiProvider>
   );
+}
+
+function WorkspacePreferenceBridge({ workspaceSlug }: { workspaceSlug: string }) {
+  const preferences = usePreferencesQuery(workspaceSlug);
+  const { setTheme } = useTheme();
+  const setViewMode = useWorkspaceView((state) => state.setViewMode);
+  const setSidebarCollapsed = useWorkspaceView((state) => state.setSidebarCollapsed);
+  useEffect(() => {
+    if (!preferences.data) return;
+    setTheme(preferences.data.theme);
+    document.documentElement.dataset.density = preferences.data.density;
+    setViewMode(preferences.data.issueView);
+    setSidebarCollapsed(preferences.data.sidebarCollapsed);
+  }, [preferences.data, setSidebarCollapsed, setTheme, setViewMode]);
+  return null;
 }
 
 function WorkspaceSidebarProvider({ children }: { children: ReactNode }) {
@@ -38,6 +57,14 @@ function WorkspaceSidebarProvider({ children }: { children: ReactNode }) {
 }
 
 function WorkspaceShell({ workspace, workspaces, children }: WorkspaceExperienceProps) {
+  const pathname = usePathname();
+  if (pathname.startsWith(`/app/${workspace.slug}/settings`)) {
+    return <SettingsShell workspace={workspace}>{children}</SettingsShell>;
+  }
+  return <ApplicationShell workspace={workspace} workspaces={workspaces}>{children}</ApplicationShell>;
+}
+
+function ApplicationShell({ workspace, workspaces, children }: WorkspaceExperienceProps) {
   const pathname = usePathname();
   const router = useRouter();
   const clientsQuery = useClientsQuery(workspace.slug);

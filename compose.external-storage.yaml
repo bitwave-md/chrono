@@ -1,0 +1,12 @@
+services:
+  storage:
+    profiles: ["bundled-storage-disabled"]
+
+  storage-init:
+    profiles: ["bundled-storage-disabled"]
+
+  app:
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
+        required: false

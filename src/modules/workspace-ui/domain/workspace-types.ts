@@ -4,6 +4,7 @@ export interface WorkspaceIdentity {
   slug: string;
   role: "owner" | "admin" | "member" | "guest";
   userEmail: string;
+  isOperator: boolean;
 }
 
 export type WorkspaceOption = WorkspaceIdentity;
@@ -184,6 +185,42 @@ export interface InboxNotificationRecord {
   statusColor: string | null;
   statusCategory: WorkflowStatusRecord["category"];
   actorMembershipId: string;
+  actorName: string | null;
+  actorEmail: string;
+  actorAvatarUrl: string | null;
+}
+
+export type AttachmentTargetType = "client" | "project" | "issue";
+
+export interface AttachmentRecord {
+  id: string;
+  objectId: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string | null;
+  createdAt: string;
+  uploaderMembershipId: string;
+  uploaderName: string | null;
+  uploaderEmail: string;
+  uploaderAvatarUrl: string | null;
+}
+
+export interface AttachmentShareLinkRecord {
+  id: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  accessCount: number;
+  lastAccessedAt: string | null;
+  createdAt: string;
+  createdByMembershipId: string;
+}
+
+export interface IssueActivityEventRecord {
+  id: string;
+  eventType: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
   actorName: string | null;
   actorEmail: string;
   actorAvatarUrl: string | null;

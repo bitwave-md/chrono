@@ -1,0 +1,1 @@
+ALTER TYPE "public"."membership_status" ADD VALUE 'removed';

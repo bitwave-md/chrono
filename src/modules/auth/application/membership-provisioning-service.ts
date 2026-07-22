@@ -63,7 +63,10 @@ export class MembershipProvisioningService {
             role: "owner",
             status: "active",
           })
-          .onConflictDoNothing();
+          .onConflictDoUpdate({
+            target: [workspaceMemberships.workspaceId, workspaceMemberships.userId],
+            set: { role: "owner", status: "active", updatedAt: new Date() },
+          });
       }
 
       const pendingInvitations = await transaction
@@ -92,7 +95,10 @@ export class MembershipProvisioningService {
             role: invitation.role,
             status: "active",
           })
-          .onConflictDoNothing();
+          .onConflictDoUpdate({
+            target: [workspaceMemberships.workspaceId, workspaceMemberships.userId],
+            set: { role: invitation.role, status: "active", updatedAt: new Date() },
+          });
 
         await transaction
           .update(invitations)

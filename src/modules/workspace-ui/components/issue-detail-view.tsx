@@ -18,8 +18,10 @@ import { useIssueMetadataQuery, useReplaceIssueLabelsMutation } from "@/modules/
 import { useIssueQuery, useUpdateIssueDetailMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
 import { useIssueTimeLogsQuery } from "@/modules/workspace-ui/application/use-timer-query";
+import { useIssueActivityQuery } from "@/modules/workspace-ui/application/use-issue-activity-query";
 import { useClientsQuery, useMembersQuery, useProjectsQuery, useWorkflowStatusesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
+import { AttachmentSection } from "@/modules/workspace-ui/components/attachment-section";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
@@ -58,6 +60,7 @@ function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boole
   const labelsMutation = useReplaceIssueLabelsMutation(workspaceSlug, issue.id);
   const commentsQuery = useIssueCommentsQuery(workspaceSlug, issue.id);
   const timeLogsQuery = useIssueTimeLogsQuery(workspaceSlug, issue.id);
+  const activityQuery = useIssueActivityQuery(workspaceSlug, issue.id);
   const addComment = useAddIssueCommentMutation(workspaceSlug, issue.id);
   const [comment, setComment] = useState("");
   const patch = (request: Record<string, unknown>, optimistic: Partial<IssueRecord>) => update.mutate({ issueId: issue.id, expectedVersion: issue.version, ...request, optimistic });
@@ -111,13 +114,16 @@ function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boole
               }}
             />
 
+            <AttachmentSection canUpload={client?.canEdit ?? false} targetId={issue.id} targetType="issue" workspaceSlug={workspaceSlug} />
+
             <IssueActivity
               comment={comment}
               comments={commentsQuery.data ?? []}
+              events={activityQuery.data ?? []}
               error={addComment.error?.message}
               issueId={issue.id}
               issueTitle={issue.title}
-              loading={commentsQuery.isLoading || timeLogsQuery.isLoading}
+              loading={commentsQuery.isLoading || timeLogsQuery.isLoading || activityQuery.isLoading}
               logs={timeLogsQuery.data ?? []}
               pending={addComment.isPending}
               workspaceSlug={workspaceSlug}

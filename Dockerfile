@@ -29,6 +29,10 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Native Sharp bindings dynamically load their matching vendored libvips tree.
+# Next's standalone trace includes the binding but can omit that optional tree.
+COPY --from=dependencies --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
+COPY --from=dependencies --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
 
 USER nextjs
 EXPOSE 3000

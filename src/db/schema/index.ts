@@ -4,5 +4,7 @@ export * from "./favorites";
 export * from "./inbox";
 export * from "./issues";
 export * from "./projects";
+export * from "./settings";
+export * from "./storage";
 export * from "./time-tracking";
 export * from "./workspaces";
