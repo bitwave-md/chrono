@@ -33,22 +33,18 @@ const adapter = DrizzleAdapter(db, {
   authenticatorsTable: authenticators,
 }) as Adapter;
 
-const providers: NextAuthOptions["providers"] = [];
-
-if (bootstrapUserService) {
-  providers.push(CredentialsProvider({
-    id: "bootstrap",
-    name: "Owner setup key",
-    credentials: {
-      email: { label: "Owner email", type: "email" },
-      token: { label: "Setup key", type: "password" },
-    },
-    async authorize(credentials) {
-      if (!credentials?.email || !credentials.token) return null;
-      return bootstrapUserService.authenticate(credentials.email, credentials.token);
-    },
-  }));
-}
+const providers: NextAuthOptions["providers"] = [CredentialsProvider({
+  id: "bootstrap",
+  name: "Owner setup key",
+  credentials: {
+    email: { label: "Owner email", type: "email" },
+    token: { label: "Setup key", type: "password" },
+  },
+  async authorize(credentials) {
+    if (!bootstrapUserService || !credentials?.email || !credentials.token) return null;
+    return bootstrapUserService.authenticate(credentials.email, credentials.token);
+  },
+})];
 
 if (process.env.EMAIL_SERVER) {
   providers.push(EmailProvider({
@@ -56,10 +52,6 @@ if (process.env.EMAIL_SERVER) {
     from: process.env.EMAIL_FROM ?? "Chrono <chrono@localhost>",
     maxAge: 15 * 60,
   }));
-}
-
-if (!providers.length) {
-  throw new Error("Configure bootstrap credentials or EMAIL_SERVER to enable sign-in.");
 }
 
 export const authCapabilities = {
