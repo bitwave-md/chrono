@@ -29,6 +29,8 @@ export function EntityHeader({
   title,
   favoriteTarget,
   allowDelete = false,
+  canonicalHref,
+  showSidebarTrigger = true,
   children,
 }: {
   workspaceSlug: string;
@@ -37,6 +39,8 @@ export function EntityHeader({
   title: string;
   favoriteTarget: FavoriteRecord;
   allowDelete?: boolean;
+  canonicalHref?: string;
+  showSidebarTrigger?: boolean;
   children?: ReactNode;
 }) {
   const favorites = useFavoritesQuery(workspaceSlug);
@@ -49,7 +53,7 @@ export function EntityHeader({
   return (
     <header className="shrink-0 bg-background">
       <div className="flex h-12 min-w-0 items-center gap-1.5 border-b px-4">
-        <SidebarTrigger className="mr-1 text-muted-foreground" />
+        {showSidebarTrigger ? <SidebarTrigger className="mr-1 text-muted-foreground" /> : null}
         {breadcrumbs.map((item) => (
           <span className="contents" key={`${item.href}:${item.label}`}>
             <Link className="flex min-w-0 shrink items-center gap-2 rounded-sm text-xs font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={item.href}>
@@ -71,7 +75,7 @@ export function EntityHeader({
         >
           <Star className={cn("size-5", selected && "fill-amber-400 text-amber-400")} />
         </Button>
-        <EntityActionsMenu allowDelete={allowDelete} target={favoriteTarget} workspaceSlug={workspaceSlug} />
+        <EntityActionsMenu allowDelete={allowDelete} canonicalHref={canonicalHref} target={favoriteTarget} workspaceSlug={workspaceSlug} />
       </div>
       {children}
     </header>
@@ -80,10 +84,12 @@ export function EntityHeader({
 
 function EntityActionsMenu({
   allowDelete,
+  canonicalHref,
   target,
   workspaceSlug,
 }: {
   allowDelete: boolean;
+  canonicalHref?: string;
   target: FavoriteRecord;
   workspaceSlug: string;
 }) {
@@ -95,7 +101,9 @@ function EntityActionsMenu({
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(canonicalHref
+        ? new URL(canonicalHref, window.location.origin).href
+        : window.location.href);
       toast.success("Link copied");
       setOpen(false);
     } catch {
@@ -103,7 +111,7 @@ function EntityActionsMenu({
     }
   };
   const openInNewTab = () => {
-    window.open(window.location.href, "_blank", "noopener,noreferrer");
+    window.open(canonicalHref ?? window.location.href, "_blank", "noopener,noreferrer");
     setOpen(false);
   };
   const deleteEntity = () => deletion.mutate(target, {

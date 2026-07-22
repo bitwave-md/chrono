@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useSignOutMutation } from "@/modules/auth/presentation/use-auth-mutations";
 import { useFavoritesQuery } from "@/modules/workspace-ui/application/use-favorite-queries";
+import { useInboxQuery } from "@/modules/workspace-ui/application/use-inbox-queries";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { CreateClientDialog } from "@/modules/workspace-ui/components/create-client-dialog";
 import { EntityIcon } from "@/modules/workspace-ui/components/entity-icon";
@@ -58,6 +59,8 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
   const signOut = useSignOutMutation();
   const favoritesQuery = useFavoritesQuery(workspace.slug);
   const favorites = favoritesQuery.data ?? [];
+  const inboxQuery = useInboxQuery(workspace.slug);
+  const inboxUnreadCount = inboxQuery.data?.filter((item) => !item.readAt).length ?? 0;
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
   const workspaceOpen = useWorkspaceView((state) => state.workspaceSectionOpen);
@@ -119,7 +122,7 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarLink href={`${root}/inbox`} icon={Inbox} isActive={active(`${root}/inbox`)} label="Inbox" onNavigate={finishNavigation} />
+              <SidebarLink badge={inboxUnreadCount || undefined} href={`${root}/inbox`} icon={Inbox} isActive={active(`${root}/inbox`)} label="Inbox" onNavigate={finishNavigation} />
               <SidebarLink href={`${root}/my-issues`} icon={ListTodo} isActive={active(`${root}/my-issues`)} label="My Issues" onNavigate={finishNavigation} />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -265,17 +268,18 @@ function FavoriteIcon({ favorite }: { favorite: FavoriteRecord }) {
   );
 }
 
-function SidebarLink({ href, icon: Icon, isActive, label, onNavigate }: {
+function SidebarLink({ href, icon: Icon, isActive, label, badge, onNavigate }: {
   href: string;
   icon: typeof Inbox;
   isActive: boolean;
   label: string;
+  badge?: number;
   onNavigate: () => void;
 }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
-        <Link href={href} onClick={onNavigate}><Icon /><span>{label}</span></Link>
+        <Link href={href} onClick={onNavigate}><Icon /><span>{label}</span>{badge ? <span className="ml-auto text-[0.65rem] tabular-nums text-sidebar-foreground/65">{badge > 99 ? "99+" : badge}</span> : null}</Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

@@ -30,17 +30,18 @@ import { LabelProperty } from "@/modules/workspace-ui/components/label-property"
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 import { favoriteFromIssue } from "@/modules/workspace-ui/domain/favorite-target";
+import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
 import type { IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
-export function IssueDetailView({ workspaceSlug, issueId }: { workspaceSlug: string; issueId: string }) {
+export function IssueDetailView({ workspaceSlug, issueId, embedded = false }: { workspaceSlug: string; issueId: string; embedded?: boolean }) {
   const issueQuery = useIssueQuery(workspaceSlug, issueId);
   const issue = issueQuery.data;
   if (issueQuery.isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading issue...</div>;
   if (!issue) return <div className="p-6 text-sm text-destructive">{issueQuery.error?.message ?? "Issue not found."}</div>;
-  return <LoadedIssueDetail issue={issue} workspaceSlug={workspaceSlug} />;
+  return <LoadedIssueDetail embedded={embedded} issue={issue} workspaceSlug={workspaceSlug} />;
 }
 
-function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; workspaceSlug: string }) {
+function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boolean; issue: IssueRecord; workspaceSlug: string }) {
   const update = useUpdateIssueDetailMutation(workspaceSlug, issue.id);
   const membersQuery = useMembersQuery(workspaceSlug);
   const clientsQuery = useClientsQuery(workspaceSlug);
@@ -71,6 +72,7 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
     <>
       <EntityHeader
         allowDelete={client?.canEdit ?? false}
+        canonicalHref={issueDetailPath(workspaceSlug, issue.id, issue.projectId)}
         breadcrumbs={[
           {
             label: issue.clientName,
@@ -83,6 +85,7 @@ function LoadedIssueDetail({ issue, workspaceSlug }: { issue: IssueRecord; works
         icon={<span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground"><CircleDot className="size-3.5" /></span>}
         title={`${issue.identifier} ${issue.title}`}
         workspaceSlug={workspaceSlug}
+        showSidebarTrigger={!embedded}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">

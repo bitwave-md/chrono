@@ -99,6 +99,19 @@ version returns `409 conflict`.
 `GET /api/workspaces/:workspaceSlug/workflows/:workflowId/statuses` returns
 active statuses ordered by position for an accessible Client or Project workflow.
 
+## Inbox
+
+- `GET /api/workspaces/:workspaceSlug/inbox` lists up to 100 non-dismissed
+  notifications for the current membership. `unread=true` limits the feed.
+- `POST /api/workspaces/:workspaceSlug/inbox` marks every notification read for
+  the current membership.
+- `PATCH /api/workspaces/:workspaceSlug/inbox/:notificationId` accepts `read`,
+  `unread`, or `dismiss` as its `action`.
+
+Assignment, workflow-status, and comment mutations notify the Issue creator and
+current assignees other than the actor. Notification access is recipient-scoped
+and current Issue visibility is rechecked when listing.
+
 ## Favorites
 
 - `GET /api/workspaces/:workspaceSlug/favorites` lists the current membership's

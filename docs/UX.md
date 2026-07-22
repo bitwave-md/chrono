@@ -32,6 +32,14 @@ favorite. It links Clients with their owned icons, Projects with their owned
 icons, and Issues with the standard Issue icon. Favorite state is optimistic
 TanStack Query server state rather than sidebar disclosure state.
 
+Inbox is a recipient-specific notification feed rather than a general Issue
+directory. Its compact left pane shows unread state, actor, Issue identity,
+event summary, relative time, filters, and dismiss controls. Selecting an event
+marks it read and opens the shared Issue detail in the right pane; mobile shows
+the feed and detail as separate steps. The sidebar badge reflects unread
+assignment, status-change, and comment events performed by other members on
+Issues the current member created or is assigned to.
+
 ## Project experience
 
 Projects expose Overview, Activity, and Issues tabs. Overview contains summary,

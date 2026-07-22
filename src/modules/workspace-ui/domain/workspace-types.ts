@@ -167,6 +167,28 @@ export interface WorkflowStatusRecord {
   isDefault: boolean;
 }
 
+export interface InboxNotificationRecord {
+  id: string;
+  kind: "assigned" | "status_changed" | "commented";
+  detail: string | null;
+  createdAt: string;
+  readAt: string | null;
+  issueId: string;
+  identifier: string;
+  issueTitle: string;
+  projectId: string | null;
+  projectName: string | null;
+  clientId: string;
+  clientName: string;
+  statusName: string;
+  statusColor: string | null;
+  statusCategory: WorkflowStatusRecord["category"];
+  actorMembershipId: string;
+  actorName: string | null;
+  actorEmail: string;
+  actorAvatarUrl: string | null;
+}
+
 export interface TimeCategoryRecord {
   id: string;
   name: string;

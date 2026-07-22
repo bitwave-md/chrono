@@ -79,6 +79,12 @@ The fixtures were removed after verification. Tenant-safe foreign keys and
 server-side principal resolution remain the enforcement boundary; UI hiding is
 not treated as authorization.
 
+Inbox notifications are scoped to one recipient Workspace membership through
+tenant-safe foreign keys and every list/mutation predicate repeats both the
+Workspace and recipient IDs. Feed reads also reapply current guest Client and
+Issue visibility; notification delivery never acts as a durable access grant.
+Actors do not receive notifications for their own mutations.
+
 ## Upgrade review
 
 React and React DOM were advanced to the current compatible 19.2.7 patch, and

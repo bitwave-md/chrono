@@ -164,6 +164,13 @@ Favorite target authorization is re-evaluated when listing and mutating; stale
 or inaccessible targets are not exposed. The conditional sidebar section is a
 projection of this TanStack-owned server state.
 
+`inbox_notifications` is a recipient-owned projection of relevant Issue
+events. Assignment, status-change, and comment mutations emit notifications to
+the Issue creator and current assignees, excluding the actor. Each row keeps
+tenant-safe references to its recipient, actor, and Issue plus independent read
+and dismissed timestamps. Listing rechecks current Issue visibility, so a
+notification never restores access that the recipient has since lost.
+
 Client, Project, and Issue deletion uses domain-owned soft-archive operations.
 Client and Project archival atomically archives active descendants while
 retaining immutable time attribution. Active timers are checked before the

@@ -4,12 +4,14 @@ import { db } from "@/db/client";
 import { issueComments, users, workspaceMemberships } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
+import { IssueNotificationWriter } from "@/modules/inbox/application/issue-notification-writer";
 import { IssueService } from "@/modules/issues/application/issue-service";
 import { ValidationError } from "@/modules/shared/application/application-error";
 
 export class IssueCommentService {
   readonly #issueService = new IssueService();
   readonly #clientAccess = new ClientAccessService();
+  readonly #notifications = new IssueNotificationWriter();
 
   async list(principal: Principal, issueId: string) {
     await this.#issueService.get(principal, issueId);
@@ -40,12 +42,21 @@ export class IssueCommentService {
     await this.#clientAccess.assertCanContribute(principal, issue.clientId);
     const body = bodyValue.trim();
     if (!body || body.length > 20_000) throw new ValidationError("Comment must contain 1-20,000 characters.");
-    const [comment] = await db.insert(issueComments).values({
-      workspaceId: principal.workspaceId,
-      issueId,
-      authorMembershipId: principal.membershipId,
-      body,
-    }).returning();
-    return comment;
+    return db.transaction(async (transaction) => {
+      const [comment] = await transaction.insert(issueComments).values({
+        workspaceId: principal.workspaceId,
+        issueId,
+        authorMembershipId: principal.membershipId,
+        body,
+      }).returning();
+      await this.#notifications.notifyInterested(
+        transaction,
+        principal,
+        issueId,
+        "commented",
+        body.slice(0, 240),
+      );
+      return comment;
+    });
   }
 }

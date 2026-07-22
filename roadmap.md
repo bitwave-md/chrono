@@ -1,5 +1,24 @@
 # Chrono Roadmap
 
+## Notification Inbox
+
+Tracer bullet: assign or update an Issue as one member, then let another
+interested member review, open, mark read, and dismiss that event from a
+Linear-inspired split Inbox without mixing it into the general Issue directory.
+
+- [x] Add tenant-safe recipient Issue notifications with read/dismiss state.
+- [x] Emit assignment, status-change, and comment notifications to interested members other than the actor.
+- [x] Add authorized Inbox list and mutation APIs with TanStack Query hooks.
+- [x] Replace the Issue directory Inbox with a compact notification list and Issue detail split view.
+- [x] Add unread sidebar count, filters, empty states, and responsive behavior.
+- [x] Verify migrations, authorization, event delivery, UI builds, and Docker runtime.
+
+Completed and runtime-verified on 2026-07-22. Migration 0011 created the
+recipient-scoped notification store, the production app reached healthy, and
+the Inbox remained empty for actor-only demo activity as intended. TypeScript,
+ESLint, 34 tests, tenant predicates, event-recipient rules, and the Docker
+source stack passed verification.
+
 ## Canonical creation-dialog UX
 
 Tracer bullet: create a Client from the sidebar using the same focused composer

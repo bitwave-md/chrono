@@ -78,6 +78,13 @@
       "when": 1784318187590,
       "tag": "0010_default_time_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784716814860,
+      "tag": "0011_notification_inbox",
+      "breakpoints": true
     }
   ]
 }

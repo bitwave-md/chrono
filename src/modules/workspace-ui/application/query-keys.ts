@@ -3,6 +3,9 @@ import type { ClientTimeReportFilters, IssueQueryFilters } from "@/modules/works
 export const workspaceQueryKeys = {
   clients: (workspaceSlug: string) => ["workspace", workspaceSlug, "clients"] as const,
   favorites: (workspaceSlug: string) => ["workspace", workspaceSlug, "favorites"] as const,
+  inboxRoot: (workspaceSlug: string) => ["workspace", workspaceSlug, "inbox"] as const,
+  inbox: (workspaceSlug: string, unreadOnly: boolean) =>
+    [...workspaceQueryKeys.inboxRoot(workspaceSlug), unreadOnly] as const,
   clientResources: (workspaceSlug: string, clientId: string) =>
     ["workspace", workspaceSlug, "client", clientId, "resources"] as const,
   clientMembers: (workspaceSlug: string, clientId: string) =>

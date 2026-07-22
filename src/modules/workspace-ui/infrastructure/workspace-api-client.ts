@@ -6,6 +6,7 @@ import type {
   ClientTimeReportRecord,
   FavoriteRecord,
   FavoriteTargetType,
+  InboxNotificationRecord,
   IssuePriority,
   IssueRecord,
   IssueCommentRecord,
@@ -137,6 +138,24 @@ export class WorkspaceApiClient {
       method: "PUT",
       body: JSON.stringify(input),
     });
+  }
+
+  listInbox(unreadOnly: boolean): Promise<InboxNotificationRecord[]> {
+    return this.#get(`/inbox${unreadOnly ? "?unread=true" : ""}`);
+  }
+
+  updateInboxNotification(
+    notificationId: string,
+    action: "read" | "unread" | "dismiss",
+  ): Promise<unknown> {
+    return this.#request(`/inbox/${encodeURIComponent(notificationId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action }),
+    });
+  }
+
+  markInboxRead(): Promise<{ count: number }> {
+    return this.#request("/inbox", { method: "POST" });
   }
 
   listProjects(clientId: string | null): Promise<ProjectRecord[]> {

@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, isNull, or, sql } from "drizzle-orm";
 
 import { db, type DatabaseTransaction } from "@/db/client";
 import {
@@ -6,22 +6,20 @@ import {
   clients,
   issueAssignees,
   issueNamespaces,
-  issueLabels,
   issues,
   issueTypes,
-  labels,
   projectBranches,
   projects,
   timerSessions,
-  users,
   workflowStatuses,
-  workspaceMemberships,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueContextResolver } from "@/modules/issues/application/issue-context-resolver";
+import { IssueListEnricher } from "@/modules/issues/application/issue-list-enricher";
 import { IssueRelationValidator } from "@/modules/issues/application/issue-relation-validator";
 import { IssueStatusMapper } from "@/modules/issues/application/issue-status-mapper";
+import { IssueNotificationWriter } from "@/modules/inbox/application/issue-notification-writer";
 import {
   ConflictError,
   NotFoundError,
@@ -30,7 +28,6 @@ import {
 
 const issuePriorities = ["none", "urgent", "high", "medium", "low"] as const;
 const issueVisibilities = ["internal", "client_shared", "restricted"] as const;
-
 export type IssuePriority = (typeof issuePriorities)[number];
 export type IssueVisibility = (typeof issueVisibilities)[number];
 
@@ -74,6 +71,8 @@ export interface UpdateIssueInput {
 export class IssueService {
   readonly #clientAccess = new ClientAccessService();
   readonly #contextResolver = new IssueContextResolver();
+  readonly #enricher = new IssueListEnricher();
+  readonly #notifications = new IssueNotificationWriter();
   readonly #relationValidator = new IssueRelationValidator();
   readonly #statusMapper = new IssueStatusMapper();
 
@@ -186,7 +185,7 @@ export class IssueService {
       .where(and(...conditions))
       .orderBy(desc(issues.createdAt));
 
-    return this.#attachAssignees(principal.workspaceId, rows);
+    return this.#enricher.attach(principal.workspaceId, rows);
   }
 
   async get(principal: Principal, issueId: string) {
@@ -277,6 +276,14 @@ export class IssueService {
         issue.id,
         input.assigneeMembershipIds,
       );
+      await this.#notifications.notify(
+        transaction,
+        principal,
+        issue.id,
+        "assigned",
+        null,
+        input.assigneeMembershipIds,
+      );
 
       return { issue, identifier: `${context.prefix}-${number}` };
     }, { isolationLevel: "serializable", accessMode: "read write" });
@@ -295,7 +302,6 @@ export class IssueService {
 
     if (!snapshot) throw new NotFoundError("Issue not found.");
     await this.#clientAccess.assertCanContribute(principal, snapshot.clientId);
-
     return db.transaction(async (transaction) => {
       const [current] = await transaction
         .select()
@@ -308,6 +314,17 @@ export class IssueService {
         .limit(1);
 
       if (!current) throw new NotFoundError("Issue not found.");
+
+      const previousAssigneeIds = input.assigneeMembershipIds
+        ? await transaction
+            .select({ membershipId: issueAssignees.membershipId })
+            .from(issueAssignees)
+            .where(and(
+              eq(issueAssignees.workspaceId, principal.workspaceId),
+              eq(issueAssignees.issueId, issueId),
+            ))
+            .then((rows) => rows.map((row) => row.membershipId))
+        : [];
 
       if (input.assigneeMembershipIds) {
         await this.#relationValidator.assertAssignees(
@@ -385,13 +402,37 @@ export class IssueService {
           issueId,
           input.assigneeMembershipIds,
         );
+        await this.#notifications.notify(
+          transaction,
+          principal,
+          issueId,
+          "assigned",
+          null,
+          input.assigneeMembershipIds.filter((membershipId) => !previousAssigneeIds.includes(membershipId)),
+        );
       }
 
-      const [namespace] = await transaction
-        .select({ prefix: issueNamespaces.prefix })
-        .from(issueNamespaces)
-        .where(eq(issueNamespaces.id, updated.issueNamespaceId))
-        .limit(1);
+      const [[namespace], [status]] = await Promise.all([
+        transaction
+          .select({ prefix: issueNamespaces.prefix })
+          .from(issueNamespaces)
+          .where(eq(issueNamespaces.id, updated.issueNamespaceId))
+          .limit(1),
+        transaction
+          .select({ name: workflowStatuses.name })
+          .from(workflowStatuses)
+          .where(eq(workflowStatuses.id, updated.statusId))
+          .limit(1),
+      ]);
+      if (updated.statusId !== current.statusId) {
+        await this.#notifications.notifyInterested(
+          transaction,
+          principal,
+          issueId,
+          "status_changed",
+          status?.name ?? "another status",
+        );
+      }
 
       return { issue: updated, identifier: `${namespace.prefix}-${updated.number}` };
     }, { isolationLevel: "serializable", accessMode: "read write" });
@@ -423,47 +464,6 @@ export class IssueService {
       .returning({ id: issues.id });
     if (!archived) throw new NotFoundError("Issue not found.");
     return archived;
-  }
-
-  async #attachAssignees<T extends { id: string }>(workspaceId: string, rows: T[]) {
-    if (rows.length === 0) return rows.map((row) => ({ ...row, assignees: [] }));
-
-    const [assignments, labelRows] = await Promise.all([db
-      .select({
-        issueId: issueAssignees.issueId,
-        membershipId: workspaceMemberships.id,
-        userId: users.id,
-        displayName: users.name,
-        email: users.email,
-        avatarUrl: users.image,
-      })
-      .from(issueAssignees)
-      .innerJoin(workspaceMemberships, eq(workspaceMemberships.id, issueAssignees.membershipId))
-      .innerJoin(users, eq(users.id, workspaceMemberships.userId))
-      .where(and(
-        eq(issueAssignees.workspaceId, workspaceId),
-        inArray(issueAssignees.issueId, rows.map((row) => row.id)),
-      )), db
-        .select({
-          issueId: issueLabels.issueId,
-          id: labels.id,
-          name: labels.name,
-          color: labels.color,
-        })
-        .from(issueLabels)
-        .innerJoin(labels, eq(labels.id, issueLabels.labelId))
-        .where(and(
-          eq(issueLabels.workspaceId, workspaceId),
-          inArray(issueLabels.issueId, rows.map((row) => row.id)),
-          isNull(labels.archivedAt),
-        )),
-    ]);
-
-    return rows.map((row) => ({
-      ...row,
-      assignees: assignments.filter((assignment) => assignment.issueId === row.id),
-      labels: labelRows.filter((label) => label.issueId === row.id),
-    }));
   }
 
   async #replaceAssignees(
