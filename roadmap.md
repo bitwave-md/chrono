@@ -1,5 +1,27 @@
 # Chrono Roadmap
 
+## Self-hosting appliance
+
+Tracer bullet: install Chrono on a clean Docker host without Node.js,
+PostgreSQL, or SMTP; sign in as the bootstrap owner; then upgrade the versioned
+application images without losing the PostgreSQL volume.
+
+- [x] Add versioned Next.js and migrator GHCR publication automation.
+- [x] Pull production images from one Compose file while retaining local builds.
+- [x] Add generated secrets and SMTP-independent bootstrap-owner sign-in.
+- [x] Add optional Caddy automatic HTTPS through a Compose profile.
+- [x] Add a guided installer and rewrite self-hosting documentation.
+- [x] Verify authentication, Compose rendering, builds, tests, and clean startup.
+
+The self-hosting appliance was completed and runtime-verified on 2026-07-22.
+Production HTTP, optional HTTPS, source-build, and Mailpit development Compose
+models render successfully. The installer generated mode-`0600` secrets in an
+isolated smoke test. A clean multi-stage Docker build replayed migrations,
+started healthy PostgreSQL and Next.js containers, and authenticated the
+bootstrap owner through NextAuth’s CSRF-protected credentials callback. GHCR
+publication runs on version tags; until a package is public, the installer
+automatically uses the verified Docker source-build fallback.
+
 ## Entity header and deletion refinement
 
 Tracer bullet: navigate Client → Project → Issue through a compact Linear-like

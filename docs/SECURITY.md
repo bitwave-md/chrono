@@ -2,9 +2,16 @@
 
 ## Authentication baseline
 
-Phase 1 uses stable NextAuth 4, the current Auth.js Drizzle adapter, database
-sessions, and email magic links. Auth.js v5 is not used because it is still
-published under a beta tag.
+Chrono uses stable NextAuth 4, the Auth.js Drizzle adapter, and signed JWT
+sessions. JWT sessions are required because the self-hosting appliance supports
+the NextAuth Credentials provider for bootstrap-owner access. Users,
+memberships, invitations, and tenant authorization remain database-backed.
+
+The optional owner setup key is compared through a constant-time SHA-256 digest
+and is accepted only with the configured bootstrap email. The installer
+generates a high-entropy key and stores it in a mode-`0600` environment file.
+It is an operator credential: do not publish it in Compose files, logs, shell
+history, tickets, or screenshots.
 
 Only the configured bootstrap email, an active workspace member, or an address
 with an unexpired invitation may request a sign-in link. Resource authorization
@@ -49,8 +56,10 @@ development server. It is not included in the final application runner image.
 ## Operational requirements
 
 - Use a long, random `NEXTAUTH_SECRET`.
-- Use a trusted SMTP server with TLS in production.
-- Terminate HTTPS at a trusted reverse proxy.
+- Keep `AUTH_BOOTSTRAP_TOKEN`, `POSTGRES_PASSWORD`, and `NEXTAUTH_SECRET` random
+  and private; rotating `NEXTAUTH_SECRET` signs every user out.
+- When email sign-in is enabled, use a trusted SMTP server with TLS.
+- Terminate HTTPS through the optional Caddy profile or another trusted proxy.
 - Do not expose PostgreSQL publicly.
 - Back up PostgreSQL outside the Docker volume and test restores.
 - Re-run production and full dependency audits during each dependency upgrade.

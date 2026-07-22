@@ -1,69 +1,130 @@
 # Chrono
 
-Chrono is Bitwave's self-hosted, keyboard-first client project workspace with
-native issue tracking, time tracking, and reporting.
+Chrono is Bitwave’s self-hosted, keyboard-first workspace for Clients,
+Projects, Issues, native timers, manual time entries, and reporting.
 
-## Phase 1 stack
+## Self-host in one command
 
-- Next.js App Router
-- PostgreSQL and Drizzle ORM
-- Stable NextAuth with email magic links and database sessions
-- Tailwind CSS
-- Docker Compose with one-shot migrations
+Chrono’s supported appliance installation requires only Docker Engine (or
+Docker Desktop) with the Docker Compose plugin. Node.js, PostgreSQL, npm, and
+SMTP are not required on the host.
 
-## Local setup
+```sh
+curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/install.sh | sh
+```
 
-1. Copy `.env.example` to `.env` and replace the example secret and owner email.
-2. Start PostgreSQL and Mailpit:
+The installer downloads `compose.yaml` into `~/chrono`, generates the database
+password, NextAuth secret, and owner setup key, runs every migration, and starts
+Chrono at `http://localhost:3000`. It prefers versioned GHCR images and
+automatically falls back to a Docker source build when a public image is not
+available; neither path installs build tools on the host.
 
-   ```sh
-   docker compose -f compose.yaml -f compose.dev.yaml up db mailpit
-   ```
+Sign in using the owner email and setup key printed by the installer. The same
+values are stored in `~/chrono/.env`, which is created with mode `0600`.
 
-3. Install and migrate:
+### Domain and automatic HTTPS
 
-   ```sh
-   npm ci
-   npm run db:migrate
-   npm run dev
-   ```
+Pass an HTTPS public URL to enable the bundled Caddy profile. The domain must
+resolve to the Docker host, and ports 80 and 443 must be reachable.
 
-4. Open `http://localhost:3000/app`, request a link for the configured bootstrap
-   email, and read the message at `http://localhost:8025`.
+```sh
+curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/install.sh |
+  NEXTAUTH_URL=https://chrono.example.com sh
+```
 
-For the complete application in Docker, use the local override so the app
-resolves SMTP through the `mailpit` service:
+Caddy obtains and renews the certificate automatically. Existing Nginx,
+Traefik, Caddy, Coolify, or hosting-panel users can leave the profile disabled,
+set `NEXTAUTH_URL`, and proxy to the configured local Chrono port.
+
+### Optional email sign-in
+
+SMTP is optional. Owner setup-key sign-in works without it. To enable magic
+links for approved members, set `EMAIL_SERVER` and `EMAIL_FROM` in
+`~/chrono/.env`, then apply the configuration:
+
+```sh
+cd ~/chrono
+docker compose up -d
+```
+
+Use an `smtp://` or `smtps://` URL and percent-encode special characters in
+credentials.
+
+## Manual Compose installation
+
+Experienced operators can download `compose.yaml`, copy `.env.example` to
+`.env`, replace every placeholder secret, and run:
+
+```sh
+docker compose pull
+docker compose up -d
+docker compose ps
+```
+
+The default stack contains PostgreSQL, a one-shot Drizzle migrator, and the
+standalone Next.js application. PostgreSQL is internal-only and persists in the
+`chrono_postgres_data` named volume. The application starts only after the
+database is healthy and migrations complete successfully.
+
+From a source checkout, use the build overlay instead of GHCR:
+
+```sh
+docker compose -f compose.yaml -f compose.build.yaml up --build -d
+```
+
+## Upgrade and backup
+
+Back up before every upgrade:
+
+```sh
+cd ~/chrono
+docker compose exec -T db pg_dump -U chrono -d chrono -Fc > chrono.dump
+```
+
+Set `CHRONO_VERSION` in `.env` to the desired release, then deploy both matching
+images:
+
+```sh
+docker compose pull
+docker compose up -d
+docker compose ps
+```
+
+Never treat the Docker volume as a backup. Keep encrypted backup copies outside
+the Docker host and test restores. See `docs/OPERATIONS.md` for the complete
+upgrade, restore, HTTPS, and troubleshooting procedures.
+
+## Source development
+
+Copy `.env.example` to `.env`, replace the secrets, and start the source-built
+stack with PostgreSQL and Mailpit:
 
 ```sh
 npm run stack:up
 ```
 
-Do not use the production-only Compose command with
-`EMAIL_SERVER=smtp://localhost:1025`; inside a container, `localhost` refers to
-that container rather than Mailpit.
+Open Chrono at `http://localhost:3000` and Mailpit at
+`http://localhost:8025`. The development override builds the local Dockerfile
+targets instead of pulling GHCR images.
 
-The first successful bootstrap login creates the configured workspace and owner
-membership. Other addresses require an active membership or unexpired invite.
-
-## Production Compose
-
-Provide real PostgreSQL, SMTP, authentication, and bootstrap values in `.env`,
-then run:
+For a host-run Next.js process:
 
 ```sh
-docker compose up --build -d
+docker compose -f compose.yaml -f compose.dev.yaml up -d db mailpit
+npm ci
+npm run db:migrate
+npm run dev
 ```
 
-The `migrate` service must complete successfully before the application starts.
-The PostgreSQL volume provides persistence, but operators must configure external
-backups separately.
+Use `EMAIL_SERVER=smtp://localhost:1025` only for a host-run process. The Docker
+application uses the internal address `smtp://mailpit:1025` from the override.
 
 ## Documentation
 
-- `docs/ARCHITECTURE.md`
-- `docs/API.md`
-- `docs/OPERATIONS.md`
-- `docs/PERFORMANCE.md`
-- `docs/SECURITY.md`
-- `docs/UX.md`
-- `roadmap.md`
+- `docs/ARCHITECTURE.md` — system boundaries and data model
+- `docs/OPERATIONS.md` — installation, upgrades, backup, and recovery
+- `docs/SECURITY.md` — authentication and deployment requirements
+- `docs/API.md` — HTTP endpoints
+- `docs/PERFORMANCE.md` — measured performance notes
+- `docs/UX.md` — interaction and layout conventions
+- `roadmap.md` — completed implementation tracer bullets
