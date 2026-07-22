@@ -72,9 +72,12 @@ esac
 POSTGRES_PASSWORD_VALUE=${POSTGRES_PASSWORD:-$(random_hex 24)}
 NEXTAUTH_SECRET_VALUE=${NEXTAUTH_SECRET:-$(random_hex 32)}
 BOOTSTRAP_TOKEN_VALUE=${AUTH_BOOTSTRAP_TOKEN:-$(random_hex 24)}
+MINIO_ROOT_PASSWORD_VALUE=${MINIO_ROOT_PASSWORD:-$(random_hex 24)}
+S3_SECRET_KEY_VALUE=${S3_SECRET_KEY:-$(random_hex 24)}
 
 umask 077
 mkdir -p "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR/data/status"
 
 if [ -e "$INSTALL_DIR/.env" ] && [ "${CHRONO_FORCE:-0}" != "1" ]; then
   fail "$INSTALL_DIR/.env already exists. Set CHRONO_FORCE=1 only when intentionally replacing this installation configuration."
@@ -87,6 +90,20 @@ else
   curl -fsSL "https://raw.githubusercontent.com/bitwave-md/chrono/$SOURCE_REF/compose.yaml" -o "$INSTALL_DIR/compose.yaml"
 fi
 
+install_helper() {
+  name=$1
+  if [ -n "${CHRONO_COMPOSE_SOURCE:-}" ]; then
+    cp "$(dirname "$CHRONO_COMPOSE_SOURCE")/scripts/$name" "$INSTALL_DIR/$name"
+  else
+    curl -fsSL "https://raw.githubusercontent.com/bitwave-md/chrono/$SOURCE_REF/scripts/$name" -o "$INSTALL_DIR/$name"
+  fi
+  chmod 700 "$INSTALL_DIR/$name"
+}
+
+install_helper backup.sh
+install_helper restore.sh
+install_helper update.sh
+
 write_environment() {
   pull_policy=$1
   install_mode=$2
@@ -97,10 +114,22 @@ CHRONO_MIGRATOR_IMAGE=ghcr.io/bitwave-md/chrono-migrator
 CHRONO_PULL_POLICY=$pull_policy
 CHRONO_BUILD_CONTEXT=./source
 CHRONO_INSTALL_MODE=$install_mode
+CHRONO_RELEASE_REPOSITORY=bitwave-md/chrono
+CHRONO_STATUS_DIR=./data/status
 CHRONO_BIND_ADDRESS=$CHRONO_BIND_ADDRESS_VALUE
 CHRONO_PORT=3000
 COMPOSE_PROFILES=$COMPOSE_PROFILES_VALUE
 CHRONO_DOMAIN=$CHRONO_DOMAIN_VALUE
+MINIO_ROOT_USER=chrono-root
+MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD_VALUE
+S3_ENDPOINT=http://storage:9000
+S3_REGION=us-east-1
+S3_BUCKET=chrono
+S3_ACCESS_KEY=chrono-app
+S3_SECRET_KEY=$S3_SECRET_KEY_VALUE
+S3_FORCE_PATH_STYLE=true
+STORAGE_WORKSPACE_QUOTA_GB=10
+STORAGE_PERSONAL_QUOTA_MB=100
 POSTGRES_DB=chrono
 POSTGRES_USER=chrono
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD_VALUE
