@@ -10,18 +10,8 @@ services:
       - "127.0.0.1:8025:8025"
 
   app:
-    build:
-      context: .
-      target: runner
-    pull_policy: build
     environment:
       EMAIL_SERVER: smtp://mailpit:1025
     depends_on:
       mailpit:
         condition: service_started
-
-  migrate:
-    build:
-      context: .
-      target: migrator
-    pull_policy: build

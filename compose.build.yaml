@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: ${CHRONO_BUILD_CONTEXT:-.}
+      target: runner
+    pull_policy: build
+
+  migrate:
+    build:
+      context: ${CHRONO_BUILD_CONTEXT:-.}
+      target: migrator
+    pull_policy: build

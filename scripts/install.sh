@@ -87,11 +87,16 @@ else
   curl -fsSL "https://raw.githubusercontent.com/bitwave-md/chrono/$SOURCE_REF/compose.yaml" -o "$INSTALL_DIR/compose.yaml"
 fi
 
-cat >"$INSTALL_DIR/.env" <<EOF
+write_environment() {
+  pull_policy=$1
+  install_mode=$2
+  cat >"$INSTALL_DIR/.env" <<EOF
 CHRONO_VERSION=$VERSION
 CHRONO_APP_IMAGE=ghcr.io/bitwave-md/chrono
 CHRONO_MIGRATOR_IMAGE=ghcr.io/bitwave-md/chrono-migrator
-CHRONO_PULL_POLICY=always
+CHRONO_PULL_POLICY=$pull_policy
+CHRONO_BUILD_CONTEXT=./source
+CHRONO_INSTALL_MODE=$install_mode
 CHRONO_BIND_ADDRESS=$CHRONO_BIND_ADDRESS_VALUE
 CHRONO_PORT=3000
 COMPOSE_PROFILES=$COMPOSE_PROFILES_VALUE
@@ -108,10 +113,25 @@ AUTH_BOOTSTRAP_TOKEN=$BOOTSTRAP_TOKEN_VALUE
 AUTH_BOOTSTRAP_WORKSPACE_NAME=$WORKSPACE_NAME
 AUTH_BOOTSTRAP_WORKSPACE_SLUG=$WORKSPACE_SLUG
 EOF
-chmod 600 "$INSTALL_DIR/.env"
+  chmod 600 "$INSTALL_DIR/.env"
+}
+
+write_environment always image
 
 if [ "${CHRONO_SKIP_START:-0}" != "1" ]; then
-  (cd "$INSTALL_DIR" && docker compose pull && docker compose up -d)
+  if (cd "$INSTALL_DIR" && docker compose pull); then
+    (cd "$INSTALL_DIR" && docker compose up -d)
+  else
+    say "Prebuilt images are unavailable; falling back to a Docker source build."
+    command -v tar >/dev/null 2>&1 || fail "tar is required for the source-build fallback."
+    rm -rf "$INSTALL_DIR/source"
+    mkdir -p "$INSTALL_DIR/source"
+    curl -fsSL "https://github.com/bitwave-md/chrono/archive/$SOURCE_REF.tar.gz" |
+      tar -xz --strip-components=1 -C "$INSTALL_DIR/source"
+    cp "$INSTALL_DIR/source/compose.build.yaml" "$INSTALL_DIR/compose.build.yaml"
+    write_environment never source
+    (cd "$INSTALL_DIR" && docker compose -f compose.yaml -f compose.build.yaml up --build -d)
+  fi
 fi
 
 say ""
