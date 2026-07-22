@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEmailSignInMutation } from "@/modules/auth/presentation/use-auth-mutations";
 
-export function EmailSignInForm({ callbackUrl }: { callbackUrl: string }) {
+export function EmailSignInForm({ callbackUrl, autoFocus = true }: { callbackUrl: string; autoFocus?: boolean }) {
   const [email, setEmail] = useState("");
   const mutation = useEmailSignInMutation(callbackUrl);
 
@@ -24,7 +24,7 @@ export function EmailSignInForm({ callbackUrl }: { callbackUrl: string }) {
         Work email
         <Input
           autoComplete="email"
-          autoFocus
+          autoFocus={autoFocus}
           id="chrono-sign-in-email"
           name="email"
           placeholder="you@company.com"
