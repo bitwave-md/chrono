@@ -22,6 +22,7 @@ Your clients
     Home
     Issues
     Projects
+    Time
 ```
 
 The Workspace switcher is searchable. Sidebar and Client disclosure state are
@@ -39,6 +40,13 @@ marks it read and opens the shared Issue detail in the right pane; mobile shows
 the feed and detail as separate steps. The sidebar badge reflects unread
 assignment, status-change, and comment events performed by other members on
 Issues the current member created or is assigned to.
+
+Settings replaces the normal app sidebar with searchable Personal, Workspace,
+and operator-only Administration groups. Each functional page uses a centered
+700–760px column, restrained title, short section descriptions, and rounded
+divided cards. Mobile navigation uses the shared off-canvas Sidebar. Profile,
+preferences, notifications, Workspace identity, members, time entry types,
+storage, and updates never appear as decorative placeholders.
 
 ## Project experience
 
@@ -84,6 +92,12 @@ require a Workspace time entry type. Manual entries include a shadcn Calendar
 picker for the work date and prevent future-date selection. Finalized entries
 appear chronologically in Activity alongside comments with worker, duration,
 source, type, date, and note.
+
+Client and Project Overview plus Issue detail contain a shared Attachments
+section. Uploads show progress and private rows with filename, size, uploader,
+date, download, share, and permission-aware delete controls. Issue uploads also
+appear as immutable Activity items. Share popovers create links from one hour
+through 30 days and list/revoke existing links without exposing bucket URLs.
 
 The lowest property-rail section summarizes finalized work with shadcn charts:
 a gradient area chart shows cumulative time and a stacked radial chart sizes

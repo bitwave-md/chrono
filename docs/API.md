@@ -65,6 +65,8 @@ Project assignees are supplied as membership IDs:
   and requires `expectedVersion`.
 - `GET|POST /api/workspaces/:workspaceSlug/issues/:issueId/comments` lists or
   creates comments.
+- `GET /api/workspaces/:workspaceSlug/issues/:issueId/activity` lists immutable
+  automated events, including attachment uploads.
 - `PUT /api/workspaces/:workspaceSlug/issues/:issueId/labels` atomically
   replaces labels.
 - `GET /api/workspaces/:workspaceSlug/issue-metadata` returns active issue
@@ -168,3 +170,48 @@ was truncated.
 Manual time-log creation accepts an explicit `startedAt` epoch. The Issue UI
 derives it from the selected local work date and duration so the finalized
 entry ends on that date while the server continues to reject future periods.
+
+## Settings and identity assets
+
+- `GET|PATCH /api/account/profile` reads or updates the signed-in profile.
+- `GET|PATCH /api/account/preferences` manages theme, density, Issue view, and
+  sidebar defaults.
+- `POST|DELETE /api/account/avatar` creates an image upload or removes it.
+- `GET|PATCH /api/workspaces/:workspaceSlug/settings/general` manages Workspace
+  name and icon identity.
+- `GET|PATCH /api/workspaces/:workspaceSlug/settings/notifications` manages the
+  current membership's Inbox event preferences.
+- `GET|POST /api/workspaces/:workspaceSlug/settings/members` lists members and
+  invitations or creates an invitation.
+- `PATCH /api/workspaces/:workspaceSlug/settings/members/:membershipId` changes
+  role or active, suspended, and removed state with last-owner protection.
+- `GET /api/workspaces/:workspaceSlug/settings/storage` and `/updates` expose
+  operator-only health and release metadata.
+- `PATCH /api/workspaces/:workspaceSlug/time-categories/:categoryId` renames,
+  recolors, reorders, changes billing default, or archives a time entry type.
+
+Identity uploads use a two-step intent and raw-body PUT. PNG, JPEG, and WebP
+inputs are normalized to 256px WebP. Avatar and Workspace icon content remains
+authenticated and uses private no-store caching.
+
+## Attachments and sharing
+
+- `GET|POST /api/workspaces/:workspaceSlug/attachments` lists one target's
+  files or reserves an upload intent.
+- `PUT /api/workspaces/:workspaceSlug/attachments/uploads/:uploadId/content`
+  streams and finalizes the declared file.
+- `DELETE /api/workspaces/:workspaceSlug/attachments/uploads/:uploadId`
+  cancels a pending reservation.
+- `GET|DELETE /api/workspaces/:workspaceSlug/attachments/:attachmentId`
+  returns metadata or removes a file.
+- `GET /api/workspaces/:workspaceSlug/attachments/:attachmentId/content`
+  streams an authorized download.
+- `GET|POST /api/workspaces/:workspaceSlug/attachments/:attachmentId/share-links`
+  lists or creates links lasting one hour through 30 days.
+- `DELETE /api/workspaces/:workspaceSlug/attachments/:attachmentId/share-links/:linkId`
+  revokes a link.
+- `GET /share/files/:token` anonymously downloads exactly one unexpired file.
+
+Attachment intents accept `targetType` (`client`, `project`, or `issue`),
+`targetId`, `filename`, `contentType`, and `sizeBytes`. General files are capped
+at 10 MB. Browser code never receives S3 credentials or bucket object keys.

@@ -1,5 +1,26 @@
 # Chrono Roadmap
 
+## Settings, storage, attachments, sharing, and updates
+
+Tracer bullet: install Chrono with its private object store, upload a safe file
+to an Issue, download it with normal authorization, share it temporarily, and
+manage storage plus application updates through the dedicated Settings shell.
+
+- [x] Add the private S3 adapter, MinIO appliance services, storage schema, and migrations.
+- [x] Implement safe upload intents, streamed content, authenticated downloads, quotas, and cleanup.
+- [x] Add Client, Project, and Issue attachments plus expiring revocable share links.
+- [x] Build the categorized Linear-inspired Settings shell and functional Personal/Workspace pages.
+- [x] Add operator-only Storage and Updates pages, release metadata, backup, restore, and update scripts.
+- [x] Verify tenant isolation, file policy, migration replay, backups, builds, and Docker runtime.
+
+Completed and runtime-verified on 2026-07-22. The authenticated tracer exercised
+all eight Settings routes, invitation and time-type administration, safe upload
+cancellation, private attachment download, unauthorized rejection, expiring
+sharing and revocation, immutable Issue activity, and avatar/Workspace WebP
+normalization against bundled MinIO. Clean migration replay, 39 tests,
+TypeScript, ESLint, production/standalone Docker builds, coordinated database
+plus byte-verified object backup, Compose health, and the 500-line audit passed.
+
 ## Notification Inbox
 
 Tracer bullet: assign or update an Issue as one member, then let another

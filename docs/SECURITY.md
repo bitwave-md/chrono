@@ -20,11 +20,11 @@ session alone does not grant tenant access.
 
 ## Dependency advisory review
 
-Reviewed again after Phase 5 on 2026-07-15. `npm audit --omit=dev` reports six
-production advisories (five moderate and one high); the full audit reports ten
-(nine moderate and one high). The Phase 5 TanStack Query, Zustand, GSAP, Radix,
-and Lucide dependencies add no advisory chain. Existing advisories currently
-have no compatible non-breaking resolution in the selected stable stack.
+Reviewed again on 2026-07-22. `npm audit --omit=dev` reports five production
+advisories (two moderate and three high); the full audit reports nine (six
+moderate and three high). The Auth.js Drizzle adapter was advanced to its fixed
+1.11.3 patch. Remaining automated fixes propose incompatible historical major
+versions rather than a safe upgrade for the selected Next.js/NextAuth stack.
 
 ### Nodemailer
 
@@ -47,6 +47,14 @@ The reported PostCSS path is used while processing repository-owned CSS during
 the production build. Chrono does not compile user-provided CSS. Track the next
 compatible Next.js release carrying the patched PostCSS dependency.
 
+### Next.js image dependency
+
+The audit also reports the Sharp version nested under Next.js image tooling.
+Chrono does not accept arbitrary image transformations through Next Image;
+identity uploads use the separately installed patched Sharp 0.35 line, strict
+PNG/JPEG/WebP decoding, fixed 256px output, and a 5 MB source limit. Continue to
+track a Next.js release carrying a patched nested image dependency.
+
 ### Drizzle migration tooling
 
 The reported esbuild version is nested under Drizzle's development-only CLI.
@@ -61,7 +69,7 @@ development server. It is not included in the final application runner image.
 - When email sign-in is enabled, use a trusted SMTP server with TLS.
 - Terminate HTTPS through the optional Caddy profile or another trusted proxy.
 - Do not expose PostgreSQL publicly.
-- Back up PostgreSQL outside the Docker volume and test restores.
+- Back up PostgreSQL and the private object bucket as one snapshot and test restores.
 - Re-run production and full dependency audits during each dependency upgrade.
 
 ## Phase 5 authorization probes
@@ -84,6 +92,21 @@ tenant-safe foreign keys and every list/mutation predicate repeats both the
 Workspace and recipient IDs. Feed reads also reapply current guest Client and
 Issue visibility; notification delivery never acts as a durable access grant.
 Actors do not receive notifications for their own mutations.
+
+## File storage boundary
+
+MinIO uses separate randomly generated root and bucket-scoped application
+credentials. Production publishes neither its API nor console. Application
+objects use opaque UUID keys, private buckets, tenant-safe metadata, and
+authenticated streaming downloads. HTML, SVG, scripts, executables, MIME
+spoofing, declared/actual size mismatches, and quota overages are rejected.
+
+Anonymous share tokens contain 256 bits of entropy; PostgreSQL stores only
+their digest. Links expire within 30 days, are revocable, stop working when the
+creator loses access or the target is archived, and expose no visitor IP
+history. Public responses are attachment-only with `nosniff`, `no-referrer`,
+`noindex`, no-store caching, and rate limiting. The app has no Docker socket,
+and application updates remain host-side operations.
 
 ## Upgrade review
 

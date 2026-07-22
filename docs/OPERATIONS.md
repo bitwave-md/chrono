@@ -7,11 +7,13 @@ The supported production package is one Compose project containing:
 - `app`: the versioned standalone Next.js image.
 - `migrate`: the matching one-shot Drizzle migration image.
 - `db`: PostgreSQL 17 with a persistent named volume.
+- `storage`: pinned MinIO with a persistent named volume and no production port.
+- `storage-init`: one-shot private bucket, application user, and policy setup.
 - `caddy`: optional automatic HTTPS under the `https` profile.
 
-The host needs Docker and the Compose plugin only. PostgreSQL is not published
-to the host. The app waits for a healthy database and a successful migration
-job before starting.
+The host needs Docker and the Compose plugin only. PostgreSQL and MinIO are not
+published to the host. The app waits for healthy persistence plus successful
+migration and bucket initialization jobs. It never mounts the Docker socket.
 
 ## Guided and unattended installation
 
@@ -70,7 +72,7 @@ the original `Host`, `X-Forwarded-Host`, and `X-Forwarded-Proto` headers.
 ```sh
 cd ~/chrono
 docker compose ps
-docker compose logs --tail=200 app migrate db
+docker compose logs --tail=200 app migrate db storage storage-init
 curl --fail http://127.0.0.1:3000/api/health
 ```
 
@@ -80,29 +82,30 @@ Desktop or `colima start`, then verify with `docker info`.
 
 ## Backup and restore
 
-Create a custom-format backup outside the volume:
+Create a coordinated database and object backup:
 
 ```sh
-docker compose exec -T db pg_dump -U chrono -d chrono -Fc > chrono.dump
+cd ~/chrono
+./backup.sh
 ```
 
-Test restoration into an isolated database:
+The helper writes `postgres.dump`, `objects/`, `manifest.json`, and
+`checksums.sha256` under `~/chrono/backups`. Copy it off-host and encrypt it.
+To restore after verifying checksums:
 
 ```sh
-docker compose exec -T db createdb -U chrono chrono_restore_test
-docker compose exec -T db pg_restore -U chrono -d chrono_restore_test --exit-on-error < chrono.dump
+CHRONO_RESTORE_CONFIRM=restore ./restore.sh ~/chrono/backups/chrono-<timestamp>
 ```
 
-Keep encrypted, off-host backups with retention. A named volume protects
-against container replacement, not disk loss, deletion, or database corruption.
+Never mix the database from one backup with objects from another. Named volumes
+protect only against container replacement.
 
 ## Upgrade and rollback
 
-1. Back up and verify the backup file.
-2. Change `CHRONO_VERSION` to a published release; avoid floating `latest` when
-   deterministic rollbacks matter.
-3. Run `docker compose pull` and `docker compose up -d`.
-4. Confirm the migration job exited successfully and the app is healthy.
+Run `./update.sh <release-version>`. It creates a backup, updates
+`CHRONO_VERSION`, pulls the matching app and migrator, runs migrations, restarts
+the stack, and waits for a healthy application. Settings → Updates displays the
+same command and release notes but cannot execute it.
 
 To move a source-fallback installation onto published images, set
 `CHRONO_INSTALL_MODE=image`, `CHRONO_PULL_POLICY=always`, and the desired
@@ -117,6 +120,22 @@ docker compose -f compose.yaml -f compose.build.yaml up --build -d
 Application rollback uses the previous matching image tag. Database rollback
 is not automatic: restore the pre-upgrade backup if a migration is not backward
 compatible. Never mix app and migrator versions.
+
+## External S3-compatible storage
+
+Set `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`,
+`S3_SECRET_KEY`, and `S3_FORCE_PATH_STYLE` for AWS S3, R2, B2, Garage, or
+another compatible private bucket. Disable bundled MinIO with:
+
+```sh
+printf '%s\n' 'COMPOSE_FILE=compose.yaml:compose.external-storage.yaml' >> .env
+docker compose -f compose.yaml -f compose.external-storage.yaml up -d
+```
+
+The supplied credentials require list/location access on the bucket and
+get/put/delete access on its objects. Downloads still flow through Chrono;
+bucket URLs are never public. Persisting `COMPOSE_FILE` ensures the backup,
+restore, and update helpers use the same external-storage topology.
 
 ## Local development stack
 

@@ -35,7 +35,8 @@ Workspace
         └── Issues
             ├── User assignees
             ├── Labels and issue type
-            ├── Comments
+            ├── Comments and immutable activity events
+            ├── Private attachments and expiring share links
             └── Time entries
 ```
 
@@ -85,8 +86,29 @@ ordered child tables.
 
 Issue comments are authored records with soft-deletion timestamps. Labels and
 issue types are Workspace metadata connected through tenant-safe foreign keys.
+Issue attachment uploads append immutable `issue_activity_events`; deleting the
+file revokes access and every share link without deleting the historical event.
 Every cross-entity reference includes Workspace scope where PostgreSQL permits
 it, preventing cross-tenant relationships at the database boundary.
+
+## Private object storage
+
+`stored_objects` is the lifecycle and quota authority for opaque S3 object
+keys. `attachments` connects one ready object to exactly one Client, Project,
+or Issue. Personal avatars and Workspace images reference separately processed
+identity objects. Raw bucket keys and credentials never reach the browser.
+
+Uploads reserve quota as `pending`, stream through an authenticated same-origin
+route, enforce declared and actual size, inspect magic bytes and unsafe active
+content, calculate SHA-256, and become `ready` only after S3 succeeds. Failed,
+canceled, and abandoned uploads transition to `deleted`; opportunistic cleanup
+removes reservations older than 24 hours. Identity images are decoded, cropped,
+stripped of metadata, and re-encoded as 256px WebP with Sharp.
+
+`attachment_share_links` stores only SHA-256 token digests. Anonymous access is
+limited to one attachment, expires within 30 days, rechecks creator and target
+state, increments aggregate access counters without IP retention, and responds
+with download-only security headers plus per-token rate limiting.
 
 ## Time attribution
 
@@ -147,6 +169,12 @@ UI state only: sidebar disclosure, Client submenu expansion, overlays, view
 mode, focus, and the command menu. Components never fetch server data through
 effects.
 
+Settings replaces the normal application sidebar with searchable Personal,
+Workspace, and operator-only Administration categories. Its narrow content
+column and divided cards reuse the same shadcn primitives. TanStack Query owns
+every profile, preference, membership, storage, and update request; local form
+and upload-progress state stays component-scoped.
+
 Issue timer and manual-entry controls live below the comment composer rather
 than in the property rail. Starting a timer persists only its authoritative
 epoch; the browser derives the live counter. Stopping or manually logging work
@@ -201,7 +229,8 @@ Animations use `@gsap/react` and compositor-friendly transform/opacity values.
 ## Deployment and constraints
 
 - Production Compose pulls matching versioned Next.js and Drizzle migrator
-  images from GHCR, runs PostgreSQL internally, and optionally enables Caddy.
+  images from GHCR, runs PostgreSQL and private MinIO internally, and optionally
+  enables Caddy. External S3-compatible storage uses an override without MinIO.
 - The development override builds source targets and adds Mailpit.
 - PostgreSQL data persists in a named volume.
 - Source files stay below 500 lines.
