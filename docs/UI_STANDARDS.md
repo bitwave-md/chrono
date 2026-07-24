@@ -70,6 +70,9 @@ Issue activity separates machine history from authored conversation:
   body, and inline file or image content.
 - Keep replies inside their parent comment card. The reply composer is one
   compact row: current-user avatar, text input, attachment action, send action.
+- Place the comment actions trigger at the top right of every manageable
+  comment and reply. Keep it muted until hover or focus on pointer devices;
+  editing uses the canonical dialog and deletion requires confirmation.
 - Put the primary attachment action inside the comment composer. Files uploaded
   there must be linked atomically to the posted comment.
 - Keep direct Issue attachments immediately below the description without an
@@ -79,7 +82,8 @@ Issue activity separates machine history from authored conversation:
 - Open description and Activity images in the shared fullscreen viewer. Keep
   zoom percentage, download, copy-image, copy-link, and close controls grouped
   at the top right.
-- Use TanStack Query mutations for comments, replies, uploads, and deletion;
+- Use TanStack Query mutations for comment creation, editing, deletion,
+  replies, and uploads;
   composer text, selected files, and progress remain local ephemeral state.
 
 ## Change checklist

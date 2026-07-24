@@ -347,6 +347,10 @@ export class WorkspaceApiClient {
     });
   }
 
+  updateIssueComment(issueId: string, commentId: string, body: string): Promise<unknown> { return this.#request(`/issues/${encodeURIComponent(issueId)}/comments/${encodeURIComponent(commentId)}`, { method: "PATCH", body: JSON.stringify({ body }) }); }
+
+  deleteIssueComment(issueId: string, commentId: string): Promise<unknown> { return this.#request(`/issues/${encodeURIComponent(issueId)}/comments/${encodeURIComponent(commentId)}`, { method: "DELETE" }); }
+
   issueMetadata(): Promise<IssueMetadataRecord> {
     return this.#get("/issue-metadata");
   }

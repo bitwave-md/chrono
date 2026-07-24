@@ -67,6 +67,10 @@ Project assignees are supplied as membership IDs:
   creates comments and replies. POST accepts `body`, optional
   `parentCommentId`, and up to ten ready `attachmentIds` uploaded by the actor
   to the same Issue. A file-only comment is valid.
+- `PATCH|DELETE /api/workspaces/:workspaceSlug/issues/:issueId/comments/:commentId`
+  edits or soft-deletes one comment. Only its author may edit it; its author or
+  a Workspace owner/admin may delete it. Deleting also removes files attached
+  directly to that comment.
 - `GET /api/workspaces/:workspaceSlug/issues/:issueId/activity` lists immutable
   automated events such as Issue creation, status movement, priority changes,
   and added or removed labels.

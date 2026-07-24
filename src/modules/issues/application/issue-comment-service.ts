@@ -6,12 +6,14 @@ import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueNotificationWriter } from "@/modules/inbox/application/issue-notification-writer";
 import { IssueService } from "@/modules/issues/application/issue-service";
-import { ValidationError } from "@/modules/shared/application/application-error";
+import { ForbiddenError, NotFoundError, ValidationError } from "@/modules/shared/application/application-error";
+import { AttachmentService } from "@/modules/storage/application/attachment-service";
 
 export class IssueCommentService {
   readonly #issueService = new IssueService();
   readonly #clientAccess = new ClientAccessService();
   readonly #notifications = new IssueNotificationWriter();
+  readonly #attachments = new AttachmentService();
 
   async list(principal: Principal, issueId: string) {
     await this.#issueService.get(principal, issueId);
@@ -138,5 +140,61 @@ export class IssueCommentService {
       );
       return comment;
     });
+  }
+
+  async update(principal: Principal, issueId: string, commentId: string, bodyValue: string) {
+    const issue = await this.#issueService.get(principal, issueId);
+    await this.#clientAccess.assertCanContribute(principal, issue.clientId);
+    const body = bodyValue.trim();
+    if (!body) throw new ValidationError("Comment text is required when editing.");
+    if (body.length > 20_000) throw new ValidationError("Comment must contain at most 20,000 characters.");
+    const comment = await this.#comment(principal, issueId, commentId);
+    if (comment.authorMembershipId !== principal.membershipId) {
+      throw new ForbiddenError("Only the comment author can edit this comment.");
+    }
+    const [updated] = await db.update(issueComments).set({ body, updatedAt: new Date() }).where(and(
+      eq(issueComments.workspaceId, principal.workspaceId),
+      eq(issueComments.issueId, issueId),
+      eq(issueComments.id, commentId),
+      isNull(issueComments.deletedAt),
+    )).returning();
+    if (!updated) throw new NotFoundError("Comment not found.");
+    return updated;
+  }
+
+  async remove(principal: Principal, issueId: string, commentId: string) {
+    const issue = await this.#issueService.get(principal, issueId);
+    await this.#clientAccess.assertCanContribute(principal, issue.clientId);
+    const comment = await this.#comment(principal, issueId, commentId);
+    const canModerate = principal.role === "owner" || principal.role === "admin";
+    if (!canModerate && comment.authorMembershipId !== principal.membershipId) {
+      throw new ForbiddenError("Only the comment author or a Workspace administrator can delete this comment.");
+    }
+    const files = await db.select({ id: attachments.id }).from(attachments).where(and(
+      eq(attachments.workspaceId, principal.workspaceId),
+      eq(attachments.issueId, issueId),
+      eq(attachments.commentId, commentId),
+      isNull(attachments.deletedAt),
+    ));
+    const [removed] = await db.update(issueComments).set({ deletedAt: new Date(), updatedAt: new Date() }).where(and(
+      eq(issueComments.workspaceId, principal.workspaceId),
+      eq(issueComments.issueId, issueId),
+      eq(issueComments.id, commentId),
+      isNull(issueComments.deletedAt),
+    )).returning({ id: issueComments.id });
+    if (!removed) throw new NotFoundError("Comment not found.");
+    await Promise.all(files.map((file) => this.#attachments.remove(principal, file.id)));
+    return removed;
+  }
+
+  async #comment(principal: Principal, issueId: string, commentId: string) {
+    const [comment] = await db.select({ authorMembershipId: issueComments.authorMembershipId }).from(issueComments).where(and(
+      eq(issueComments.workspaceId, principal.workspaceId),
+      eq(issueComments.issueId, issueId),
+      eq(issueComments.id, commentId),
+      isNull(issueComments.deletedAt),
+    )).limit(1);
+    if (!comment) throw new NotFoundError("Comment not found.");
+    return comment;
   }
 }

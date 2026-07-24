@@ -119,9 +119,16 @@ assert.ok(!directAttachments.some((item) => item.id === intent.attachmentId), "C
 const reply = await data<{ id: string }>(`/api/workspaces/${workspace}/issues/${issueId}/comments`, {
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: "Storage tracer reply", parentCommentId: comment.id }),
 });
-const comments = await data<Array<{ id: string; parentCommentId: string | null; attachments: Array<{ id: string }> }>>(`/api/workspaces/${workspace}/issues/${issueId}/comments`);
+await data(`/api/workspaces/${workspace}/issues/${issueId}/comments/${reply.id}`, {
+  method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: "Storage tracer reply edited" }),
+});
+let comments = await data<Array<{ id: string; parentCommentId: string | null; body: string; attachments: Array<{ id: string }> }>>(`/api/workspaces/${workspace}/issues/${issueId}/comments`);
 assert.ok(comments.find((item) => item.id === comment.id)?.attachments.some((item) => item.id === intent.attachmentId), "The uploaded file was not linked to its comment.");
 assert.equal(comments.find((item) => item.id === reply.id)?.parentCommentId, comment.id);
+assert.equal(comments.find((item) => item.id === reply.id)?.body, "Storage tracer reply edited");
+await data(`/api/workspaces/${workspace}/issues/${issueId}/comments/${reply.id}`, { method: "DELETE" });
+comments = await data(`/api/workspaces/${workspace}/issues/${issueId}/comments`);
+assert.ok(!comments.some((item) => item.id === reply.id), "Deleted replies must not remain in the Issue thread.");
 const download = await authenticated(`/api/workspaces/${workspace}/attachments/${intent.attachmentId}/content`);
 assert.equal(await download.text(), content.toString());
 assert.equal(download.headers.get("x-content-type-options"), "nosniff");
@@ -141,6 +148,7 @@ assert.equal((await fetch(share.url)).status, 404);
 const events = await data<Array<{ eventType: string; payload: Record<string, unknown> }>>(`/api/workspaces/${workspace}/issues/${issueId}/activity`);
 assert.ok(!events.some((event) => event.eventType === "attachment_uploaded" && event.payload.attachmentId === intent.attachmentId), "Comment files must render with their comment instead of as a duplicate system event.");
 await data(`/api/workspaces/${workspace}/attachments/${intent.attachmentId}`, { method: "DELETE" });
+await data(`/api/workspaces/${workspace}/issues/${issueId}/comments/${comment.id}`, { method: "DELETE" });
 
 const profile = await data<{ image: string | null }>("/api/account/profile");
 const identityImage = await sharp({ create: { width: 4, height: 4, channels: 4, background: "#6366f1" } }).png().toBuffer();

@@ -2,7 +2,7 @@
 
 import { CircleCheck, CircleDot, CirclePlay, Clock3, FileText, LoaderCircle, Paperclip, Signal, Square } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import toast from "react-hot-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,6 +14,7 @@ import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useS
 import { useTimeCategoriesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { ManualTimeDatePicker } from "@/modules/workspace-ui/components/manual-time-date-picker";
 import { IssueCommentComposer, type IssueCommentInput } from "@/modules/workspace-ui/components/issue-comment-composer";
+import { IssueCommentActions } from "@/modules/workspace-ui/components/issue-comment-actions";
 import { ImageAttachmentPreview } from "@/modules/workspace-ui/components/image-attachment-preview";
 import { TimeEntryTypePicker } from "@/modules/workspace-ui/components/time-entry-type-picker";
 import { formatLoggedDuration } from "@/modules/workspace-ui/domain/issue-time-summary";
@@ -79,22 +80,28 @@ function EventActivityItem({ event }: { event: IssueActivityEventRecord }) {
 }
 
 function CommentActivityItem({ comment, currentUser, issueId, replies, workspaceSlug, onSubmit }: { comment: IssueCommentRecord; currentUser: MemberRecord | null; issueId: string; replies: IssueCommentRecord[]; workspaceSlug: string; onSubmit: (input: IssueCommentInput) => Promise<unknown> }) {
+  const actions = (item: IssueCommentRecord) => {
+    const authored = currentUser?.membershipId === item.authorMembershipId;
+    const canModerate = currentUser?.role === "owner" || currentUser?.role === "admin";
+    return <IssueCommentActions body={item.body} canDelete={Boolean(authored || canModerate)} canEdit={Boolean(authored && item.body)} commentId={item.id} issueId={issueId} workspaceSlug={workspaceSlug} />;
+  };
   return (
     <article className="my-2 overflow-hidden rounded-lg border bg-card/45">
-      <div className="p-4">
-        <CommentAuthor comment={comment} />
+      <div className="group/comment p-4">
+        <CommentAuthor actions={actions(comment)} comment={comment} />
         {comment.body ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground/90">{comment.body}</p> : null}
         <CommentAttachments attachments={comment.attachments} workspaceSlug={workspaceSlug} />
       </div>
-      {replies.length ? <div className="grid gap-4 border-t bg-muted/10 px-4 py-3">{replies.map((reply) => <div key={reply.id}><CommentAuthor comment={reply} />{reply.body ? <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground/90">{reply.body}</p> : null}<CommentAttachments attachments={reply.attachments} workspaceSlug={workspaceSlug} /></div>)}</div> : null}
+      {replies.length ? <div className="grid gap-4 border-t bg-muted/10 px-4 py-3">{replies.map((reply) => <div className="group/comment" key={reply.id}><CommentAuthor actions={actions(reply)} comment={reply} />{reply.body ? <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground/90">{reply.body}</p> : null}<CommentAttachments attachments={reply.attachments} workspaceSlug={workspaceSlug} /></div>)}</div> : null}
       <IssueCommentComposer currentUser={currentUser} issueId={issueId} parentCommentId={comment.id} placeholder="Leave a reply..." workspaceSlug={workspaceSlug} onSubmit={onSubmit} />
     </article>
   );
 }
 
-function CommentAuthor({ comment }: { comment: IssueCommentRecord }) {
+function CommentAuthor({ actions, comment }: { actions: ReactNode; comment: IssueCommentRecord }) {
   const name = comment.authorName ?? comment.authorEmail;
-  return <div className="flex items-center gap-2"><Avatar className="size-6"><AvatarImage alt="" src={comment.authorAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><strong className="text-sm font-medium">{name}</strong><span className="text-xs text-muted-foreground">{relativeTime(comment.createdAt)}</span></div>;
+  const edited = new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 1_000;
+  return <div className="flex min-h-6 items-center gap-2"><Avatar className="size-6"><AvatarImage alt="" src={comment.authorAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><strong className="text-sm font-medium">{name}</strong><span className="text-xs text-muted-foreground">{relativeTime(comment.createdAt)}{edited ? " · edited" : ""}</span>{actions}</div>;
 }
 
 function CommentAttachments({ attachments, workspaceSlug }: { attachments: AttachmentRecord[]; workspaceSlug: string }) {

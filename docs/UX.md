@@ -93,7 +93,9 @@ previews and open the shared fullscreen zoom, download, copy-image, and
 copy-link viewer. Activity renders immutable system and time events, including
 label changes, as compact rows while authored comments use distinct cards with
 inline files, image previews, one-level replies, and attachment-enabled
-single-row reply composers.
+single-row reply composers. A restrained top-right actions menu lets authors
+edit or delete their comments and lets Workspace administrators moderate them;
+edited comments are identified without changing their original activity time.
 Timer and manual-entry controls sit directly below the comment composer and
 require a Workspace time entry type. Manual entries include a shadcn Calendar
 picker for the work date and prevent future-date selection. Finalized entries

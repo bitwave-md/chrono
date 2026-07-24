@@ -89,7 +89,9 @@ tenant-safe, same-Issue parent reference for one-level reply threads. Labels
 and issue types are Workspace metadata connected through tenant-safe foreign
 keys. Immutable `issue_activity_events` record Issue creation and property
 transitions, including label-set differences, independently from authored
-comments.
+comments. Comment authors may update their own text; authors and Workspace
+administrators may soft-delete comments through the centralized comment
+service, which also retires files attached directly to the deleted record.
 Every cross-entity reference includes Workspace scope where PostgreSQL permits
 it, preventing cross-tenant relationships at the database boundary.
 
