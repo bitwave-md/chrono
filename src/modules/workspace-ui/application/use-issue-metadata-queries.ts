@@ -29,7 +29,10 @@ export function useReplaceIssueLabelsMutation(workspaceSlug: string, issueId: st
       return { previous };
     },
     onError: (_error, _variables, context) => queryClient.setQueryData(queryKey, context?.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey }),
+      queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.issueActivity(workspaceSlug, issueId) }),
+    ]),
   });
 }
 
@@ -67,6 +70,9 @@ export function useReplaceIssueListLabelsMutation(
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.issuesRoot(workspaceSlug),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.issueActivity(workspaceSlug, variables.issueId),
         }),
         queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.issue(workspaceSlug, variables.issueId),

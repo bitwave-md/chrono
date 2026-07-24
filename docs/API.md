@@ -68,8 +68,8 @@ Project assignees are supplied as membership IDs:
   `parentCommentId`, and up to ten ready `attachmentIds` uploaded by the actor
   to the same Issue. A file-only comment is valid.
 - `GET /api/workspaces/:workspaceSlug/issues/:issueId/activity` lists immutable
-  automated events such as Issue creation, status movement, and priority
-  changes.
+  automated events such as Issue creation, status movement, priority changes,
+  and added or removed labels.
 - `PUT /api/workspaces/:workspaceSlug/issues/:issueId/labels` atomically
   replaces labels.
 - `GET /api/workspaces/:workspaceSlug/issue-metadata` returns active issue

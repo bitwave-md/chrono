@@ -2,7 +2,6 @@
 
 import { CircleCheck, CircleDot, CirclePlay, Clock3, FileText, LoaderCircle, Paperclip, Signal, Square } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
-import Image from "next/image";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -15,14 +14,16 @@ import { useActiveTimerQuery, useManualTimeMutation, useStartTimerMutation, useS
 import { useTimeCategoriesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { ManualTimeDatePicker } from "@/modules/workspace-ui/components/manual-time-date-picker";
 import { IssueCommentComposer, type IssueCommentInput } from "@/modules/workspace-ui/components/issue-comment-composer";
+import { ImageAttachmentPreview } from "@/modules/workspace-ui/components/image-attachment-preview";
 import { TimeEntryTypePicker } from "@/modules/workspace-ui/components/time-entry-type-picker";
 import { formatLoggedDuration } from "@/modules/workspace-ui/domain/issue-time-summary";
 import { manualTimeStartedAt } from "@/modules/workspace-ui/domain/manual-time-entry-date";
-import type { AttachmentRecord, IssueActivityEventRecord, IssueCommentRecord, TimeLogRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { AttachmentRecord, IssueActivityEventRecord, IssueCommentRecord, MemberRecord, TimeLogRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 export function IssueActivity({
   comments,
+  currentUser,
   events,
   issueId,
   issueTitle,
@@ -31,6 +32,7 @@ export function IssueActivity({
   workspaceSlug,
 }: {
   comments: IssueCommentRecord[];
+  currentUser: MemberRecord | null;
   events: IssueActivityEventRecord[];
   issueId: string;
   issueTitle: string;
@@ -52,7 +54,7 @@ export function IssueActivity({
       <h2 className="text-base font-semibold">Activity</h2>
       <div className="mt-5 grid gap-2">
         {activity.map((entry) => entry.kind === "comment"
-          ? <CommentActivityItem comment={entry.item} issueId={issueId} key={`comment-${entry.item.id}`} replies={replies.filter((reply) => reply.parentCommentId === entry.item.id)} workspaceSlug={workspaceSlug} onSubmit={submitComment} />
+          ? <CommentActivityItem comment={entry.item} currentUser={currentUser} issueId={issueId} key={`comment-${entry.item.id}`} replies={replies.filter((reply) => reply.parentCommentId === entry.item.id)} workspaceSlug={workspaceSlug} onSubmit={submitComment} />
           : entry.kind === "time" ? <TimeActivityItem key={`time-${entry.item.id}`} log={entry.item} />
             : <EventActivityItem event={entry.item} key={`event-${entry.item.id}`} />)}
         {!loading && !activity.length ? <p className="text-sm text-muted-foreground">No activity yet.</p> : null}
@@ -76,8 +78,7 @@ function EventActivityItem({ event }: { event: IssueActivityEventRecord }) {
   );
 }
 
-function CommentActivityItem({ comment, issueId, replies, workspaceSlug, onSubmit }: { comment: IssueCommentRecord; issueId: string; replies: IssueCommentRecord[]; workspaceSlug: string; onSubmit: (input: IssueCommentInput) => Promise<unknown> }) {
-  const name = comment.authorName ?? comment.authorEmail;
+function CommentActivityItem({ comment, currentUser, issueId, replies, workspaceSlug, onSubmit }: { comment: IssueCommentRecord; currentUser: MemberRecord | null; issueId: string; replies: IssueCommentRecord[]; workspaceSlug: string; onSubmit: (input: IssueCommentInput) => Promise<unknown> }) {
   return (
     <article className="my-2 overflow-hidden rounded-lg border bg-card/45">
       <div className="p-4">
@@ -86,7 +87,7 @@ function CommentActivityItem({ comment, issueId, replies, workspaceSlug, onSubmi
         <CommentAttachments attachments={comment.attachments} workspaceSlug={workspaceSlug} />
       </div>
       {replies.length ? <div className="grid gap-4 border-t bg-muted/10 px-4 py-3">{replies.map((reply) => <div key={reply.id}><CommentAuthor comment={reply} />{reply.body ? <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground/90">{reply.body}</p> : null}<CommentAttachments attachments={reply.attachments} workspaceSlug={workspaceSlug} /></div>)}</div> : null}
-      <IssueCommentComposer issueId={issueId} parentCommentId={comment.id} placeholder={`Reply to ${name}...`} workspaceSlug={workspaceSlug} onSubmit={onSubmit} />
+      <IssueCommentComposer currentUser={currentUser} issueId={issueId} parentCommentId={comment.id} placeholder="Leave a reply..." workspaceSlug={workspaceSlug} onSubmit={onSubmit} />
     </article>
   );
 }
@@ -101,7 +102,7 @@ function CommentAttachments({ attachments, workspaceSlug }: { attachments: Attac
   return <div className="mt-3 grid gap-2">{attachments.map((attachment) => {
     const href = `/api/workspaces/${workspaceSlug}/attachments/${attachment.id}/content`;
     return attachment.contentType.startsWith("image/")
-      ? <a className="block overflow-hidden rounded-md border bg-muted/20" href={href} key={attachment.id} target="_blank" rel="noreferrer"><Image alt={attachment.filename} className="h-auto max-h-[34rem] w-full object-contain" height={720} src={href} unoptimized width={1280} /></a>
+      ? <ImageAttachmentPreview attachment={attachment} className="max-h-[34rem] rounded-md border" key={attachment.id} workspaceSlug={workspaceSlug} />
       : <a className="flex items-center gap-3 rounded-md border bg-background/45 px-3 py-2.5 hover:bg-muted/35" href={href} key={attachment.id} download><span className="grid size-8 place-items-center rounded-md bg-muted text-muted-foreground"><FileText className="size-4" /></span><span className="min-w-0"><strong className="block truncate text-sm font-medium">{attachment.filename}</strong><span className="text-xs text-muted-foreground">{formatBytes(attachment.sizeBytes)}</span></span></a>;
   })}</div>;
 }
@@ -122,6 +123,7 @@ function eventPresentation(event: IssueActivityEventRecord) {
   if (event.eventType === "issue_created") return { icon: CircleDot, text: "created the issue" };
   if (event.eventType === "status_changed") return { icon: CircleCheck, text: `moved from ${from} to ${to}` };
   if (event.eventType === "priority_changed") return { icon: Signal, text: `changed priority from ${capitalize(from)} to ${capitalize(to)}` };
+  if (event.eventType === "labels_changed") return { icon: CircleDot, text: labelChangeText(event.payload) };
   if (event.eventType === "attachment_uploaded") return { icon: Paperclip, text: `attached ${String(event.payload.filename ?? "a file")}` };
   return { icon: CircleDot, text: "updated the issue" };
 }
@@ -132,6 +134,20 @@ function relativeTime(value: string): string {
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function labelChangeText(payload: Record<string, unknown>): string {
+  const added = Array.isArray(payload.added) ? payload.added.filter((value): value is string => typeof value === "string") : [];
+  const removed = Array.isArray(payload.removed) ? payload.removed.filter((value): value is string => typeof value === "string") : [];
+  const changes = [
+    added.length ? `added ${labelList("label", added)}` : null,
+    removed.length ? `removed ${labelList("label", removed)}` : null,
+  ].filter(Boolean);
+  return changes.join(" and ") || "changed labels";
+}
+
+function labelList(noun: string, values: string[]) {
+  return `${values.length === 1 ? noun : `${noun}s`} ${values.join(", ")}`;
 }
 
 function formatBytes(value: number): string {

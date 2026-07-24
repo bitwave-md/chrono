@@ -87,10 +87,13 @@ entry table linking back to its Issue and Project/Branch context.
 
 Issue detail is a full page with breadcrumbs, editable title and description,
 comments, a right-side property column, labels, type, dates, and estimate.
-Direct attachments sit inline beneath the description instead of forming a
-separate content section. Activity renders immutable system and time events as
-compact rows while authored comments use distinct cards with inline files,
-image previews, one-level replies, and attachment-enabled composers.
+Direct attachments sit inline beneath the description as independent file
+surfaces instead of forming a shared list section. Image files show inline
+previews and open the shared fullscreen zoom, download, copy-image, and
+copy-link viewer. Activity renders immutable system and time events, including
+label changes, as compact rows while authored comments use distinct cards with
+inline files, image previews, one-level replies, and attachment-enabled
+single-row reply composers.
 Timer and manual-entry controls sit directly below the comment composer and
 require a Workspace time entry type. Manual entries include a shadcn Calendar
 picker for the work date and prevent future-date selection. Finalized entries

@@ -68,12 +68,17 @@ Issue activity separates machine history from authored conversation:
 - Render creation, status, priority, and time records as compact unframed rows.
 - Render user comments as bordered cards with avatar, author, relative time,
   body, and inline file or image content.
-- Keep replies inside their parent comment card and use the shared compact
-  reply composer at the card footer.
+- Keep replies inside their parent comment card. The reply composer is one
+  compact row: current-user avatar, text input, attachment action, send action.
 - Put the primary attachment action inside the comment composer. Files uploaded
   there must be linked atomically to the posted comment.
 - Keep direct Issue attachments immediately below the description without an
   independent section heading or empty-state card.
+- Render every direct attachment as an independent surface. Images use an
+  inline preview while other files retain compact metadata rows.
+- Open description and Activity images in the shared fullscreen viewer. Keep
+  zoom percentage, download, copy-image, copy-link, and close controls grouped
+  at the top right.
 - Use TanStack Query mutations for comments, replies, uploads, and deletion;
   composer text, selected files, and progress remain local ephemeral state.
 

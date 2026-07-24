@@ -20,6 +20,10 @@ export class IssueActivityWriter {
     return this.#write(transaction, context, "priority_changed", { from, to });
   }
 
+  labelsChanged(transaction: DatabaseTransaction, context: ActivityContext, added: string[], removed: string[]) {
+    return this.#write(transaction, context, "labels_changed", { added, removed });
+  }
+
   #write(transaction: DatabaseTransaction, context: ActivityContext, eventType: string, payload: Record<string, unknown>) {
     return transaction.insert(issueActivityEvents).values({
       workspaceId: context.workspaceId,

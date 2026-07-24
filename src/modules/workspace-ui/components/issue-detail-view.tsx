@@ -34,6 +34,7 @@ import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trig
 import { favoriteFromIssue } from "@/modules/workspace-ui/domain/favorite-target";
 import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
 import type { IssueRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 export function IssueDetailView({ workspaceSlug, issueId, embedded = false }: { workspaceSlug: string; issueId: string; embedded?: boolean }) {
   const issueQuery = useIssueQuery(workspaceSlug, issueId);
@@ -44,8 +45,10 @@ export function IssueDetailView({ workspaceSlug, issueId, embedded = false }: { 
 }
 
 function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boolean; issue: IssueRecord; workspaceSlug: string }) {
+  const workspace = useWorkspaceIdentity();
   const update = useUpdateIssueDetailMutation(workspaceSlug, issue.id);
   const membersQuery = useMembersQuery(workspaceSlug);
+  const currentUser = membersQuery.data?.find((member) => member.email === workspace.userEmail) ?? null;
   const clientsQuery = useClientsQuery(workspaceSlug);
   const projectsQuery = useProjectsQuery(workspaceSlug, issue.clientId);
   const projects = projectsQuery.data ?? [];
@@ -110,6 +113,7 @@ function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boole
 
             <IssueActivity
               comments={commentsQuery.data ?? []}
+              currentUser={currentUser}
               events={activityQuery.data ?? []}
               issueId={issue.id}
               issueTitle={issue.title}

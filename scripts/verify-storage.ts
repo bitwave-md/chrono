@@ -80,6 +80,18 @@ await data(`/api/workspaces/${workspace}/time-categories/${category.id}`, { meth
 const issues = await data<Array<{ id: string }>>(`/api/workspaces/${workspace}/issues`);
 assert.ok(issues[0], "A demo Issue is required for the storage tracer.");
 const issueId = issues[0].id;
+const issue = await data<{ labels: Array<{ id: string; name: string }> }>(`/api/workspaces/${workspace}/issues/${issueId}`);
+const metadata = await data<{ labels: Array<{ id: string; name: string }> }>(`/api/workspaces/${workspace}/issue-metadata`);
+const auditLabel = metadata.labels[0];
+assert.ok(auditLabel, "A demo label is required for the activity tracer.");
+const originalLabelIds = issue.labels.map((label) => label.id);
+const labelWasSelected = originalLabelIds.includes(auditLabel.id);
+const changedLabelIds = labelWasSelected ? originalLabelIds.filter((id) => id !== auditLabel.id) : [...originalLabelIds, auditLabel.id];
+await data(`/api/workspaces/${workspace}/issues/${issueId}/labels`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labelIds: changedLabelIds }) });
+const labelEvents = await data<Array<{ eventType: string; payload: Record<string, unknown> }>>(`/api/workspaces/${workspace}/issues/${issueId}/activity`);
+const labelAction = labelWasSelected ? "removed" : "added";
+assert.ok(labelEvents.some((event) => event.eventType === "labels_changed" && Array.isArray(event.payload[labelAction]) && event.payload[labelAction].includes(auditLabel.name)), "Label changes were not recorded in Issue activity.");
+await data(`/api/workspaces/${workspace}/issues/${issueId}/labels`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labelIds: originalLabelIds }) });
 const rejected = await authenticated(`/api/workspaces/${workspace}/attachments`, {
   method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ targetType: "issue", targetId: issueId, filename: "unsafe.html", contentType: "text/html", sizeBytes: 10 }),

@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAttachmentsQuery, useAttachmentShareLinksQuery, useCreateAttachmentShareMutation, useDeleteAttachmentMutation, useRevokeAttachmentShareMutation, useUploadAttachmentMutation } from "@/modules/workspace-ui/application/use-attachment-queries";
-import type { AttachmentTargetType } from "@/modules/workspace-ui/domain/workspace-types";
+import { ImageAttachmentPreview } from "@/modules/workspace-ui/components/image-attachment-preview";
+import type { AttachmentRecord, AttachmentTargetType } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 const lifetimeOptions = [
@@ -42,6 +43,7 @@ export function AttachmentSection({
   const deletion = useDeleteAttachmentMutation(workspaceSlug, target);
   const canManage = workspace.role === "owner" || workspace.role === "admin";
   const inline = variant === "inline";
+  const records = attachments.data ?? [];
 
   const selectFile = (file: File | undefined) => {
     if (!file) return;
@@ -60,8 +62,11 @@ export function AttachmentSection({
       </div> : null}
       <input className="hidden" ref={inputRef} type="file" onChange={(event) => { selectFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
       {upload.isPending ? <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div> : null}
-      <div className={cn("overflow-hidden rounded-lg border bg-card/35", !inline && "mt-3", inline && !attachments.data?.length && "hidden")}>
-        {(attachments.data ?? []).map((attachment) => {
+      {inline ? <div className={cn("grid gap-2", !records.length && "hidden")}>{records.map((attachment) => {
+        const mayDelete = canManage || attachment.uploaderEmail === workspace.userEmail;
+        return <InlineAttachment attachment={attachment} canShare={canUpload} deleting={deletion.isPending} key={attachment.id} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })} />;
+      })}</div> : <div className="mt-3 overflow-hidden rounded-lg border bg-card/35">
+        {records.map((attachment) => {
           const uploader = attachment.uploaderName ?? attachment.uploaderEmail;
           const mayDelete = canManage || attachment.uploaderEmail === workspace.userEmail;
           return (
@@ -69,19 +74,35 @@ export function AttachmentSection({
               <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><FileText className="size-4" /></span>
               <div className="min-w-0 flex-1"><strong className="block truncate text-sm font-medium">{attachment.filename}</strong><span className="block truncate text-xs text-muted-foreground">{formatBytes(attachment.sizeBytes)} · {uploader} · {new Date(attachment.createdAt).toLocaleDateString()}</span></div>
               <Avatar className="size-6 max-sm:hidden"><AvatarImage alt="" src={attachment.uploaderAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.5rem]">{uploader.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-              {canUpload ? <ShareAttachment attachmentId={attachment.id} workspaceSlug={workspaceSlug} /> : null}
-              <Button aria-label={`Download ${attachment.filename}`} asChild size="icon-sm" variant="ghost"><a download href={`/api/workspaces/${workspaceSlug}/attachments/${attachment.id}/content`}><Download /></a></Button>
-              {mayDelete ? <Button aria-label={`Delete ${attachment.filename}`} disabled={deletion.isPending} size="icon-sm" variant="ghost" onClick={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })}><Trash2 /></Button> : null}
+              <AttachmentActions attachment={attachment} canShare={canUpload} deleting={deletion.isPending} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })} />
             </div>
           );
         })}
         {attachments.isLoading ? <p className="p-5 text-sm text-muted-foreground">Loading attachments...</p> : null}
-        {!inline && !attachments.isLoading && !attachments.data?.length ? <div className="grid min-h-24 place-items-center px-4 text-center"><p className="text-sm text-muted-foreground">No files attached.</p></div> : null}
-        {attachments.error ? <p className="p-4 text-sm text-destructive">{attachments.error.message}</p> : null}
-      </div>
+        {!attachments.isLoading && !records.length ? <div className="grid min-h-24 place-items-center px-4 text-center"><p className="text-sm text-muted-foreground">No files attached.</p></div> : null}
+      </div>}
+      {inline && attachments.isLoading ? <p className="py-3 text-sm text-muted-foreground">Loading attachments...</p> : null}
+      {attachments.error ? <p className="py-3 text-sm text-destructive">{attachments.error.message}</p> : null}
       {inline && canUpload ? <Button className="mt-2 h-7 px-1.5 text-xs text-muted-foreground" disabled={upload.isPending} size="sm" variant="ghost" onClick={() => inputRef.current?.click()}>{upload.isPending ? <LoaderCircle className="animate-spin" /> : <Paperclip />}Attach file</Button> : null}
     </section>
   );
+}
+
+function InlineAttachment({ attachment, canShare, deleting, mayDelete, workspaceSlug, onDelete }: { attachment: AttachmentRecord; canShare: boolean; deleting: boolean; mayDelete: boolean; workspaceSlug: string; onDelete: () => void }) {
+  const uploader = attachment.uploaderName ?? attachment.uploaderEmail;
+  const actions = <AttachmentActions attachment={attachment} canShare={canShare} deleting={deleting} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={onDelete} />;
+  if (attachment.contentType.startsWith("image/")) {
+    return <article className="overflow-hidden rounded-lg border bg-card/35"><ImageAttachmentPreview attachment={attachment} className="max-h-[28rem]" workspaceSlug={workspaceSlug} /><div className="flex min-h-12 items-center gap-3 border-t px-3"><AttachmentDetails attachment={attachment} uploader={uploader} />{actions}</div></article>;
+  }
+  return <article className="flex min-h-14 items-center gap-3 rounded-lg border bg-card/35 px-3"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><FileText className="size-4" /></span><AttachmentDetails attachment={attachment} uploader={uploader} />{actions}</article>;
+}
+
+function AttachmentDetails({ attachment, uploader }: { attachment: AttachmentRecord; uploader: string }) {
+  return <div className="min-w-0 flex-1"><strong className="block truncate text-sm font-medium">{attachment.filename}</strong><span className="block truncate text-xs text-muted-foreground">{formatBytes(attachment.sizeBytes)} · {uploader} · {new Date(attachment.createdAt).toLocaleDateString()}</span></div>;
+}
+
+function AttachmentActions({ attachment, canShare, deleting, mayDelete, workspaceSlug, onDelete }: { attachment: AttachmentRecord; canShare: boolean; deleting: boolean; mayDelete: boolean; workspaceSlug: string; onDelete: () => void }) {
+  return <>{canShare ? <ShareAttachment attachmentId={attachment.id} workspaceSlug={workspaceSlug} /> : null}<Button aria-label={`Download ${attachment.filename}`} asChild size="icon-sm" variant="ghost"><a download href={`/api/workspaces/${workspaceSlug}/attachments/${attachment.id}/content`}><Download /></a></Button>{mayDelete ? <Button aria-label={`Delete ${attachment.filename}`} disabled={deleting} size="icon-sm" variant="ghost" onClick={onDelete}><Trash2 /></Button> : null}</>;
 }
 
 function ShareAttachment({ attachmentId, workspaceSlug }: { attachmentId: string; workspaceSlug: string }) {

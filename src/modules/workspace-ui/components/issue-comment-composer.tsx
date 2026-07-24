@@ -4,10 +4,12 @@ import { ArrowUp, FileText, LoaderCircle, Paperclip, X } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { useDeleteAttachmentMutation, useUploadAttachmentMutation } from "@/modules/workspace-ui/application/use-attachment-queries";
+import type { MemberRecord } from "@/modules/workspace-ui/domain/workspace-types";
 
 export interface IssueCommentInput {
   body: string;
@@ -23,12 +25,14 @@ interface PendingCommentAttachment {
 
 export function IssueCommentComposer({
   issueId,
+  currentUser = null,
   parentCommentId = null,
   placeholder,
   workspaceSlug,
   onSubmit,
 }: {
   issueId: string;
+  currentUser?: MemberRecord | null;
   parentCommentId?: string | null;
   placeholder: string;
   workspaceSlug: string;
@@ -81,26 +85,47 @@ export function IssueCommentComposer({
     }
   };
 
+  const fileInput = <input className="hidden" multiple ref={inputRef} type="file" onChange={(event) => { void selectFiles(event.target.files); event.currentTarget.value = ""; }} />;
+  const fileQueue = files.length ? <div className="grid gap-1 px-3 py-2">
+    {files.map((file) => <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/60 px-2 py-1.5 text-xs" key={file.id}>
+      <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate">{file.filename}</span>
+      <span className="shrink-0 text-muted-foreground">{formatBytes(file.sizeBytes)}</span>
+      <Button aria-label={`Remove ${file.filename}`} disabled={deletion.isPending} size="icon-xs" type="button" variant="ghost" onClick={() => removeFile(file)}><X /></Button>
+    </div>)}
+  </div> : null;
+  const progressBar = upload.isPending ? <div className="mx-3 mb-2 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div> : null;
+
+  if (compact) {
+    const name = currentUser?.displayName ?? currentUser?.email ?? "You";
+    return (
+      <form className="border-t bg-card/40" onSubmit={submit}>
+        {fileQueue}
+        {progressBar}
+        <div className="flex h-11 min-w-0 items-center gap-2 px-3">
+          <Avatar className="size-6 shrink-0"><AvatarImage alt="" src={currentUser?.avatarUrl ?? undefined} /><AvatarFallback className="text-[0.55rem]">{name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+          <Input className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-0" maxLength={20_000} placeholder={placeholder} value={body} onChange={(event) => setBody(event.target.value)} />
+          {fileInput}
+          <Button aria-label="Attach files" disabled={upload.isPending || files.length >= 10} size="icon-xs" type="button" variant="ghost" onClick={() => inputRef.current?.click()}><Paperclip /></Button>
+          <Button aria-label="Post reply" className="rounded-full" disabled={(!body.trim() && !files.length) || upload.isPending || submitting} size="icon-xs" type="submit">{submitting ? <LoaderCircle className="animate-spin" /> : <ArrowUp />}</Button>
+        </div>
+      </form>
+    );
+  }
+
   return (
-    <form className={cn("overflow-hidden border bg-card/55", compact ? "border-x-0 border-b-0" : "rounded-lg")} onSubmit={submit}>
+    <form className="overflow-hidden rounded-lg border bg-card/55" onSubmit={submit}>
       <Textarea
-        className={cn("resize-none border-0 bg-transparent px-4 shadow-none focus-visible:ring-0", compact ? "min-h-12 py-3 text-sm" : "min-h-24 py-4 leading-6")}
+        className="min-h-24 resize-none border-0 bg-transparent px-4 py-4 leading-6 shadow-none focus-visible:ring-0"
         maxLength={20_000}
         placeholder={placeholder}
         value={body}
         onChange={(event) => setBody(event.target.value)}
       />
-      {files.length ? <div className="grid gap-1 px-3 pb-2">
-        {files.map((file) => <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/60 px-2 py-1.5 text-xs" key={file.id}>
-          <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate">{file.filename}</span>
-          <span className="shrink-0 text-muted-foreground">{formatBytes(file.sizeBytes)}</span>
-          <Button aria-label={`Remove ${file.filename}`} disabled={deletion.isPending} size="icon-xs" type="button" variant="ghost" onClick={() => removeFile(file)}><X /></Button>
-        </div>)}
-      </div> : null}
-      {upload.isPending ? <div className="mx-3 mb-2 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div> : null}
+      {fileQueue}
+      {progressBar}
       <div className="flex items-center justify-end gap-1 border-t px-2 py-1.5">
-        <input className="hidden" multiple ref={inputRef} type="file" onChange={(event) => { void selectFiles(event.target.files); event.currentTarget.value = ""; }} />
+        {fileInput}
         <Button aria-label="Attach files" disabled={upload.isPending || files.length >= 10} size="icon-xs" type="button" variant="ghost" onClick={() => inputRef.current?.click()}><Paperclip /></Button>
         <Button aria-label={compact ? "Post reply" : "Post comment"} className="rounded-full" disabled={(!body.trim() && !files.length) || upload.isPending || submitting} size="icon-xs" type="submit">
           {submitting ? <LoaderCircle className="animate-spin" /> : <ArrowUp />}
