@@ -83,6 +83,14 @@ authorized contributor filters are URL-backed. The report combines total and
 billable summaries, daily trend, category and Project breakdowns, and a dense
 entry table linking back to its Issue and Project/Branch context.
 
+Guest navigation contains only accessible Clients and Projects and omits Time
+and Workspace administration. Guest invitation expands Client selections into
+their current Projects, permits explicit Project exclusions, and explains that
+future Projects require a Project Members grant. Project Members is a
+route-backed tab with a searchable add control for authorized administrators
+or the Project lead. Guests see read-only work-item properties while retaining
+Issue creation, comments, attachments, and Project update composition.
+
 ## Issue experience
 
 Issue detail is a full page with breadcrumbs, editable title and description,

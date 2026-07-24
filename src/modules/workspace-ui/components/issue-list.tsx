@@ -23,6 +23,7 @@ import { WorkflowStatusIcon } from "@/modules/workspace-ui/components/issue-prop
 import { buildIssueGroups, type IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import type { IssueRecord, WorkflowStatusRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
+import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface IssueListProps {
   workspaceSlug: string;
@@ -39,6 +40,7 @@ interface IssueListProps {
 }
 
 export function IssueList(props: IssueListProps) {
+  const workspace = useWorkspaceIdentity();
   const membersQuery = useMembersQuery(props.workspaceSlug);
   const clientsQuery = useClientsQuery(props.workspaceSlug);
   const projectsQuery = useProjectsQuery(props.workspaceSlug, props.clientId);
@@ -96,7 +98,7 @@ export function IssueList(props: IssueListProps) {
           onCreate={props.onCreateInGroup}
           renderIssue={(issue) => {
             const project = issue.projectId ? projectById.get(issue.projectId) : null;
-            const disabled = Boolean(issue.optimistic);
+            const disabled = workspace.role === "guest" || Boolean(issue.optimistic);
             return (
               <IssueRow
                 disabled={disabled}

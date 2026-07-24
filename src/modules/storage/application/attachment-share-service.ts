@@ -16,7 +16,7 @@ export class AttachmentShareService {
   readonly #limiter = new PublicShareRateLimiter();
 
   async list(principal: Principal, attachmentId: string) {
-    await this.#authorizedAttachment(principal, attachmentId);
+    await this.#assertCanShareAttachment(principal, attachmentId);
     return db.select({
       id: attachmentShareLinks.id,
       expiresAt: attachmentShareLinks.expiresAt,
@@ -32,7 +32,7 @@ export class AttachmentShareService {
   }
 
   async create(principal: Principal, attachmentId: string, lifetimeSeconds: number) {
-    await this.#authorizedAttachment(principal, attachmentId);
+    await this.#assertCanShareAttachment(principal, attachmentId);
     if (!Number.isInteger(lifetimeSeconds) || lifetimeSeconds < 3_600 || lifetimeSeconds > maximumLifetimeSeconds) {
       throw new ValidationError("Share links must expire between one hour and 30 days.");
     }
@@ -107,6 +107,7 @@ export class AttachmentShareService {
 
   async #authorizedAttachment(principal: Principal, attachmentId: string) {
     const [record] = await db.select({
+      uploaderMembershipId: attachments.uploaderMembershipId,
       clientId: attachments.clientId,
       projectId: attachments.projectId,
       issueId: attachments.issueId,
@@ -121,5 +122,13 @@ export class AttachmentShareService {
       : record.projectId ? { type: "project" as const, id: record.projectId }
         : { type: "issue" as const, id: record.issueId! };
     await this.#access.assertCanContribute(principal, target);
+    return record;
+  }
+
+  async #assertCanShareAttachment(principal: Principal, attachmentId: string) {
+    const record = await this.#authorizedAttachment(principal, attachmentId);
+    if (principal.role === "guest" && record.uploaderMembershipId !== principal.membershipId) {
+      throw new ForbiddenError("Guests can only share files they uploaded.");
+    }
   }
 }

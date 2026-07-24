@@ -84,6 +84,11 @@ export interface ProjectRecord {
   progressPercentage: number;
 }
 
+export interface ProjectMemberRecord extends MemberRecord {
+  clientId: string;
+  clientName: string;
+}
+
 export type ProjectBranchKind =
   | "feature"
   | "sprint"
@@ -128,6 +133,7 @@ export type IssueVisibility = "internal" | "client_shared" | "restricted";
 
 export interface IssueRecord {
   id: string;
+  creatorMembershipId: string;
   clientId: string;
   clientName: string;
   clientIconType: "icon" | "emoji";
@@ -285,6 +291,7 @@ export interface ActiveTimerRecord {
 
 export interface ProjectUpdateRecord {
   id: string;
+  authorMembershipId: string;
   body: string;
   health: "on_track" | "at_risk" | "off_track" | null;
   progress: number | null;

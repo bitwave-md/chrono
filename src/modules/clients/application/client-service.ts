@@ -130,7 +130,7 @@ export class ClientService {
 
     return records.map((record) => ({
       ...record,
-      canEdit: principal.role !== "guest" || record.permission === "contribute",
+      canEdit: principal.role !== "guest",
       canManage: principal.role === "owner" || principal.role === "admin",
     }));
   }

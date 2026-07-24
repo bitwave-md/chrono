@@ -1,8 +1,13 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import {
+  clientMemberships,
   invitations,
+  invitationClientAccess,
+  invitationProjectExclusions,
+  projectMemberships,
+  projects,
   workspaceMemberships,
   workspaces,
 } from "@/db/schema";
@@ -87,7 +92,7 @@ export class MembershipProvisioningService {
         );
 
       for (const invitation of pendingInvitations) {
-        await transaction
+        const [membership] = await transaction
           .insert(workspaceMemberships)
           .values({
             workspaceId: invitation.workspaceId,
@@ -98,7 +103,41 @@ export class MembershipProvisioningService {
           .onConflictDoUpdate({
             target: [workspaceMemberships.workspaceId, workspaceMemberships.userId],
             set: { role: invitation.role, status: "active", updatedAt: new Date() },
-          });
+          }).returning({ id: workspaceMemberships.id });
+
+        if (invitation.role === "guest" && membership) {
+          const access = await transaction.select({ clientId: invitationClientAccess.clientId }).from(invitationClientAccess).where(and(
+            eq(invitationClientAccess.workspaceId, invitation.workspaceId),
+            eq(invitationClientAccess.invitationId, invitation.id),
+          ));
+          const exclusions = await transaction.select({ projectId: invitationProjectExclusions.projectId }).from(invitationProjectExclusions).where(and(
+            eq(invitationProjectExclusions.workspaceId, invitation.workspaceId),
+            eq(invitationProjectExclusions.invitationId, invitation.id),
+          ));
+          if (access.length) {
+            await transaction.insert(clientMemberships).values(access.map((item) => ({
+              workspaceId: invitation.workspaceId,
+              clientId: item.clientId,
+              workspaceMembershipId: membership.id,
+              permission: "view" as const,
+            }))).onConflictDoNothing();
+            const clientIds = access.map((item) => item.clientId);
+            const selectedProjects = await transaction.select({ id: projects.id, clientId: projects.clientId }).from(projects).where(and(
+              eq(projects.workspaceId, invitation.workspaceId),
+              inArray(projects.clientId, clientIds),
+              isNull(projects.archivedAt),
+            ));
+            const excluded = new Set(exclusions.map((item) => item.projectId));
+            const memberships = selectedProjects.filter((project) => !excluded.has(project.id)).map((project) => ({
+              workspaceId: invitation.workspaceId,
+              clientId: project.clientId,
+              projectId: project.id,
+              workspaceMembershipId: membership.id,
+              addedByMembershipId: membership.id,
+            }));
+            if (memberships.length) await transaction.insert(projectMemberships).values(memberships).onConflictDoNothing();
+          }
+        }
 
         await transaction
           .update(invitations)

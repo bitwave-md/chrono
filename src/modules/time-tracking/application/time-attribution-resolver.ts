@@ -9,7 +9,7 @@ import {
   timeCategories,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
-import { NotFoundError } from "@/modules/shared/application/application-error";
+import { ForbiddenError, NotFoundError } from "@/modules/shared/application/application-error";
 
 export interface TimeAttribution {
   issueId: string;
@@ -29,6 +29,7 @@ export class TimeAttributionResolver {
     principal: Principal,
     issueId: string,
   ): Promise<TimeAttribution> {
+    if (principal.role === "guest") throw new ForbiddenError("Guests cannot create time entries.");
     const issue = await this.#accessibleIssue(transaction, principal, issueId);
 
     if (!issue) {
@@ -48,6 +49,7 @@ export class TimeAttributionResolver {
     principal: Principal,
     categoryId: string | null,
   ): Promise<ResolvedTimeCategory | null> {
+    if (principal.role === "guest") throw new ForbiddenError("Guests cannot use time entry types.");
     if (!categoryId) {
       return null;
     }

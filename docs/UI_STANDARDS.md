@@ -61,6 +61,11 @@ Projects own Client context and namespace overrides, and Clients own their key
 and default Issue prefix. Optional settings should not turn the composer back
 into an always-visible configuration grid.
 
+Guest creation uses the same Issue composer but hides status, priority, and
+assignee mutation controls. It retains accessible Project and Branch context;
+the server fixes visibility to `client_shared` and supplies the workflow's
+default status.
+
 ## Issue activity
 
 Issue activity separates machine history from authored conversation:

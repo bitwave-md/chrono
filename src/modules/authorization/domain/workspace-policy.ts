@@ -28,6 +28,12 @@ export class WorkspacePolicy {
     }
   }
 
+  assertCanUseTimeTracking(principal: Principal): void {
+    if (principal.role === "guest") {
+      throw new ForbiddenError("Guests cannot access time tracking.");
+    }
+  }
+
   assertCanViewTimeReports(principal: Principal): void {
     if (principal.role !== "owner" && principal.role !== "admin") {
       throw new ForbiddenError(

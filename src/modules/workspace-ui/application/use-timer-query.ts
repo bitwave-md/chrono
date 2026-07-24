@@ -100,8 +100,9 @@ export function useManualTimeMutation(workspaceSlug: string) {
   });
 }
 
-export function useIssueTimeLogsQuery(workspaceSlug: string, issueId: string) {
+export function useIssueTimeLogsQuery(workspaceSlug: string, issueId: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: workspaceQueryKeys.issueTimeLogs(workspaceSlug, issueId),
     queryFn: () => new WorkspaceApiClient(workspaceSlug).listIssueTimeLogs(issueId),
   });

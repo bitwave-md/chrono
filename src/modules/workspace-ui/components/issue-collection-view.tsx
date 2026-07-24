@@ -13,7 +13,7 @@ import { IssueList } from "@/modules/workspace-ui/components/issue-list";
 import { RouteHeader, type BreadcrumbItem } from "@/modules/workspace-ui/components/route-header";
 import type { IssueGroupRecord } from "@/modules/workspace-ui/domain/issue-list-groups";
 import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
-import { useWorkspaceOverlay, useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
+import { useWorkspaceIdentity, useWorkspaceOverlay, useWorkspaceView } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface IssueCollectionViewProps {
   workspaceSlug: string;
@@ -27,6 +27,7 @@ interface IssueCollectionViewProps {
 }
 
 export function IssueCollectionView(props: IssueCollectionViewProps) {
+  const workspace = useWorkspaceIdentity();
   const router = useRouter();
   const viewMode = useWorkspaceView((state) => state.viewMode);
   const focusedIssueId = useWorkspaceView((state) => state.focusedIssueId);
@@ -66,12 +67,15 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
 
   const openIssue = (issueId: string) => {
     const issue = issues.find((candidate) => candidate.id === issueId);
-    router.push(issueDetailPath(props.workspaceSlug, issueId, issue?.projectId ?? null));
+    const accessibleProjectId = projects.some((candidate) => candidate.id === issue?.projectId)
+      ? issue?.projectId ?? null
+      : null;
+    router.push(issueDetailPath(props.workspaceSlug, issueId, accessibleProjectId));
   };
   const viewActions = (
     <>
       <Button aria-label="List view" size="icon-sm" variant={viewMode === "list" ? "secondary" : "ghost"} onClick={() => setViewMode("list")}><List /></Button>
-      {props.projectId ? <Button aria-label="Board view" size="icon-sm" variant={viewMode === "board" ? "secondary" : "ghost"} onClick={() => setViewMode("board")}><Columns3 /></Button> : null}
+      {props.projectId && workspace.role !== "guest" ? <Button aria-label="Board view" size="icon-sm" variant={viewMode === "board" ? "secondary" : "ghost"} onClick={() => setViewMode("board")}><Columns3 /></Button> : null}
     </>
   );
 
@@ -90,7 +94,7 @@ export function IssueCollectionView(props: IssueCollectionViewProps) {
           <div className="p-6 text-sm text-muted-foreground">Loading issues...</div>
         ) : issuesQuery.error ? (
           <div className="p-6 text-sm text-destructive">{issuesQuery.error.message}</div>
-        ) : viewMode === "board" && props.projectId ? (
+        ) : viewMode === "board" && props.projectId && workspace.role !== "guest" ? (
           <div className="px-4">
             <IssueBoard
               issues={issues}

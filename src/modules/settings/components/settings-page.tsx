@@ -16,9 +16,9 @@ export function SettingsPage({ path, workspaceSlug }: { path: string; workspaceS
   if (path === "personal/profile") return <AccountProfileSettings workspaceSlug={workspaceSlug} />;
   if (path === "personal/preferences") return <AccountPreferencesSettings workspaceSlug={workspaceSlug} />;
   if (path === "personal/notifications") return <NotificationSettings workspaceSlug={workspaceSlug} />;
-  if (path === "workspace/general") return <WorkspaceGeneralSettings workspaceSlug={workspaceSlug} />;
-  if (path === "workspace/members") return <WorkspaceMemberSettings workspaceSlug={workspaceSlug} />;
-  if (path === "workspace/time-entry-types") return <TimeEntryTypeSettings workspaceSlug={workspaceSlug} />;
+  if (path === "workspace/general" && workspace.role !== "guest") return <WorkspaceGeneralSettings workspaceSlug={workspaceSlug} />;
+  if (path === "workspace/members" && workspace.role !== "guest") return <WorkspaceMemberSettings workspaceSlug={workspaceSlug} />;
+  if (path === "workspace/time-entry-types" && workspace.role !== "guest") return <TimeEntryTypeSettings workspaceSlug={workspaceSlug} />;
   if (path === "administration/storage" && workspace.isOperator) return <StorageSettings workspaceSlug={workspaceSlug} />;
   if (path === "administration/updates" && workspace.isOperator) return <UpdateSettings workspaceSlug={workspaceSlug} />;
   return <SettingsPageFrame description="This settings page does not exist or is not available to your account." title="Settings unavailable"><div className="rounded-xl border p-8 text-sm text-muted-foreground">Return to another settings category from the sidebar.</div></SettingsPageFrame>;

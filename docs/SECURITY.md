@@ -72,25 +72,30 @@ development server. It is not included in the final application runner image.
 - Back up PostgreSQL and the private object bucket as one snapshot and test restores.
 - Re-run production and full dependency audits during each dependency upgrade.
 
-## Phase 5 authorization probes
+## Guest authorization boundary
 
-An isolated guest session and hidden Client fixture verified that Guests:
+Guests are external Client collaborators with fixed capabilities. A
+`client_memberships` row grants Client and direct-backlog access. A separate
+`project_memberships` row grants access to one current Project and all of its
+Issues. New Projects do not inherit existing Guest access. Direct Issue
+assignment is a deliberate single-Issue exception and never grants Project
+navigation or list access.
 
-- Receive only Clients linked through their ClientMembership.
-- Receive only Client-shared or directly assigned Issues.
-- Do not receive internal Projects.
-- Receive only their own TimeLogs.
-- Cannot access Workspace reports.
-- Cannot create Issues or timers without contribution permission.
-
-The fixtures were removed after verification. Tenant-safe foreign keys and
+Guests may create Issues in accessible scopes, comment and reply, publish
+Project updates, and upload safe attachments. Guest-created Issues are forced
+to `client_shared`. They may edit only text they authored and may delete or
+share only files they uploaded. Client/Project/workflow properties, assignments,
+labels, dates, member administration, timers, time logs, categories, reports,
+and Workspace settings remain forbidden at the service layer. Legacy Client
+permission values cannot unlock these operations. Tenant-safe foreign keys and
 server-side principal resolution remain the enforcement boundary; UI hiding is
 not treated as authorization.
 
 Inbox notifications are scoped to one recipient Workspace membership through
 tenant-safe foreign keys and every list/mutation predicate repeats both the
-Workspace and recipient IDs. Feed reads also reapply current guest Client and
-Issue visibility; notification delivery never acts as a durable access grant.
+Workspace and recipient IDs. Feed reads also reapply current Guest Client,
+Project-membership, and direct-assignment visibility; notification delivery
+never acts as a durable access grant.
 Actors do not receive notifications for their own mutations.
 
 ## File storage boundary

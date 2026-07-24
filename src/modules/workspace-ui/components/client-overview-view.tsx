@@ -91,7 +91,7 @@ export function ClientOverviewView({
               {!resourcesQuery.isLoading && !resourcesQuery.data?.length ? <span className="text-sm text-muted-foreground">No pinned resources yet.</span> : null}
             </div>
           </section>
-          <AttachmentSection canUpload={client.canEdit} targetId={client.id} targetType="client" workspaceSlug={workspaceSlug} />
+          <AttachmentSection canUpload targetId={client.id} targetType="client" workspaceSlug={workspaceSlug} />
           {update.error ? <p className="mt-4 text-xs text-destructive">{update.error.message}</p> : null}
         </main>
 

@@ -8,6 +8,7 @@ import {
   issueAssignees,
   issueNamespaces,
   issues,
+  projectMemberships,
   projects,
   users,
   workflowStatuses,
@@ -115,7 +116,14 @@ export class InboxService {
         )),
       ),
       or(
-        eq(issues.visibility, "client_shared"),
+        isNull(issues.projectId),
+        exists(
+          db.select({ value: sql`1` }).from(projectMemberships).where(and(
+            eq(projectMemberships.workspaceId, issues.workspaceId),
+            eq(projectMemberships.projectId, issues.projectId),
+            eq(projectMemberships.workspaceMembershipId, principal.membershipId),
+          )),
+        ),
         exists(
           db.select({ value: sql`1` }).from(issueAssignees).where(and(
             eq(issueAssignees.issueId, issues.id),

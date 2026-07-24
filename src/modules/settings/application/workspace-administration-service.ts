@@ -1,14 +1,19 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { and, asc, count, eq, gt, isNull, ne } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNull, ne } from "drizzle-orm";
 
-import { db } from "@/db/client";
-import { attachmentShareLinks, invitations, users, workspaceMemberships } from "@/db/schema";
+import { db, type DatabaseTransaction } from "@/db/client";
+import { attachmentShareLinks, clients, invitationClientAccess, invitationProjectExclusions, invitations, projects, users, workspaceMemberships } from "@/db/schema";
 import type { Principal, WorkspaceRole } from "@/modules/authorization/domain/principal";
 import { EmailAddress } from "@/modules/auth/domain/email-address";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/modules/shared/application/application-error";
+import { EntityId } from "@/modules/shared/domain/entity-id";
 
 type MembershipStatus = "active" | "suspended" | "removed";
+
+export interface GuestAccessInput {
+  clients: Array<{ clientId: string; excludedProjectIds: string[] }>;
+}
 
 export class WorkspaceAdministrationService {
   async overview(principal: Principal) {
@@ -35,7 +40,7 @@ export class WorkspaceAdministrationService {
     return { members, invitations: pendingInvitations };
   }
 
-  async invite(principal: Principal, emailValue: string, role: WorkspaceRole) {
+  async invite(principal: Principal, emailValue: string, role: WorkspaceRole, guestAccess: GuestAccessInput | null = null) {
     this.#assertAdministrator(principal);
     this.#assertRoleGrant(principal, role);
     const email = new EmailAddress(emailValue).value;
@@ -45,16 +50,36 @@ export class WorkspaceAdministrationService {
       ne(workspaceMemberships.status, "suspended"),
     )).limit(1);
     if (existing) throw new ConflictError("This person already belongs to the Workspace.");
-    await db.delete(invitations).where(and(eq(invitations.workspaceId, principal.workspaceId), eq(invitations.emailNormalized, email), isNull(invitations.acceptedAt)));
-    const [invitation] = await db.insert(invitations).values({
-      workspaceId: principal.workspaceId,
-      emailNormalized: email,
-      role,
-      tokenHash: digest(randomBytes(32).toString("base64url")),
-      createdByUserId: principal.userId,
-      expiresAt: expiry(),
-    }).returning({ id: invitations.id, email: invitations.emailNormalized, role: invitations.role, expiresAt: invitations.expiresAt, createdAt: invitations.createdAt });
-    return invitation!;
+    const access = role === "guest" ? normalizeGuestAccess(guestAccess) : null;
+    if (role === "guest" && !access?.clients.length) throw new ValidationError("A Guest must have access to at least one Client.");
+    return db.transaction(async (transaction) => {
+      await transaction.delete(invitations).where(and(eq(invitations.workspaceId, principal.workspaceId), eq(invitations.emailNormalized, email), isNull(invitations.acceptedAt)));
+      const [invitation] = await transaction.insert(invitations).values({
+        workspaceId: principal.workspaceId,
+        emailNormalized: email,
+        role,
+        tokenHash: digest(randomBytes(32).toString("base64url")),
+        createdByUserId: principal.userId,
+        expiresAt: expiry(),
+      }).returning({ id: invitations.id, email: invitations.emailNormalized, role: invitations.role, expiresAt: invitations.expiresAt, createdAt: invitations.createdAt });
+      if (!invitation) throw new ConflictError("The invitation could not be created.");
+      if (access) await this.#storeGuestAccess(transaction, principal.workspaceId, invitation.id, access);
+      return invitation;
+    });
+  }
+
+  async #storeGuestAccess(transaction: DatabaseTransaction, workspaceId: string, invitationId: string, access: GuestAccessInput) {
+    const clientIds = access.clients.map((item) => item.clientId);
+    const clientRows = await transaction.select({ id: clients.id }).from(clients).where(and(eq(clients.workspaceId, workspaceId), inArray(clients.id, clientIds), isNull(clients.archivedAt)));
+    if (clientRows.length !== new Set(clientIds).size) throw new ValidationError("One or more selected Clients are unavailable.");
+    const projectsByClient = await transaction.select({ id: projects.id, clientId: projects.clientId }).from(projects).where(and(eq(projects.workspaceId, workspaceId), inArray(projects.clientId, clientIds), isNull(projects.archivedAt)));
+    for (const item of access.clients) {
+      const clientProjects = projectsByClient.filter((project) => project.clientId === item.clientId).map((project) => project.id);
+      if (item.excludedProjectIds.some((id) => !clientProjects.includes(id))) throw new ValidationError("One or more excluded Projects do not belong to the selected Client.");
+    }
+    await transaction.insert(invitationClientAccess).values(access.clients.map((item) => ({ workspaceId, invitationId, clientId: item.clientId })));
+    const exclusions = access.clients.flatMap((item) => item.excludedProjectIds.map((projectId) => ({ workspaceId, invitationId, clientId: item.clientId, projectId })));
+    if (exclusions.length) await transaction.insert(invitationProjectExclusions).values(exclusions);
   }
 
   async refreshInvitation(principal: Principal, invitationId: string) {
@@ -117,3 +142,11 @@ export class WorkspaceAdministrationService {
 
 function digest(value: string) { return createHash("sha256").update(value).digest("hex"); }
 function expiry() { return new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000); }
+
+function normalizeGuestAccess(input: GuestAccessInput | null): GuestAccessInput {
+  if (!input || !Array.isArray(input.clients) || input.clients.length > 100) throw new ValidationError("Guest Client access must contain up to 100 Clients.");
+  return { clients: input.clients.map((item, index) => {
+    if (!item || typeof item !== "object" || typeof item.clientId !== "string" || !Array.isArray(item.excludedProjectIds)) throw new ValidationError(`guestAccess.clients[${index}] is invalid.`);
+    return { clientId: new EntityId(item.clientId, `guestAccess.clients[${index}].clientId`).value, excludedProjectIds: [...new Set(item.excludedProjectIds.map((id, projectIndex) => new EntityId(id, `guestAccess.clients[${index}].excludedProjectIds[${projectIndex}]`).value))] };
+  }) };
+}

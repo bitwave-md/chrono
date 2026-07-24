@@ -30,9 +30,11 @@ const stateOptions = projectStateOptions
 export function ProjectBranchSection({
   workspaceSlug,
   projectId,
+  canManage = true,
 }: {
   workspaceSlug: string;
   projectId: string;
+  canManage?: boolean;
 }) {
   const branchesQuery = useProjectBranchesQuery(workspaceSlug, projectId);
   const updateBranch = useUpdateProjectBranchMutation(workspaceSlug, projectId);
@@ -41,7 +43,7 @@ export function ProjectBranchSection({
     <section className="mt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">Branches</h2>
-        <BranchCreator projectId={projectId} workspaceSlug={workspaceSlug} />
+        {canManage ? <BranchCreator projectId={projectId} workspaceSlug={workspaceSlug} /> : null}
       </div>
       <div className="mt-2 divide-y border-y">
         {(branchesQuery.data ?? []).map((branch) => {
@@ -63,6 +65,7 @@ export function ProjectBranchSection({
                 </div>
               </div>
               <OptionProperty
+                disabled={!canManage}
                 icon={GitBranch}
                 label="Branch state"
                 options={stateOptions}

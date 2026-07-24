@@ -50,9 +50,14 @@ active Workspace members without duplicating columns on the work item.
 Clients store an independent icon-or-emoji identity with a validated hex color.
 Projects use the same owned icon identity model, with an independently editable
 icon or emoji and color.
-`client_memberships` is both the guest access boundary and the explicit roster
-shown in the Client workspace. `client_resources` stores ordered, tenant-safe
-HTTP/HTTPS links authored by Workspace memberships.
+`client_memberships` grants a Guest access to a Client and its direct backlog.
+`project_memberships` is the distinct Project access roster; it is never
+inferred from `project_assignees`. Both boundaries are required for Guest
+Project access. Direct Issue assignment grants access to only that Issue and
+does not expose its Project. Invitation access snapshots store selected Clients
+and excluded current Projects until acceptance provisions both rosters.
+`client_resources` stores ordered, tenant-safe HTTP/HTTPS links authored by
+Workspace memberships.
 
 ## Identity and workflows
 
@@ -81,8 +86,9 @@ a controlled conflict for stale mutations.
 
 `project_updates` stores authored progress updates with optional health and
 progress snapshots. `project_activity_events` stores immutable automated audit
-events with structured JSON payloads. Project resources and milestones use
-ordered child tables.
+events with structured JSON payloads. Guests with Project membership may
+publish updates and edit only their own update text; they cannot alter Project
+properties. Project resources and milestones use ordered child tables.
 
 Issue comments are authored records with soft-deletion timestamps and a
 tenant-safe, same-Issue parent reference for one-level reply threads. Labels

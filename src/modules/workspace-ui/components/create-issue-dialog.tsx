@@ -18,6 +18,7 @@ import { OptionProperty } from "@/modules/workspace-ui/components/option-propert
 import type { IssuePriority, MemberRecord, ProjectBranchRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
 import type { IssueQueryFilters } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
+import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface CreateIssueDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ interface CreateIssueDialogProps {
 }
 
 export function CreateIssueDialog(props: CreateIssueDialogProps) {
+  const workspace = useWorkspaceIdentity();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string | null>(props.selectedProjectId);
@@ -72,7 +74,7 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
       title: title.trim(),
       description: description.trim() || null,
       priority,
-      visibility: "internal",
+      visibility: workspace.role === "guest" ? "client_shared" : "internal",
       projectName: project?.name ?? null,
       branchName: branch?.name ?? null,
       statusId: selectedStatusId,
@@ -125,9 +127,11 @@ export function CreateIssueDialog(props: CreateIssueDialogProps) {
             <Textarea className="mt-5 min-h-40 resize-none border-0 bg-transparent px-0 text-base leading-7 shadow-none placeholder:text-muted-foreground/45 focus-visible:ring-0" maxLength={20_000} placeholder="Add description..." value={description} onChange={(event) => setDescription(event.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-2 px-6 pb-5 max-md:px-5 [&_[data-slot=button]]:rounded-full [&_[data-slot=button]]:border [&_[data-slot=button]]:border-border [&_[data-slot=button]]:bg-secondary/45 [&_[data-slot=button]]:px-3 [&_[data-slot=button]]:text-sm [&_[data-slot=button]]:hover:bg-secondary/75">
-            <IssueStatusProperty statuses={statuses} statusColor={selectedStatus?.color ?? defaultStatus?.color ?? null} statusId={selectedStatusId} statusName={selectedStatus?.name ?? defaultStatus?.name ?? "Backlog"} disabled={!statuses.length} onChange={(status) => setStatusId(status.id)} />
-            <IssuePriorityProperty value={priority} onChange={setPriority} />
-            <AssigneeProperty members={props.members} value={assignees} onChange={setAssignees} />
+            {workspace.role !== "guest" ? <>
+              <IssueStatusProperty statuses={statuses} statusColor={selectedStatus?.color ?? defaultStatus?.color ?? null} statusId={selectedStatusId} statusName={selectedStatus?.name ?? defaultStatus?.name ?? "Backlog"} disabled={!statuses.length} onChange={(status) => setStatusId(status.id)} />
+              <IssuePriorityProperty value={priority} onChange={setPriority} />
+              <AssigneeProperty members={props.members} value={assignees} onChange={setAssignees} />
+            </> : null}
             <OptionProperty allowEmpty icon={FolderKanban} label="Project" options={props.projects.map((item) => ({ value: item.id, label: item.name }))} placeholder="No project" value={projectId} onChange={(value) => { setProjectId(value); setBranchId(null); setStatusId(undefined); }} />
             {projectId ? <OptionProperty allowEmpty icon={GitBranch} label="Branch" options={branchOptions.map((item) => ({ value: item.id, label: item.name }))} placeholder="Main" value={branchId} onChange={setBranchId} /> : null}
           </div>

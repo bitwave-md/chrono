@@ -63,6 +63,7 @@ export function useCreateIssueMutation(
       const now = new Date().toISOString();
       const optimisticIssue: IssueRecord = {
         id: `optimistic-${crypto.randomUUID()}`,
+        creatorMembershipId: "",
         identifier: "NEW",
         title: variables.title,
         description: variables.description,

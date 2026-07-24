@@ -27,7 +27,7 @@ export class SettingsApiClient {
   general() { return this.#get<WorkspaceGeneralRecord>("/settings/general"); }
   updateGeneral(input: Partial<Pick<WorkspaceGeneralRecord, "name" | "iconType" | "iconKey" | "iconColor">>) { return this.#patch<WorkspaceGeneralRecord>("/settings/general", input); }
   members() { return this.#get<MemberSettingsRecord>("/settings/members"); }
-  invite(email: string, role: WorkspaceIdentity["role"]) { return workspaceApiRequest(this.#workspaceBase, "/settings/members", { method: "POST", body: JSON.stringify({ email, role }) }); }
+  invite(email: string, role: WorkspaceIdentity["role"], guestAccess?: { clients: Array<{ clientId: string; excludedProjectIds: string[] }> }) { return workspaceApiRequest(this.#workspaceBase, "/settings/members", { method: "POST", body: JSON.stringify({ email, role, ...(guestAccess ? { guestAccess } : {}) }) }); }
   updateMember(membershipId: string, input: { role?: WorkspaceIdentity["role"]; status?: "active" | "suspended" | "removed" }) { return this.#patch(`/settings/members/${encodeURIComponent(membershipId)}`, input); }
   refreshInvitation(invitationId: string) { return workspaceApiRequest(this.#workspaceBase, `/settings/invitations/${encodeURIComponent(invitationId)}`, { method: "POST", body: "{}" }); }
   revokeInvitation(invitationId: string) { return workspaceApiRequest(this.#workspaceBase, `/settings/invitations/${encodeURIComponent(invitationId)}`, { method: "DELETE" }); }

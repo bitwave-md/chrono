@@ -1,5 +1,4 @@
 import { and, desc, eq, exists, isNull, or, sql } from "drizzle-orm";
-
 import { db, type DatabaseTransaction } from "@/db/client";
 import {
   clientMemberships,
@@ -8,12 +7,14 @@ import {
   issueNamespaces,
   issues,
   issueTypes,
+  projectMemberships,
   projectBranches,
   projects,
   timerSessions,
   workflowStatuses,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { GuestAccessService } from "@/modules/authorization/application/guest-access-service";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueContextResolver } from "@/modules/issues/application/issue-context-resolver";
 import { IssueActivityWriter } from "@/modules/issues/application/issue-activity-writer";
@@ -24,19 +25,19 @@ import { IssueStatusMapper } from "@/modules/issues/application/issue-status-map
 import { IssueNotificationWriter } from "@/modules/inbox/application/issue-notification-writer";
 import {
   ConflictError,
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "@/modules/shared/application/application-error";
-
 export class IssueService {
   readonly #clientAccess = new ClientAccessService();
+  readonly #guestAccess = new GuestAccessService();
   readonly #activity = new IssueActivityWriter();
   readonly #contextResolver = new IssueContextResolver();
   readonly #enricher = new IssueListEnricher();
   readonly #notifications = new IssueNotificationWriter();
   readonly #relationValidator = new IssueRelationValidator();
   readonly #statusMapper = new IssueStatusMapper();
-
   async list(
     principal: Principal,
     clientId: string | null,
@@ -90,26 +91,41 @@ export class IssueService {
               ),
             ),
         ),
-        or(
-          eq(issues.visibility, "client_shared"),
-          exists(
-            db
-              .select({ value: sql`1` })
-              .from(issueAssignees)
-              .where(
-                and(
+        filters.mine
+          ? exists(db.select({ value: sql`1` }).from(issueAssignees).where(and(
+              eq(issueAssignees.workspaceId, issues.workspaceId),
+              eq(issueAssignees.issueId, issues.id),
+              eq(issueAssignees.membershipId, principal.membershipId),
+            )))
+          : filters.issueId
+            ? or(
+                isNull(issues.projectId),
+                exists(db.select({ value: sql`1` }).from(projectMemberships).where(and(
+                  eq(projectMemberships.workspaceId, issues.workspaceId),
+                  eq(projectMemberships.projectId, issues.projectId),
+                  eq(projectMemberships.workspaceMembershipId, principal.membershipId),
+                )))!,
+                exists(db.select({ value: sql`1` }).from(issueAssignees).where(and(
+                  eq(issueAssignees.workspaceId, issues.workspaceId),
                   eq(issueAssignees.issueId, issues.id),
                   eq(issueAssignees.membershipId, principal.membershipId),
-                ),
-              ),
-          ),
-        )!,
+                )))!,
+              )!
+            : or(
+                isNull(issues.projectId),
+                exists(db.select({ value: sql`1` }).from(projectMemberships).where(and(
+                  eq(projectMemberships.workspaceId, issues.workspaceId),
+                  eq(projectMemberships.projectId, issues.projectId),
+                  eq(projectMemberships.workspaceMembershipId, principal.membershipId),
+                )))!,
+              )!,
       );
     }
 
     const rows = await db
       .select({
         id: issues.id,
+        creatorMembershipId: issues.creatorMembershipId,
         clientId: issues.clientId,
         clientName: clients.name,
         clientIconType: clients.iconType,
@@ -156,8 +172,12 @@ export class IssueService {
   }
 
   async create(principal: Principal, input: CreateIssueInput) {
-    await this.#clientAccess.assertCanContribute(principal, input.clientId);
+    await this.#guestAccess.assertCanCreateIssue(principal, input.clientId, input.projectId);
+    if (principal.role !== "guest") await this.#clientAccess.assertCanContribute(principal, input.clientId);
     const title = this.#title(input.title);
+    const guestInput = principal.role === "guest"
+      ? { ...input, assigneeMembershipIds: [], statusId: null, visibility: "client_shared" as const }
+      : input;
 
     return db.transaction(async (transaction) => {
       const [client] = await transaction
@@ -175,32 +195,32 @@ export class IssueService {
       await this.#relationValidator.assertAssignees(
         transaction,
         principal,
-        input.assigneeMembershipIds,
+        guestInput.assigneeMembershipIds,
       );
       await this.#relationValidator.assertParentIssue(
         transaction,
         principal,
         input.clientId,
-        input.parentIssueId,
+        guestInput.parentIssueId,
       );
       await this.#relationValidator.assertBranch(
         transaction,
         principal,
         input.clientId,
-        input.projectId,
-        input.branchId,
+        guestInput.projectId,
+        guestInput.branchId,
       );
 
       const context = await this.#contextResolver.resolve(
         transaction,
         principal,
-        input.clientId,
-        input.projectId,
+        guestInput.clientId,
+        guestInput.projectId,
       );
       const statusId = await this.#contextResolver.resolveStatus(
         transaction,
         context.workflow_id,
-        input.statusId,
+        guestInput.statusId,
       );
       const [namespace] = await transaction
         .update(issueNamespaces)
@@ -216,15 +236,15 @@ export class IssueService {
         .values({
           workspaceId: principal.workspaceId,
           clientId: input.clientId,
-          projectId: input.projectId,
-          branchId: input.branchId,
+          projectId: guestInput.projectId,
+          branchId: guestInput.branchId,
           statusId,
           issueNamespaceId: context.namespace_id,
           number,
           title,
           description: input.description,
-          priority: input.priority,
-          visibility: input.visibility,
+          priority: guestInput.priority,
+          visibility: guestInput.visibility,
           creatorMembershipId: principal.membershipId,
           parentIssueId: input.parentIssueId,
           rank: number.toString().padStart(12, "0"),
@@ -235,7 +255,7 @@ export class IssueService {
         transaction,
         principal,
         issue.id,
-        input.assigneeMembershipIds,
+        guestInput.assigneeMembershipIds,
       );
       await this.#notifications.notify(
         transaction,
@@ -263,7 +283,14 @@ export class IssueService {
       .limit(1);
 
     if (!snapshot) throw new NotFoundError("Issue not found.");
-    await this.#clientAccess.assertCanContribute(principal, snapshot.clientId);
+    if (principal.role === "guest") {
+      await this.#guestAccess.assertCanReadIssue(principal, issueId);
+      if (input.projectId !== undefined || input.branchId !== undefined || input.assigneeMembershipIds !== undefined || input.statusId !== undefined || input.priority !== undefined || input.visibility !== undefined || input.issueTypeId !== undefined || input.estimateMinutes !== undefined || input.dueAt !== undefined) {
+        throw new ForbiddenError("Guests can only edit their own Issue text.");
+      }
+    } else {
+      await this.#clientAccess.assertCanContribute(principal, snapshot.clientId);
+    }
     return db.transaction(async (transaction) => {
       const [current] = await transaction
         .select()
@@ -276,6 +303,9 @@ export class IssueService {
         .limit(1);
 
       if (!current) throw new NotFoundError("Issue not found.");
+      if (principal.role === "guest" && current.creatorMembershipId !== principal.membershipId) {
+        throw new ForbiddenError("Guests can only edit Issues they created.");
+      }
 
       const previousAssigneeIds = input.assigneeMembershipIds
         ? await transaction
@@ -408,7 +438,6 @@ export class IssueService {
       return { issue: updated, identifier: `${namespace.prefix}-${updated.number}` };
     }, { isolationLevel: "serializable", accessMode: "read write" });
   }
-
   async archive(principal: Principal, issueId: string) {
     const issue = await this.get(principal, issueId);
     await this.#clientAccess.assertCanContribute(principal, issue.clientId);
@@ -436,7 +465,6 @@ export class IssueService {
     if (!archived) throw new NotFoundError("Issue not found.");
     return archived;
   }
-
   async #replaceAssignees(
     transaction: DatabaseTransaction,
     principal: Principal,
@@ -457,7 +485,6 @@ export class IssueService {
       })));
     }
   }
-
   #title(value: string): string {
     const title = value.trim();
     if (title.length < 2 || title.length > 240) {
@@ -466,10 +493,8 @@ export class IssueService {
     return title;
   }
 }
-
 function activityContext(principal: Principal, issueId: string) {
   return { workspaceId: principal.workspaceId, issueId, actorMembershipId: principal.membershipId };
 }
-
 export { issuePriorities, issueVisibilities } from "@/modules/issues/application/issue-contracts";
 export type { IssuePriority, IssueVisibility, UpdateIssueInput } from "@/modules/issues/application/issue-contracts";

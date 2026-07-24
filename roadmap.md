@@ -399,6 +399,25 @@ profiles remained below one millisecond on the current dataset; custom-format
 backup/restore and all four migrations replayed successfully in isolated
 databases.
 
+## Guest Client collaboration
+
+- [x] Replace permission-driven Guest contribution with fixed external
+  collaborator capabilities.
+- [x] Add tenant-safe Project access rosters independent from assignees.
+- [x] Capture Client and excluded-Project selections on Guest invitations and
+  provision current Projects at acceptance.
+- [x] Preserve existing Guest Client visibility through a Project-membership
+  migration while leaving future Projects opt-in.
+- [x] Apply Client, Project, Issue, Inbox, attachment, and favorite visibility
+  rules, including the direct-assignment single-Issue exception.
+- [x] Allow Guest Issue creation, comments, replies, attachments, and authored
+  Project updates while forbidding property, time, report, and settings access.
+- [x] Add Project Members APIs, route-backed UI, and author-only Guest update
+  editing.
+
+Migration `0016` replayed successfully from an empty PostgreSQL database and
+was applied to the development stack on 2026-07-24.
+
 ## UI system refactor: shadcn/ui
 
 Tracer bullet: retain the existing workspace state and server-data boundaries

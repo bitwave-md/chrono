@@ -3,6 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { issues, projects } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { GuestAccessService } from "@/modules/authorization/application/guest-access-service";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueService } from "@/modules/issues/application/issue-service";
 import { ProjectDetailService } from "@/modules/projects/application/project-detail-service";
@@ -17,6 +18,7 @@ export class AttachmentAccessService {
   readonly #clients = new ClientAccessService();
   readonly #issues = new IssueService();
   readonly #projects = new ProjectDetailService();
+  readonly #guests = new GuestAccessService();
 
   async assertCanRead(principal: Principal, target: AttachmentTarget): Promise<void> {
     if (target.type === "client") return this.#clients.assertCanRead(principal, target.id);
@@ -28,6 +30,12 @@ export class AttachmentAccessService {
   }
 
   async assertCanContribute(principal: Principal, target: AttachmentTarget): Promise<void> {
+    if (principal.role === "guest") {
+      if (target.type === "client") await this.#clients.assertCanRead(principal, target.id);
+      else if (target.type === "project") await this.#guests.assertCanReadProject(principal, target.id);
+      else await this.#guests.assertCanParticipate(principal, target.id);
+      return;
+    }
     await this.assertCanRead(principal, target);
     const clientId = await this.#clientId(principal.workspaceId, target);
     await this.#clients.assertCanContribute(principal, clientId);

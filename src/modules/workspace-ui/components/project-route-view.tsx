@@ -9,7 +9,10 @@ import {
   Link2,
   LoaderCircle,
   MessageSquareText,
+  Pencil,
   Plus,
+  Save,
+  X,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
@@ -19,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useProjectActivityQuery, useProjectQuery, usePublishProjectUpdateMutation, useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
+import { useAddProjectMilestoneMutation, useAddProjectResourceMutation, useEditProjectUpdateMutation, useProjectActivityQuery, useProjectQuery, usePublishProjectUpdateMutation, useUpdateProjectMutation } from "@/modules/workspace-ui/application/use-project-detail-queries";
 import { useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-property";
 import { EntityIconPicker } from "@/modules/workspace-ui/components/client-icon-picker";
@@ -31,11 +34,12 @@ import { OptionProperty } from "@/modules/workspace-ui/components/option-propert
 import { ProjectBranchSection } from "@/modules/workspace-ui/components/project-branch-section";
 import { ProjectIcon } from "@/modules/workspace-ui/components/project-icon";
 import { ProjectIssuesView } from "@/modules/workspace-ui/components/project-issues-view";
+import { ProjectMembersView } from "@/modules/workspace-ui/components/project-members-view";
 import { projectPriorityOptions, projectStateOptions } from "@/modules/workspace-ui/components/project-property-options";
 import { ProjectTabs, type ProjectTab } from "@/modules/workspace-ui/components/project-tabs";
 import { AttachmentSection } from "@/modules/workspace-ui/components/attachment-section";
 import { favoriteFromProject } from "@/modules/workspace-ui/domain/favorite-target";
-import type { ProjectDetailRecord, ProjectRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import type { ProjectDetailRecord, ProjectRecord, ProjectUpdateRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 const visibilityOptions = [
@@ -77,12 +81,14 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
       {tab === "overview" ? <ProjectOverview project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "activity" ? <ProjectActivity project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "issues" ? <ProjectIssuesView project={project} workspaceSlug={workspaceSlug} /> : null}
+      {tab === "members" ? <ProjectMembersView project={project} workspaceSlug={workspaceSlug} /> : null}
     </>
   );
 }
 
 function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRecord; workspaceSlug: string }) {
   const workspace = useWorkspaceIdentity();
+  const canManage = workspace.role !== "guest";
   const membersQuery = useMembersQuery(workspaceSlug);
   const update = useUpdateProjectMutation(workspaceSlug, project.id);
   const addResource = useAddProjectResourceMutation(workspaceSlug, project.id);
@@ -96,26 +102,27 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
       <section>
         <div className="flex items-start gap-3">
           <EntityIconPicker
+            disabled={!canManage}
             entity={project}
             label="Project"
             onChange={(appearance) => patch(appearance, appearance)}
           />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-semibold">{project.name}</h1>
-            <Input className="mt-0.5 h-7 border-0 px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0" defaultValue={project.summary ?? ""} placeholder="Add a short project summary" onBlur={(event) => {
+            <Input className="mt-0.5 h-7 border-0 px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0" defaultValue={project.summary ?? ""} placeholder="Add a short project summary" readOnly={!canManage} onBlur={(event) => {
               const summary = event.target.value.trim() || null;
-              if (summary !== project.summary) patch({ summary }, { summary });
+              if (canManage && summary !== project.summary) patch({ summary }, { summary });
             }} />
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-1 border-y py-2">
-          <OptionProperty icon={CircleDashed} label="Status" options={projectStateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
-          <OptionProperty icon={Circle} label="Priority" options={projectPriorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
-          <MemberProperty label="Lead" members={membersQuery.data ?? []} value={project.lead} onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })} />
-          <AssigneeProperty members={membersQuery.data ?? []} value={project.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
-          <OptionProperty icon={Eye} label="Visibility" options={visibilityOptions} placeholder="Internal" value={project.visibility} onChange={(value) => value && patch({ visibility: value }, { visibility: value as ProjectDetailRecord["visibility"] })} />
-          <DateProperty label="Start date" value={project.startDate} onChange={(startDate) => patch({ startDate }, { startDate })} />
-          <DateProperty label="Target date" value={project.targetDate} onChange={(targetDate) => patch({ targetDate }, { targetDate })} />
+          <OptionProperty disabled={!canManage} icon={CircleDashed} label="Status" options={projectStateOptions} placeholder="Planned" value={project.state} onChange={(value) => value && patch({ state: value }, { state: value as ProjectDetailRecord["state"] })} />
+          <OptionProperty disabled={!canManage} icon={Circle} label="Priority" options={projectPriorityOptions} placeholder="No priority" value={project.priority} onChange={(value) => value && patch({ priority: value }, { priority: value as ProjectDetailRecord["priority"] })} />
+          <MemberProperty disabled={!canManage} label="Lead" members={membersQuery.data ?? []} value={project.lead} onChange={(lead) => patch({ leadMembershipId: lead?.membershipId ?? null }, { lead })} />
+          <AssigneeProperty disabled={!canManage} members={membersQuery.data ?? []} value={project.assignees} onChange={(assignees) => patch({ assigneeMembershipIds: assignees.map((item) => item.membershipId) }, { assignees })} />
+          <OptionProperty disabled={!canManage} icon={Eye} label="Visibility" options={visibilityOptions} placeholder="Internal" value={project.visibility} onChange={(value) => value && patch({ visibility: value }, { visibility: value as ProjectDetailRecord["visibility"] })} />
+          <DateProperty disabled={!canManage} label="Start date" value={project.startDate} onChange={(startDate) => patch({ startDate }, { startDate })} />
+          <DateProperty disabled={!canManage} label="Target date" value={project.targetDate} onChange={(targetDate) => patch({ targetDate }, { targetDate })} />
         </div>
       </section>
 
@@ -123,42 +130,63 @@ function ProjectOverview({ project, workspaceSlug }: { project: ProjectDetailRec
 
       <section className="mt-8"><h2 className="text-sm font-medium">Latest update</h2>{project.latestUpdate ? <div className="mt-3 border-l-2 pl-4"><p className="text-sm leading-6">{project.latestUpdate.body}</p><p className="mt-2 text-xs text-muted-foreground">{project.latestUpdate.authorName ?? project.latestUpdate.authorEmail} · {new Date(project.latestUpdate.createdAt).toLocaleDateString()}</p></div> : <EmptyLine icon={MessageSquareText} text="No project updates yet." />}</section>
 
-      <section className="mt-8"><h2 className="text-sm font-medium">Description</h2><Textarea className="mt-3 min-h-32 resize-y border-0 bg-transparent p-0 leading-6 shadow-none focus-visible:ring-0" defaultValue={project.description ?? ""} placeholder="Add project context, goals, and constraints..." onBlur={(event) => {
+      <section className="mt-8"><h2 className="text-sm font-medium">Description</h2><Textarea className="mt-3 min-h-32 resize-y border-0 bg-transparent p-0 leading-6 shadow-none focus-visible:ring-0" defaultValue={project.description ?? ""} placeholder="Add project context, goals, and constraints..." readOnly={!canManage} onBlur={(event) => {
         const description = event.target.value.trim() || null;
-        if (description !== project.description) patch({ description }, { description });
+        if (canManage && description !== project.description) patch({ description }, { description });
       }} /></section>
 
-      <ProjectBranchSection projectId={project.id} workspaceSlug={workspaceSlug} />
+      <ProjectBranchSection canManage={canManage} projectId={project.id} workspaceSlug={workspaceSlug} />
 
-      <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Resources</h2><ResourceCreator pending={addResource.isPending} onCreate={(input) => addResource.mutate(input)} /></div>{project.resources.length ? <div className="mt-2 divide-y">{project.resources.map((resource) => <a className="flex items-center gap-2 py-2 text-sm hover:underline" href={resource.url} key={resource.id} rel="noreferrer" target="_blank"><Link2 className="size-4 text-muted-foreground" />{resource.title}</a>)}</div> : <EmptyLine icon={Link2} text="No resources linked." />}</section>
+      <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Resources</h2>{canManage ? <ResourceCreator pending={addResource.isPending} onCreate={(input) => addResource.mutate(input)} /> : null}</div>{project.resources.length ? <div className="mt-2 divide-y">{project.resources.map((resource) => <a className="flex items-center gap-2 py-2 text-sm hover:underline" href={resource.url} key={resource.id} rel="noreferrer" target="_blank"><Link2 className="size-4 text-muted-foreground" />{resource.title}</a>)}</div> : <EmptyLine icon={Link2} text="No resources linked." />}</section>
 
-      <AttachmentSection canUpload={workspace.role !== "guest"} targetId={project.id} targetType="project" workspaceSlug={workspaceSlug} />
+      <AttachmentSection canUpload targetId={project.id} targetType="project" workspaceSlug={workspaceSlug} />
 
-      <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Milestones</h2><MilestoneCreator pending={addMilestone.isPending} onCreate={(input) => addMilestone.mutate(input)} /></div>{project.milestones.length ? <div className="mt-2 divide-y">{project.milestones.map((milestone) => <div className="flex items-center gap-3 py-2 text-sm" key={milestone.id}><CheckCircle2 className="size-4 text-muted-foreground" /><span className="flex-1">{milestone.name}</span>{milestone.targetDate ? <span className="text-xs text-muted-foreground">{new Date(milestone.targetDate).toLocaleDateString()}</span> : null}</div>)}</div> : <EmptyLine icon={CalendarDays} text="No milestones defined." />}</section>
+      <section className="mt-8"><div className="flex items-center justify-between"><h2 className="text-sm font-medium">Milestones</h2>{canManage ? <MilestoneCreator pending={addMilestone.isPending} onCreate={(input) => addMilestone.mutate(input)} /> : null}</div>{project.milestones.length ? <div className="mt-2 divide-y">{project.milestones.map((milestone) => <div className="flex items-center gap-3 py-2 text-sm" key={milestone.id}><CheckCircle2 className="size-4 text-muted-foreground" /><span className="flex-1">{milestone.name}</span>{milestone.targetDate ? <span className="text-xs text-muted-foreground">{new Date(milestone.targetDate).toLocaleDateString()}</span> : null}</div>)}</div> : <EmptyLine icon={CalendarDays} text="No milestones defined." />}</section>
       {update.error ? <p className="mt-4 text-xs text-destructive">{update.error.message}</p> : null}
     </div>
   );
 }
 
 function ProjectActivity({ project, workspaceSlug }: { project: ProjectDetailRecord; workspaceSlug: string }) {
+  const workspace = useWorkspaceIdentity();
   const activityQuery = useProjectActivityQuery(workspaceSlug, project.id);
   const publish = usePublishProjectUpdateMutation(workspaceSlug, project.id);
   const [body, setBody] = useState("");
   const [health, setHealth] = useState<string | null>(project.latestUpdate?.health ?? "on_track");
   const [progress, setProgress] = useState(project.progress.percentage.toString());
-  const submit = (event: FormEvent) => { event.preventDefault(); if (!body.trim()) return; publish.mutate({ body: body.trim(), health, progress: Number(progress) }, { onSuccess: () => setBody("") }); };
+  const submit = (event: FormEvent) => { event.preventDefault(); if (!body.trim()) return; publish.mutate({ body: body.trim(), health: workspace.role === "guest" ? null : health, progress: workspace.role === "guest" ? null : Number(progress) }, { onSuccess: () => setBody("") }); };
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-7">
       <form className="border-b pb-6" onSubmit={submit}>
         <Textarea maxLength={20_000} placeholder="Write a project update..." rows={5} value={body} onChange={(event) => setBody(event.target.value)} />
-        <div className="mt-2 flex flex-wrap items-center gap-2"><OptionProperty icon={CircleDashed} label="Health" options={healthOptions} placeholder="Health" value={health} onChange={setHealth} /><Input className="h-8 w-20" max={100} min={0} type="number" value={progress} onChange={(event) => setProgress(event.target.value)} /><Button className="ml-auto" disabled={publish.isPending || !body.trim()} size="sm" type="submit">{publish.isPending ? <LoaderCircle className="animate-spin" /> : null}Publish update</Button></div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">{workspace.role !== "guest" ? <><OptionProperty icon={CircleDashed} label="Health" options={healthOptions} placeholder="Health" value={health} onChange={setHealth} /><Input className="h-8 w-20" max={100} min={0} type="number" value={progress} onChange={(event) => setProgress(event.target.value)} /></> : null}<Button className="ml-auto" disabled={publish.isPending || !body.trim()} size="sm" type="submit">{publish.isPending ? <LoaderCircle className="animate-spin" /> : null}Publish update</Button></div>
       </form>
       <div className="mt-6 grid gap-6">
-        {(activityQuery.data?.updates ?? []).map((item) => <article className="border-l-2 pl-4" key={item.id}><div className="flex items-center gap-2"><Avatar className="size-6"><AvatarFallback>{(item.authorName ?? item.authorEmail).slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><strong className="text-sm">{item.authorName ?? item.authorEmail}</strong><span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</span></div><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{item.body}</p>{item.health ? <Badge className="mt-3" variant="outline">{item.health.replace("_", " ")}</Badge> : null}</article>)}
+        {(activityQuery.data?.updates ?? []).map((item) => <ProjectUpdateItem item={item} key={item.id} projectId={project.id} workspaceSlug={workspaceSlug} />)}
         {(activityQuery.data?.events ?? []).map((event) => <div className="flex gap-3 text-xs text-muted-foreground" key={event.id}><CircleDashed className="size-4" /><span><strong className="text-foreground">{event.actorName ?? event.actorEmail ?? "System"}</strong> {event.eventType.replaceAll(".", " ")} · {new Date(event.createdAt).toLocaleString()}</span></div>)}
         {!activityQuery.isLoading && !activityQuery.data?.updates.length && !activityQuery.data?.events.length ? <EmptyLine icon={MessageSquareText} text="No activity yet." /> : null}
       </div>
     </div>
+  );
+}
+
+function ProjectUpdateItem({ item, projectId, workspaceSlug }: { item: ProjectUpdateRecord; projectId: string; workspaceSlug: string }) {
+  const workspace = useWorkspaceIdentity();
+  const edit = useEditProjectUpdateMutation(workspaceSlug, projectId);
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(item.body);
+  const canEdit = workspace.role !== "guest" || item.authorEmail === workspace.userEmail;
+  return (
+    <article className="group/update border-l-2 pl-4">
+      <div className="flex items-center gap-2">
+        <Avatar className="size-6"><AvatarFallback>{(item.authorName ?? item.authorEmail).slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+        <strong className="text-sm">{item.authorName ?? item.authorEmail}</strong>
+        <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</span>
+        {canEdit && !editing ? <Button aria-label="Edit update" className="ml-auto opacity-0 group-hover/update:opacity-100 focus-visible:opacity-100" size="icon-sm" variant="ghost" onClick={() => setEditing(true)}><Pencil /></Button> : null}
+      </div>
+      {editing ? <div className="mt-3 grid gap-2"><Textarea maxLength={20_000} value={body} onChange={(event) => setBody(event.target.value)} /><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" onClick={() => { setBody(item.body); setEditing(false); }}><X />Cancel</Button><Button disabled={edit.isPending || !body.trim()} size="sm" onClick={() => edit.mutate({ updateId: item.id, body: body.trim() }, { onSuccess: () => setEditing(false) })}><Save />Save</Button></div>{edit.error ? <p className="text-xs text-destructive">{edit.error.message}</p> : null}</div> : <p className="mt-3 whitespace-pre-wrap text-sm leading-6">{item.body}</p>}
+      {item.health ? <Badge className="mt-3" variant="outline">{item.health.replace("_", " ")}</Badge> : null}
+    </article>
   );
 }
 

@@ -40,6 +40,12 @@ database session, an accessible Workspace membership, and a trusted `Origin`.
   dates, icon identity, or the atomic assignee collection.
 - `GET|POST /api/workspaces/:workspaceSlug/projects/:projectId/activity`
   reads activity or publishes an authored update.
+- `PATCH /api/workspaces/:workspaceSlug/projects/:projectId/activity/:updateId`
+  edits authored update text; Guest edits are author-only.
+- `GET|POST /api/workspaces/:workspaceSlug/projects/:projectId/members` lists
+  or grants the dedicated Project access roster.
+- `DELETE /api/workspaces/:workspaceSlug/projects/:projectId/members/:membershipId`
+  revokes Project access without changing Project assignment data.
 - `POST /api/workspaces/:workspaceSlug/projects/:projectId/resources` adds a
   validated HTTP/HTTPS resource.
 - `POST /api/workspaces/:workspaceSlug/projects/:projectId/milestones` adds a
@@ -189,7 +195,9 @@ entry ends on that date while the server continues to reject future periods.
 - `GET|PATCH /api/workspaces/:workspaceSlug/settings/notifications` manages the
   current membership's Inbox event preferences.
 - `GET|POST /api/workspaces/:workspaceSlug/settings/members` lists members and
-  invitations or creates an invitation.
+  invitations or creates an invitation. Guest invitations require
+  `guestAccess.clients`, with each Client carrying `excludedProjectIds`; the
+  snapshot is provisioned into Client and Project memberships on acceptance.
 - `PATCH /api/workspaces/:workspaceSlug/settings/members/:membershipId` changes
   role or active, suspended, and removed state with last-owner protection.
 - `GET /api/workspaces/:workspaceSlug/settings/storage` and `/updates` expose

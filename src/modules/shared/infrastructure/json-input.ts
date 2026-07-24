@@ -160,6 +160,15 @@ export class JsonInput {
     return value;
   }
 
+  optionalObject(key: string): Record<string, unknown> | null {
+    const value = this.#value[key];
+    if (value === undefined || value === null) return null;
+    if (typeof value !== "object" || Array.isArray(value)) {
+      throw new ValidationError(`${key} must be an object.`);
+    }
+    return value as Record<string, unknown>;
+  }
+
   requiredDateTime(key: string): Date {
     const value = this.requiredString(key, 64);
     const date = new Date(value);

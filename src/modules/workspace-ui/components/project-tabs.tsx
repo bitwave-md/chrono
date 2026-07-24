@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type ProjectTab = "overview" | "activity" | "issues";
+export type ProjectTab = "overview" | "activity" | "issues" | "members";
 
 export function ProjectTabs({
   workspaceSlug,
@@ -19,7 +19,7 @@ export function ProjectTabs({
 }) {
   return (
     <nav className="flex h-12 items-center gap-1 px-3">
-      {(["overview", "activity", "issues"] as const).map((item) => (
+      {(["overview", "activity", "issues", "members"] as const).map((item) => (
         <Button
           asChild
           className={cn(

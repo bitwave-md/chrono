@@ -9,6 +9,7 @@ import {
   workflowStatuses,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { GuestAccessService } from "@/modules/authorization/application/guest-access-service";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { ProjectSlug } from "@/modules/projects/domain/project-slug";
 import {
@@ -59,6 +60,7 @@ export interface UpdateProjectBranchInput {
 }
 
 export class ProjectBranchService {
+  readonly #guestAccess = new GuestAccessService();
   readonly #clientAccess = new ClientAccessService();
 
   async list(principal: Principal, projectId: string) {
@@ -204,14 +206,12 @@ export class ProjectBranchService {
           eq(projects.id, projectId),
           eq(projects.workspaceId, principal.workspaceId),
           isNull(projects.archivedAt),
-          principal.role === "guest"
-            ? eq(projects.visibility, "client_shared")
-            : undefined,
         ),
       )
       .limit(1);
 
     if (!project) throw new NotFoundError("Project not found.");
+    await this.#guestAccess.assertCanReadProject(principal, projectId);
     if (contribute) {
       await this.#clientAccess.assertCanContribute(principal, project.clientId);
     } else {

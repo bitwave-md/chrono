@@ -21,11 +21,19 @@ export class ClientAccessService {
     principal: Principal,
     clientId: string,
   ): Promise<void> {
+    if (principal.role === "guest") {
+      throw new ForbiddenError("Guests cannot modify Client or work-item properties.");
+    }
     const client = await this.#accessibleClient(principal, clientId, true);
 
     if (!client) {
       throw new ForbiddenError("The client does not allow contributions.");
     }
+  }
+
+  async assertCanParticipate(principal: Principal, clientId: string): Promise<void> {
+    const client = await this.#accessibleClient(principal, clientId, false);
+    if (!client) throw new ForbiddenError("You do not have access to this Client.");
   }
 
   async #accessibleClient(

@@ -10,6 +10,7 @@ import {
   timerSessions,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy";
 import {
   ConflictError,
   NotFoundError,
@@ -27,8 +28,10 @@ export interface StartTimerInput {
 export class TimerService {
   readonly #attributionResolver = new TimeAttributionResolver();
   readonly #entryValidator = new TimeEntryValidator();
+  readonly #policy = new WorkspacePolicy();
 
   async active(principal: Principal) {
+    this.#policy.assertCanUseTimeTracking(principal);
     const [timer] = await db
       .select({
         id: timerSessions.id,
@@ -79,6 +82,7 @@ export class TimerService {
   }
 
   async start(principal: Principal, input: StartTimerInput) {
+    this.#policy.assertCanUseTimeTracking(principal);
     const note = this.#entryValidator.normalizeNote(input.note);
 
     try {
@@ -130,6 +134,7 @@ export class TimerService {
   }
 
   async stop(principal: Principal) {
+    this.#policy.assertCanUseTimeTracking(principal);
     return db.transaction(
       async (transaction) => {
         const stoppedAt = new Date();

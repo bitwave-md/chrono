@@ -64,7 +64,7 @@ export function AttachmentSection({
       {upload.isPending ? <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div> : null}
       {inline ? <div className={cn("grid gap-2", !records.length && "hidden")}>{records.map((attachment) => {
         const mayDelete = canManage || attachment.uploaderEmail === workspace.userEmail;
-        return <InlineAttachment attachment={attachment} canShare={canUpload} deleting={deletion.isPending} key={attachment.id} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })} />;
+        return <InlineAttachment attachment={attachment} canShare={canUpload && (workspace.role !== "guest" || attachment.uploaderEmail === workspace.userEmail)} deleting={deletion.isPending} key={attachment.id} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })} />;
       })}</div> : <div className="mt-3 overflow-hidden rounded-lg border bg-card/35">
         {records.map((attachment) => {
           const uploader = attachment.uploaderName ?? attachment.uploaderEmail;
@@ -74,7 +74,7 @@ export function AttachmentSection({
               <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><FileText className="size-4" /></span>
               <div className="min-w-0 flex-1"><strong className="block truncate text-sm font-medium">{attachment.filename}</strong><span className="block truncate text-xs text-muted-foreground">{formatBytes(attachment.sizeBytes)} · {uploader} · {new Date(attachment.createdAt).toLocaleDateString()}</span></div>
               <Avatar className="size-6 max-sm:hidden"><AvatarImage alt="" src={attachment.uploaderAvatarUrl ?? undefined} /><AvatarFallback className="text-[0.5rem]">{uploader.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-              <AttachmentActions attachment={attachment} canShare={canUpload} deleting={deletion.isPending} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })} />
+              <AttachmentActions attachment={attachment} canShare={canUpload && (workspace.role !== "guest" || attachment.uploaderEmail === workspace.userEmail)} deleting={deletion.isPending} mayDelete={mayDelete} workspaceSlug={workspaceSlug} onDelete={() => deletion.mutate(attachment.id, { onSuccess: () => toast.success("Attachment deleted") })} />
             </div>
           );
         })}

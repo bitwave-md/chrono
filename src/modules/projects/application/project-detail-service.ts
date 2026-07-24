@@ -18,6 +18,7 @@ import {
   workspaceMemberships,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { GuestAccessService } from "@/modules/authorization/application/guest-access-service";
 import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { ClientIcon, type ClientIconType } from "@/modules/clients/domain/client-icon";
@@ -54,6 +55,7 @@ export interface UpdateProjectInput {
 
 export class ProjectDetailService {
   readonly #clientAccess = new ClientAccessService();
+  readonly #guestAccess = new GuestAccessService();
   readonly #memberService = new WorkspaceMemberService();
   readonly #policy = new WorkspacePolicy();
 
@@ -245,7 +247,8 @@ export class ProjectDetailService {
     input: { body: string; health: ProjectHealth | null; progress: number | null },
   ) {
     const project = await this.#project(principal, projectId);
-    await this.#clientAccess.assertCanContribute(principal, project.clientId);
+    if (principal.role === "guest") await this.#guestAccess.assertCanPublishProjectUpdate(principal, projectId);
+    else await this.#clientAccess.assertCanContribute(principal, project.clientId);
     const body = input.body.trim();
 
     if (!body || body.length > 20_000) throw new ValidationError("Update body must contain 1-20,000 characters.");
@@ -263,6 +266,40 @@ export class ProjectDetailService {
     }).returning();
 
     return update;
+  }
+
+  async editPublishedUpdate(
+    principal: Principal,
+    projectId: string,
+    updateId: string,
+    bodyInput: string,
+  ) {
+    const project = await this.#project(principal, projectId);
+    if (principal.role === "guest") await this.#guestAccess.assertCanPublishProjectUpdate(principal, projectId);
+    else await this.#clientAccess.assertCanContribute(principal, project.clientId);
+    const body = bodyInput.trim();
+    if (!body || body.length > 20_000) throw new ValidationError("Update body must contain 1-20,000 characters.");
+
+    const [current] = await db.select({ authorMembershipId: projectUpdates.authorMembershipId })
+      .from(projectUpdates)
+      .where(and(
+        eq(projectUpdates.workspaceId, principal.workspaceId),
+        eq(projectUpdates.projectId, projectId),
+        eq(projectUpdates.id, updateId),
+      ))
+      .limit(1);
+    if (!current) throw new NotFoundError("Project update not found.");
+    await this.#guestAccess.assertCanEditAuthoredText(principal, current.authorMembershipId);
+
+    const [updated] = await db.update(projectUpdates)
+      .set({ body, updatedAt: new Date() })
+      .where(and(
+        eq(projectUpdates.workspaceId, principal.workspaceId),
+        eq(projectUpdates.projectId, projectId),
+        eq(projectUpdates.id, updateId),
+      ))
+      .returning({ id: projectUpdates.id, body: projectUpdates.body });
+    return updated;
   }
 
   async addResource(
@@ -347,11 +384,11 @@ export class ProjectDetailService {
         eq(projects.id, projectId),
         eq(projects.workspaceId, principal.workspaceId),
         isNull(projects.archivedAt),
-        principal.role === "guest" ? eq(projects.visibility, "client_shared") : undefined,
       ))
       .limit(1);
 
     if (!project) throw new NotFoundError("Project not found.");
+    await this.#guestAccess.assertCanReadProject(principal, projectId);
     await this.#clientAccess.assertCanRead(principal, project.clientId);
     return {
       ...project,
@@ -387,6 +424,7 @@ export class ProjectDetailService {
     return db
       .select({
         id: projectUpdates.id,
+        authorMembershipId: projectUpdates.authorMembershipId,
         body: projectUpdates.body,
         health: projectUpdates.health,
         progress: projectUpdates.progress,

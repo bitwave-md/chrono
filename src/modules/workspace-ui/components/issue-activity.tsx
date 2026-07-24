@@ -41,6 +41,7 @@ export function IssueActivity({
   logs: TimeLogRecord[];
   workspaceSlug: string;
 }) {
+  const workspace = useWorkspaceIdentity();
   const addComment = useAddIssueCommentMutation(workspaceSlug, issueId);
   const replies = comments.filter((comment) => comment.parentCommentId);
   const activity = [
@@ -62,7 +63,7 @@ export function IssueActivity({
       </div>
       <div className="mt-5"><IssueCommentComposer issueId={issueId} placeholder="Leave a comment..." workspaceSlug={workspaceSlug} onSubmit={submitComment} /></div>
       {addComment.error ? <p className="mt-2 text-xs text-destructive">{addComment.error.message}</p> : null}
-      <IssueTimeComposer issueId={issueId} issueTitle={issueTitle} workspaceSlug={workspaceSlug} />
+      {workspace.role !== "guest" ? <IssueTimeComposer issueId={issueId} issueTitle={issueTitle} workspaceSlug={workspaceSlug} /> : null}
     </section>
   );
 }

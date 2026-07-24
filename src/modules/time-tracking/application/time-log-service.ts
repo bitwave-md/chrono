@@ -12,6 +12,7 @@ import {
   users,
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueService } from "@/modules/issues/application/issue-service";
 import {
@@ -48,8 +49,10 @@ export class TimeLogService {
   readonly #entryValidator = new TimeEntryValidator();
   readonly #issues = new IssueService();
   readonly #clientAccess = new ClientAccessService();
+  readonly #policy = new WorkspacePolicy();
 
   async list(principal: Principal, filters: TimeLogFilters) {
+    this.#policy.assertCanUseTimeTracking(principal);
     this.#assertDateRange(filters.from, filters.to);
     if (filters.issueId) await this.#issues.get(principal, filters.issueId);
     else if (filters.clientId) await this.#clientAccess.assertCanRead(principal, filters.clientId);
@@ -161,6 +164,7 @@ export class TimeLogService {
   }
 
   async createManual(principal: Principal, input: CreateManualTimeLogInput) {
+    this.#policy.assertCanUseTimeTracking(principal);
     const period = this.#entryValidator.manualPeriod(
       input.startedAt,
       input.durationSeconds,

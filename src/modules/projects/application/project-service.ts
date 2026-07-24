@@ -8,6 +8,7 @@ import {
   issueNamespaces,
   issues,
   projects,
+  projectMemberships,
   projectUpdates,
   users,
   workflows,
@@ -150,11 +151,16 @@ export class ProjectService {
         and project.archived_at is null
         ${clientId ? sql`and project.client_id = ${clientId}` : sql``}
         ${principal.role === "guest" ? sql`
-          and project.visibility = 'client_shared'
           and exists (
             select 1 from ${clientMemberships} access
             where access.client_id = project.client_id
               and access.workspace_membership_id = ${principal.membershipId}
+          )
+          and exists (
+            select 1 from ${projectMemberships} project_access
+            where project_access.workspace_id = project.workspace_id
+              and project_access.project_id = project.id
+              and project_access.workspace_membership_id = ${principal.membershipId}
           )
         ` : sql``}
       order by project.name, client.name

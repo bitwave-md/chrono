@@ -9,6 +9,7 @@ import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
 import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { favoriteFromClient } from "@/modules/workspace-ui/domain/favorite-target";
 import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
+import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 export type ClientTab = "overview" | "issues" | "projects" | "time" | "members";
 
@@ -23,8 +24,9 @@ export function ClientHeader({
   tab: ClientTab;
   onPrimaryAction?: () => void;
 }) {
+  const workspace = useWorkspaceIdentity();
   const root = `/app/${workspaceSlug}/clients/${client.id}`;
-  const actionLabel = tab === "overview"
+  const actionLabel = tab === "overview" && client.canEdit
     ? "Add resource"
     : tab === "issues"
       ? "New issue"
@@ -41,7 +43,7 @@ export function ClientHeader({
       workspaceSlug={workspaceSlug}
     >
       <div className="flex h-12 items-center gap-1 overflow-x-auto px-3">
-        {(["overview", "issues", "projects", "time", "members"] as const).map((item) => (
+        {(["overview", "issues", "projects", ...(workspace.role === "guest" ? [] : ["time"]), "members"] as const).map((item) => (
           <Button asChild className={cn("rounded-full bg-secondary/35 capitalize text-muted-foreground hover:bg-secondary/70 hover:text-foreground", tab === item && "bg-secondary text-secondary-foreground")} key={item} size="sm" variant="secondary">
             <Link href={`${root}/${item}`}>{item}</Link>
           </Button>

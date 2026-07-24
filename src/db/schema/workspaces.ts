@@ -115,6 +115,7 @@ export const invitations = pgTable(
   },
   (table) => [
     uniqueIndex("invitations_token_hash_unique").on(table.tokenHash),
+    uniqueIndex("invitations_workspace_id_unique").on(table.workspaceId, table.id),
     index("invitations_workspace_email_idx").on(
       table.workspaceId,
       table.emailNormalized,

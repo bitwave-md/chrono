@@ -1,7 +1,7 @@
 "use client";
 
 import { LoaderCircle, MailPlus, RotateCw, ShieldCheck, Trash2 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInviteMemberMutation, useRefreshInvitationMutation, useRevokeInvitationMutation, useSettingsMembersQuery, useUpdateMemberMutation } from "@/modules/settings/application/use-settings-queries";
+import { useClientsQuery, useProjectsQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { SettingsError, SettingsLoading, SettingsPageFrame, SettingsSection } from "@/modules/settings/components/settings-primitives";
 import type { WorkspaceIdentity } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
@@ -23,19 +24,40 @@ export function WorkspaceMemberSettings({ workspaceSlug }: { workspaceSlug: stri
   const refresh = useRefreshInvitationMutation(workspaceSlug);
   const revoke = useRevokeInvitationMutation(workspaceSlug);
   const [role, setRole] = useState<WorkspaceIdentity["role"]>("member");
+  const [clientFilter, setClientFilter] = useState("");
+  const [guestClients, setGuestClients] = useState<Array<{ clientId: string; excludedProjectIds: string[] }>>([]);
+  const clientsQuery = useClientsQuery(workspaceSlug);
+  const projectsQuery = useProjectsQuery(workspaceSlug, null);
+  const visibleClients = useMemo(() => (clientsQuery.data ?? []).filter((client) => client.name.toLowerCase().includes(clientFilter.toLowerCase())), [clientFilter, clientsQuery.data]);
   if (query.isLoading) return <SettingsPageFrame description="Invite people and manage their access." title="Members"><SettingsLoading /></SettingsPageFrame>;
   if (query.error || !query.data) return <SettingsPageFrame description="Invite people and manage their access." title="Members"><SettingsError message={query.error?.message ?? "Member settings unavailable."} /></SettingsPageFrame>;
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); const form = event.currentTarget; const email = new FormData(form).get("email"); if (typeof email !== "string") return;
-    invite.mutate({ email, role }, { onSuccess: () => { form.reset(); toast.success("Invitation created"); }, onError: (error) => toast.error(error.message) });
+    invite.mutate({ email, role, guestAccess: role === "guest" ? { clients: guestClients } : undefined }, { onSuccess: () => { form.reset(); setGuestClients([]); toast.success("Invitation created"); }, onError: (error) => toast.error(error.message) });
   };
+  const toggleClient = (clientId: string) => setGuestClients((current) => current.some((item) => item.clientId === clientId) ? current.filter((item) => item.clientId !== clientId) : [...current, { clientId, excludedProjectIds: [] }]);
+  const toggleProject = (clientId: string, projectId: string) => setGuestClients((current) => current.map((item) => item.clientId !== clientId ? item : { ...item, excludedProjectIds: item.excludedProjectIds.includes(projectId) ? item.excludedProjectIds.filter((id) => id !== projectId) : [...item.excludedProjectIds, projectId] }));
   return (
     <SettingsPageFrame description="Invite collaborators, assign roles, and suspend access without losing historical work." title="Members">
       <SettingsSection title="Invite someone" description="Invited people receive access after signing in with this email address.">
         <form className="grid gap-2 p-4 sm:grid-cols-[minmax(0,1fr)_9rem_auto]" onSubmit={submit}>
           <Input name="email" placeholder="name@company.com" required type="email" />
           <Select value={role} onValueChange={(value) => setRole(value as WorkspaceIdentity["role"])}><SelectTrigger className="capitalize"><SelectValue /></SelectTrigger><SelectContent>{roles.filter((value) => workspace.role === "owner" || (value !== "owner" && value !== "admin")).map((value) => <SelectItem className="capitalize" key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
-          <Button disabled={invite.isPending} size="sm" type="submit">{invite.isPending ? <LoaderCircle className="animate-spin" /> : <MailPlus />}Invite</Button>
+          <Button disabled={invite.isPending || (role === "guest" && !guestClients.length)} size="sm" type="submit">{invite.isPending ? <LoaderCircle className="animate-spin" /> : <MailPlus />}Invite</Button>
+          {role === "guest" ? <div className="grid gap-3 border-t pt-4 sm:col-span-3">
+            <div><strong className="text-sm font-medium">Client access</strong><p className="mt-1 text-xs text-muted-foreground">Guests can create Issues, comments, replies, Project updates, and attachments. New Projects require explicit access later.</p></div>
+            <Input placeholder="Search Clients..." value={clientFilter} onChange={(event) => setClientFilter(event.target.value)} />
+            <div className="grid max-h-72 gap-2 overflow-y-auto">
+              {visibleClients.map((client) => {
+                const access = guestClients.find((item) => item.clientId === client.id);
+                const clientProjects = (projectsQuery.data ?? []).filter((project) => project.clientId === client.id);
+                return <div className="rounded-lg border p-3" key={client.id}>
+                  <label className="flex items-center gap-2 text-sm font-medium"><input checked={Boolean(access)} type="checkbox" onChange={() => toggleClient(client.id)} /><span>{client.name}</span><span className="ml-auto text-xs text-muted-foreground">{access ? `${clientProjects.length - access.excludedProjectIds.length}/${clientProjects.length} Projects` : "No access"}</span></label>
+                  {access ? <div className="mt-2 grid gap-1 border-t pt-2">{clientProjects.map((project) => <label className="flex items-center gap-2 pl-5 text-xs text-muted-foreground" key={project.id}><input checked={!access.excludedProjectIds.includes(project.id)} type="checkbox" onChange={() => toggleProject(client.id, project.id)} /><span>{project.name}</span></label>)}</div> : null}
+                </div>;
+              })}
+            </div>
+          </div> : null}
         </form>
       </SettingsSection>
       <SettingsSection title={`Members · ${query.data.members.length}`}>

@@ -18,12 +18,12 @@ import type {
   ProjectBranchRecord,
   ProjectBranchState,
   ProjectDetailRecord,
+  ProjectMemberRecord,
   ProjectRecord,
   TimeCategoryRecord,
   TimeLogRecord,
   WorkflowStatusRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
-
 interface ApiEnvelope<T> {
   data: T;
 }
@@ -366,6 +366,10 @@ export class WorkspaceApiClient {
     return this.#get(`/projects/${encodeURIComponent(projectId)}`);
   }
 
+  projectMembers(projectId: string): Promise<ProjectMemberRecord[]> { return this.#get(`/projects/${encodeURIComponent(projectId)}/members`); }
+  addProjectMember(projectId: string, membershipId: string): Promise<unknown> { return this.#request(`/projects/${encodeURIComponent(projectId)}/members`, { method: "POST", body: JSON.stringify({ membershipId }) }); }
+  removeProjectMember(projectId: string, membershipId: string): Promise<unknown> { return this.#request(`/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}`, { method: "DELETE" }); }
+
   listProjectBranches(projectId: string): Promise<ProjectBranchRecord[]> {
     return this.#get(`/projects/${encodeURIComponent(projectId)}/branches`);
   }
@@ -424,36 +428,36 @@ export class WorkspaceApiClient {
       body: JSON.stringify(input),
     });
   }
-
+  editProjectUpdate(projectId: string, updateId: string, body: string): Promise<unknown> {
+    return this.#request(
+      `/projects/${encodeURIComponent(projectId)}/activity/${encodeURIComponent(updateId)}`,
+      { method: "PATCH", body: JSON.stringify({ body }) },
+    );
+  }
   addProjectResource(projectId: string, input: { title: string; url: string; description: string | null }): Promise<unknown> {
     return this.#request(`/projects/${encodeURIComponent(projectId)}/resources`, {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
-
   addProjectMilestone(projectId: string, input: { name: string; targetDate: string | null }): Promise<unknown> {
     return this.#request(`/projects/${encodeURIComponent(projectId)}/milestones`, {
       method: "POST",
       body: JSON.stringify({ ...input, description: null, state: "planned" }),
     });
   }
-
   activeTimer(): Promise<ActiveTimerState> {
     return this.#get("/timers/active");
   }
-
   startTimer(input: StartTimerRequest): Promise<unknown> {
     return this.#request("/timers/active", {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
-
   stopTimer(): Promise<unknown> {
     return this.#request("/timers/active", { method: "DELETE" });
   }
-
   addManualTime(input: {
     issueId: string;
     categoryId: string | null;
@@ -469,11 +473,9 @@ export class WorkspaceApiClient {
       }),
     });
   }
-
   async #get<T>(path: string): Promise<T> {
     return this.#request<T>(path);
   }
-
   async #request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await fetch(`${this.#basePath}${path}`, {
       ...init,

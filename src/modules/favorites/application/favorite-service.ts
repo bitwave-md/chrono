@@ -156,18 +156,30 @@ export class FavoriteService {
     }
 
     const issue = await this.#issues.get(principal, target.targetId);
+    const projectId = await this.#accessibleProjectId(principal, issue.projectId);
     return {
       id: favoriteId,
       targetType: "issue",
       targetId: issue.id,
       title: issue.title,
       clientId: issue.clientId,
-      projectId: issue.projectId,
+      projectId,
       identifier: issue.identifier,
       iconType: null,
       iconKey: null,
       iconColor: issue.statusColor,
     };
+  }
+
+  async #accessibleProjectId(principal: Principal, projectId: string | null): Promise<string | null> {
+    if (!projectId || principal.role !== "guest") return projectId;
+    try {
+      await this.#projects.get(principal, projectId);
+      return projectId;
+    } catch (error) {
+      if (error instanceof ApplicationError && [403, 404].includes(error.status)) return null;
+      throw error;
+    }
   }
 
   #target(row: typeof workspaceFavorites.$inferSelect): FavoriteTarget {

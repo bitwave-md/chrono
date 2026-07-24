@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { attachments, issueComments, storedObjects, users, workspaceMemberships } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { GuestAccessService } from "@/modules/authorization/application/guest-access-service";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueNotificationWriter } from "@/modules/inbox/application/issue-notification-writer";
 import { IssueService } from "@/modules/issues/application/issue-service";
@@ -12,6 +13,7 @@ import { AttachmentService } from "@/modules/storage/application/attachment-serv
 export class IssueCommentService {
   readonly #issueService = new IssueService();
   readonly #clientAccess = new ClientAccessService();
+  readonly #guestAccess = new GuestAccessService();
   readonly #notifications = new IssueNotificationWriter();
   readonly #attachments = new AttachmentService();
 
@@ -78,7 +80,8 @@ export class IssueCommentService {
 
   async create(principal: Principal, issueId: string, input: { body: string; parentCommentId: string | null; attachmentIds: string[] }) {
     const issue = await this.#issueService.get(principal, issueId);
-    await this.#clientAccess.assertCanContribute(principal, issue.clientId);
+    if (principal.role === "guest") await this.#guestAccess.assertCanParticipate(principal, issueId);
+    else await this.#clientAccess.assertCanContribute(principal, issue.clientId);
     const body = input.body.trim();
     if (!body && !input.attachmentIds.length) throw new ValidationError("A comment or attachment is required.");
     if (body.length > 20_000) throw new ValidationError("Comment must contain at most 20,000 characters.");
@@ -144,7 +147,8 @@ export class IssueCommentService {
 
   async update(principal: Principal, issueId: string, commentId: string, bodyValue: string) {
     const issue = await this.#issueService.get(principal, issueId);
-    await this.#clientAccess.assertCanContribute(principal, issue.clientId);
+    if (principal.role === "guest") await this.#guestAccess.assertCanParticipate(principal, issueId);
+    else await this.#clientAccess.assertCanContribute(principal, issue.clientId);
     const body = bodyValue.trim();
     if (!body) throw new ValidationError("Comment text is required when editing.");
     if (body.length > 20_000) throw new ValidationError("Comment must contain at most 20,000 characters.");
@@ -164,7 +168,8 @@ export class IssueCommentService {
 
   async remove(principal: Principal, issueId: string, commentId: string) {
     const issue = await this.#issueService.get(principal, issueId);
-    await this.#clientAccess.assertCanContribute(principal, issue.clientId);
+    if (principal.role === "guest") await this.#guestAccess.assertCanParticipate(principal, issueId);
+    else await this.#clientAccess.assertCanContribute(principal, issue.clientId);
     const comment = await this.#comment(principal, issueId, commentId);
     const canModerate = principal.role === "owner" || principal.role === "admin";
     if (!canModerate && comment.authorMembershipId !== principal.membershipId) {

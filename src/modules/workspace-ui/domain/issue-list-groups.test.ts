@@ -59,6 +59,7 @@ test("Client aggregation retains direct, Main, and named-Branch Issues", () => {
 function issue(id: string, statusId: string | null, statusName: string | null): IssueRecord {
   return {
     id,
+    creatorMembershipId: "membership",
     clientId: "client",
     clientName: "Client",
     clientIconType: "icon",

@@ -20,6 +20,20 @@ export function useProjectActivityQuery(workspaceSlug: string, projectId: string
   });
 }
 
+export function useProjectMembersQuery(workspaceSlug: string, projectId: string) {
+  return useQuery({ queryKey: workspaceQueryKeys.projectMembers(workspaceSlug, projectId), queryFn: () => new WorkspaceApiClient(workspaceSlug).projectMembers(projectId) });
+}
+
+export function useAddProjectMemberMutation(workspaceSlug: string, projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: (membershipId: string) => new WorkspaceApiClient(workspaceSlug).addProjectMember(projectId, membershipId), onSuccess: () => queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.projectMembers(workspaceSlug, projectId) }) });
+}
+
+export function useRemoveProjectMemberMutation(workspaceSlug: string, projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: (membershipId: string) => new WorkspaceApiClient(workspaceSlug).removeProjectMember(projectId, membershipId), onSuccess: () => queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.projectMembers(workspaceSlug, projectId) }) });
+}
+
 export function useUpdateProjectMutation(workspaceSlug: string, projectId: string) {
   const queryClient = useQueryClient();
   const queryKey = workspaceQueryKeys.project(workspaceSlug, projectId);
@@ -71,6 +85,20 @@ export function usePublishProjectUpdateMutation(workspaceSlug: string, projectId
   return useMutation({
     mutationFn: (input: { body: string; health: string | null; progress: number | null }) =>
       new WorkspaceApiClient(workspaceSlug).publishProjectUpdate(projectId, input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.project(workspaceSlug, projectId) }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.projectActivity(workspaceSlug, projectId) }),
+      ]);
+    },
+  });
+}
+
+export function useEditProjectUpdateMutation(workspaceSlug: string, projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ updateId, body }: { updateId: string; body: string }) =>
+      new WorkspaceApiClient(workspaceSlug).editProjectUpdate(projectId, updateId, body),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.project(workspaceSlug, projectId) }),
