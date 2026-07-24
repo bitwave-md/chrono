@@ -87,16 +87,20 @@ entry table linking back to its Issue and Project/Branch context.
 
 Issue detail is a full page with breadcrumbs, editable title and description,
 comments, a right-side property column, labels, type, dates, and estimate.
+Direct attachments sit inline beneath the description instead of forming a
+separate content section. Activity renders immutable system and time events as
+compact rows while authored comments use distinct cards with inline files,
+image previews, one-level replies, and attachment-enabled composers.
 Timer and manual-entry controls sit directly below the comment composer and
 require a Workspace time entry type. Manual entries include a shadcn Calendar
 picker for the work date and prevent future-date selection. Finalized entries
 appear chronologically in Activity alongside comments with worker, duration,
 source, type, date, and note.
 
-Client and Project Overview plus Issue detail contain a shared Attachments
-section. Uploads show progress and private rows with filename, size, uploader,
-date, download, share, and permission-aware delete controls. Issue uploads also
-appear as immutable Activity items. Share popovers create links from one hour
+Client and Project Overview contain the shared Attachments section. Issue
+description uploads use the same private rows in an inline variant, while
+comment uploads render inside Activity cards. Uploads show progress and retain
+permission-aware download, share, and delete controls. Share popovers create links from one hour
 through 30 days and list/revoke existing links without exposing bucket URLs.
 
 The lowest property-rail section summarizes finalized work with shadcn charts:

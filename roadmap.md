@@ -9,6 +9,7 @@ manage storage plus application updates through the dedicated Settings shell.
 - [x] Add the private S3 adapter, MinIO appliance services, storage schema, and migrations.
 - [x] Implement safe upload intents, streamed content, authenticated downloads, quotas, and cleanup.
 - [x] Add Client, Project, and Issue attachments plus expiring revocable share links.
+- [x] Separate inline Issue description files from attachment-enabled comments and replies.
 - [x] Build the categorized Linear-inspired Settings shell and functional Personal/Workspace pages.
 - [x] Add operator-only Storage and Updates pages, release metadata, backup, restore, and update scripts.
 - [x] Verify tenant isolation, file policy, migration replay, backups, builds, and Docker runtime.

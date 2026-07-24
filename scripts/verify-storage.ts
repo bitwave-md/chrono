@@ -99,6 +99,17 @@ const intent = await data<{ uploadId: string; attachmentId: string; uploadUrl: s
 await data(intent.uploadUrl, { method: "PUT", body: content });
 const attachment = await data<Array<{ id: string; sha256: string }>>(`/api/workspaces/${workspace}/attachments?targetType=issue&targetId=${issueId}`);
 assert.ok(attachment.some((item) => item.id === intent.attachmentId && item.sha256), "Uploaded attachment was not finalized.");
+const comment = await data<{ id: string }>(`/api/workspaces/${workspace}/issues/${issueId}/comments`, {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: "Storage tracer comment", attachmentIds: [intent.attachmentId] }),
+});
+const directAttachments = await data<Array<{ id: string }>>(`/api/workspaces/${workspace}/attachments?targetType=issue&targetId=${issueId}`);
+assert.ok(!directAttachments.some((item) => item.id === intent.attachmentId), "Comment files must not remain in the Issue description list.");
+const reply = await data<{ id: string }>(`/api/workspaces/${workspace}/issues/${issueId}/comments`, {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: "Storage tracer reply", parentCommentId: comment.id }),
+});
+const comments = await data<Array<{ id: string; parentCommentId: string | null; attachments: Array<{ id: string }> }>>(`/api/workspaces/${workspace}/issues/${issueId}/comments`);
+assert.ok(comments.find((item) => item.id === comment.id)?.attachments.some((item) => item.id === intent.attachmentId), "The uploaded file was not linked to its comment.");
+assert.equal(comments.find((item) => item.id === reply.id)?.parentCommentId, comment.id);
 const download = await authenticated(`/api/workspaces/${workspace}/attachments/${intent.attachmentId}/content`);
 assert.equal(await download.text(), content.toString());
 assert.equal(download.headers.get("x-content-type-options"), "nosniff");
@@ -116,7 +127,7 @@ await data(`/api/workspaces/${workspace}/attachments/${intent.attachmentId}/shar
 assert.equal((await fetch(share.url)).status, 404);
 
 const events = await data<Array<{ eventType: string; payload: Record<string, unknown> }>>(`/api/workspaces/${workspace}/issues/${issueId}/activity`);
-assert.ok(events.some((event) => event.eventType === "attachment_uploaded" && event.payload.attachmentId === intent.attachmentId), "Issue upload activity was not recorded.");
+assert.ok(!events.some((event) => event.eventType === "attachment_uploaded" && event.payload.attachmentId === intent.attachmentId), "Comment files must render with their comment instead of as a duplicate system event.");
 await data(`/api/workspaces/${workspace}/attachments/${intent.attachmentId}`, { method: "DELETE" });
 
 const profile = await data<{ image: string | null }>("/api/account/profile");

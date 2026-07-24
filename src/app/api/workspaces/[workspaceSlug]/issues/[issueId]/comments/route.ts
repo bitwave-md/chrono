@@ -25,7 +25,11 @@ export async function POST(request: Request, context: CommentRouteContext) {
     const { workspaceSlug, issueId: value } = await context.params;
     const principal = await principalResolver.requireWorkspace(workspaceSlug);
     const input = new JsonInput(await request.json());
-    const comment = await commentService.create(principal, new EntityId(value, "issueId").value, input.requiredString("body", 20_000));
+    const comment = await commentService.create(principal, new EntityId(value, "issueId").value, {
+      body: input.optionalString("body", 20_000) ?? "",
+      parentCommentId: input.optionalUuid("parentCommentId"),
+      attachmentIds: input.uuidArray("attachmentIds", 10),
+    });
     return Response.json({ data: comment }, { status: 201 });
   } catch (error) { return ApiErrorResponse.from(error); }
 }

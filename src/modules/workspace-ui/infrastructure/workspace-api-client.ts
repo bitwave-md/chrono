@@ -340,10 +340,10 @@ export class WorkspaceApiClient {
     return this.#get(`/issues/${encodeURIComponent(issueId)}/comments`);
   }
 
-  addIssueComment(issueId: string, body: string): Promise<unknown> {
+  addIssueComment(issueId: string, input: { body: string; parentCommentId?: string | null; attachmentIds?: string[] }): Promise<unknown> {
     return this.#request(`/issues/${encodeURIComponent(issueId)}/comments`, {
       method: "POST",
-      body: JSON.stringify({ body }),
+      body: JSON.stringify(input),
     });
   }
 

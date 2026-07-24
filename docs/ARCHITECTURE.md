@@ -84,10 +84,11 @@ progress snapshots. `project_activity_events` stores immutable automated audit
 events with structured JSON payloads. Project resources and milestones use
 ordered child tables.
 
-Issue comments are authored records with soft-deletion timestamps. Labels and
-issue types are Workspace metadata connected through tenant-safe foreign keys.
-Issue attachment uploads append immutable `issue_activity_events`; deleting the
-file revokes access and every share link without deleting the historical event.
+Issue comments are authored records with soft-deletion timestamps and a
+tenant-safe, same-Issue parent reference for one-level reply threads. Labels
+and issue types are Workspace metadata connected through tenant-safe foreign
+keys. Immutable `issue_activity_events` record Issue creation and property
+transitions independently from authored comments.
 Every cross-entity reference includes Workspace scope where PostgreSQL permits
 it, preventing cross-tenant relationships at the database boundary.
 
@@ -95,7 +96,10 @@ it, preventing cross-tenant relationships at the database boundary.
 
 `stored_objects` is the lifecycle and quota authority for opaque S3 object
 keys. `attachments` connects one ready object to exactly one Client, Project,
-or Issue. Personal avatars and Workspace images reference separately processed
+or Issue. Issue attachments optionally reference a comment in the same
+Workspace and Issue; a null comment denotes a description attachment. Comment
+creation validates ownership and links uploaded files in one transaction.
+Personal avatars and Workspace images reference separately processed
 identity objects. Raw bucket keys and credentials never reach the browser.
 
 Uploads reserve quota as `pending`, stream through an authenticated same-origin

@@ -287,6 +287,7 @@ export const issueComments = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     workspaceId: uuid("workspace_id").notNull(),
     issueId: uuid("issue_id").notNull(),
+    parentCommentId: uuid("parent_comment_id"),
     authorMembershipId: uuid("author_membership_id").notNull(),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
@@ -308,6 +309,16 @@ export const issueComments = pgTable(
       columns: [table.workspaceId, table.authorMembershipId],
       foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id],
     }).onDelete("restrict"),
+    uniqueIndex("issue_comments_workspace_issue_id_unique").on(
+      table.workspaceId,
+      table.issueId,
+      table.id,
+    ),
+    foreignKey({
+      name: "issue_comments_parent_tenant_issue_fk",
+      columns: [table.workspaceId, table.issueId, table.parentCommentId],
+      foreignColumns: [table.workspaceId, table.issueId, table.id],
+    }).onDelete("cascade"),
     index("issue_comments_issue_created_idx").on(table.issueId, table.createdAt),
   ],
 );

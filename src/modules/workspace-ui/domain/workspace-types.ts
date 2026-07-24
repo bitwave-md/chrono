@@ -336,6 +336,7 @@ export interface ProjectActivityRecord {
 
 export interface IssueCommentRecord {
   id: string;
+  parentCommentId: string | null;
   body: string;
   createdAt: string;
   updatedAt: string;
@@ -343,6 +344,7 @@ export interface IssueCommentRecord {
   authorName: string | null;
   authorEmail: string;
   authorAvatarUrl: string | null;
+  attachments: AttachmentRecord[];
 }
 
 export interface IssueMetadataRecord {

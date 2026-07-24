@@ -14,7 +14,7 @@ import {
 
 import { users } from "./auth";
 import { clients } from "./clients";
-import { issues } from "./issues";
+import { issueComments, issues } from "./issues";
 import { projects } from "./projects";
 import { workspaceMemberships, workspaces } from "./workspaces";
 
@@ -58,6 +58,7 @@ export const attachments = pgTable("attachments", {
   clientId: uuid("client_id"),
   projectId: uuid("project_id"),
   issueId: uuid("issue_id"),
+  commentId: uuid("comment_id"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { mode: "date", withTimezone: true }),
 }, (table) => [
@@ -66,6 +67,7 @@ export const attachments = pgTable("attachments", {
   index("attachments_client_created_idx").on(table.clientId, table.createdAt),
   index("attachments_project_created_idx").on(table.projectId, table.createdAt),
   index("attachments_issue_created_idx").on(table.issueId, table.createdAt),
+  index("attachments_comment_created_idx").on(table.commentId, table.createdAt),
   foreignKey({
     name: "attachments_object_tenant_fk",
     columns: [table.workspaceId, table.objectId],
@@ -91,7 +93,13 @@ export const attachments = pgTable("attachments", {
     columns: [table.workspaceId, table.issueId],
     foreignColumns: [issues.workspaceId, issues.id],
   }).onDelete("cascade"),
+  foreignKey({
+    name: "attachments_comment_tenant_issue_fk",
+    columns: [table.workspaceId, table.issueId, table.commentId],
+    foreignColumns: [issueComments.workspaceId, issueComments.issueId, issueComments.id],
+  }).onDelete("cascade"),
   check("attachments_exact_target_check", sql`num_nonnulls(${table.clientId}, ${table.projectId}, ${table.issueId}) = 1`),
+  check("attachments_comment_issue_check", sql`${table.commentId} is null or ${table.issueId} is not null`),
 ]);
 
 export const attachmentShareLinks = pgTable("attachment_share_links", {

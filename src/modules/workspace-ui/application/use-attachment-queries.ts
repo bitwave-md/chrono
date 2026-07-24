@@ -6,14 +6,14 @@ import type { AttachmentTargetType } from "@/modules/workspace-ui/domain/workspa
 import { WorkspaceStorageApiClient, type AttachmentTargetInput } from "@/modules/workspace-ui/infrastructure/workspace-storage-api-client";
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
 
-const key = (workspaceSlug: string, target: AttachmentTargetInput) => ["workspace", workspaceSlug, "attachments", target.targetType, target.targetId] as const;
+export const attachmentQueryKey = (workspaceSlug: string, target: AttachmentTargetInput) => ["workspace", workspaceSlug, "attachments", target.targetType, target.targetId] as const;
 const shareKey = (workspaceSlug: string, attachmentId: string) => ["workspace", workspaceSlug, "attachments", attachmentId, "share-links"] as const;
 
 export function useAttachmentsQuery(workspaceSlug: string, target: AttachmentTargetInput) {
-  return useQuery({ queryKey: key(workspaceSlug, target), queryFn: () => new WorkspaceStorageApiClient(workspaceSlug).listAttachments(target) });
+  return useQuery({ queryKey: attachmentQueryKey(workspaceSlug, target), queryFn: () => new WorkspaceStorageApiClient(workspaceSlug).listAttachments(target) });
 }
 
-export function useUploadAttachmentMutation(workspaceSlug: string, target: AttachmentTargetInput, onProgress: (value: number) => void) {
+export function useUploadAttachmentMutation(workspaceSlug: string, target: AttachmentTargetInput, onProgress: (value: number) => void, invalidateOnSuccess = true) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (file: File) => {
@@ -21,10 +21,10 @@ export function useUploadAttachmentMutation(workspaceSlug: string, target: Attac
       const intent = await client.createUpload(target, file);
       try { await client.uploadContent(intent.uploadUrl, file, onProgress); }
       catch (error) { await client.cancelUpload(intent.uploadId).catch(() => undefined); throw error; }
-      return intent;
+      return { ...intent, file };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: key(workspaceSlug, target) });
+      if (invalidateOnSuccess) queryClient.invalidateQueries({ queryKey: attachmentQueryKey(workspaceSlug, target) });
       if (target.targetType === "issue") queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.issueActivity(workspaceSlug, target.targetId) });
     },
   });
@@ -34,7 +34,7 @@ export function useDeleteAttachmentMutation(workspaceSlug: string, target: Attac
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attachmentId: string) => new WorkspaceStorageApiClient(workspaceSlug).deleteAttachment(attachmentId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: key(workspaceSlug, target) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: attachmentQueryKey(workspaceSlug, target) }),
   });
 }
 

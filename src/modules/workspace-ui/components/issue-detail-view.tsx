@@ -7,13 +7,13 @@ import {
   GitBranch,
   Shapes,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { useAddIssueCommentMutation, useIssueCommentsQuery } from "@/modules/workspace-ui/application/use-issue-comment-queries";
+import { useIssueCommentsQuery } from "@/modules/workspace-ui/application/use-issue-comment-queries";
 import { useIssueMetadataQuery, useReplaceIssueLabelsMutation } from "@/modules/workspace-ui/application/use-issue-metadata-queries";
 import { useIssueQuery, useUpdateIssueDetailMutation } from "@/modules/workspace-ui/application/use-issue-queries";
 import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
@@ -61,15 +61,7 @@ function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boole
   const commentsQuery = useIssueCommentsQuery(workspaceSlug, issue.id);
   const timeLogsQuery = useIssueTimeLogsQuery(workspaceSlug, issue.id);
   const activityQuery = useIssueActivityQuery(workspaceSlug, issue.id);
-  const addComment = useAddIssueCommentMutation(workspaceSlug, issue.id);
-  const [comment, setComment] = useState("");
   const patch = (request: Record<string, unknown>, optimistic: Partial<IssueRecord>) => update.mutate({ issueId: issue.id, expectedVersion: issue.version, ...request, optimistic });
-
-  const submitComment = (event: FormEvent) => {
-    event.preventDefault();
-    if (!comment.trim()) return;
-    addComment.mutate(comment.trim(), { onSuccess: () => setComment("") });
-  };
 
   return (
     <>
@@ -114,21 +106,16 @@ function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boole
               }}
             />
 
-            <AttachmentSection canUpload={client?.canEdit ?? false} targetId={issue.id} targetType="issue" workspaceSlug={workspaceSlug} />
+            <AttachmentSection canUpload={client?.canEdit ?? false} targetId={issue.id} targetType="issue" variant="inline" workspaceSlug={workspaceSlug} />
 
             <IssueActivity
-              comment={comment}
               comments={commentsQuery.data ?? []}
               events={activityQuery.data ?? []}
-              error={addComment.error?.message}
               issueId={issue.id}
               issueTitle={issue.title}
               loading={commentsQuery.isLoading || timeLogsQuery.isLoading || activityQuery.isLoading}
               logs={timeLogsQuery.data ?? []}
-              pending={addComment.isPending}
               workspaceSlug={workspaceSlug}
-              onCommentChange={setComment}
-              onSubmit={submitComment}
             />
           </main>
 

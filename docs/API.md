@@ -64,9 +64,12 @@ Project assignees are supplied as membership IDs:
 - `PATCH /api/workspaces/:workspaceSlug/issues/:issueId` updates present fields
   and requires `expectedVersion`.
 - `GET|POST /api/workspaces/:workspaceSlug/issues/:issueId/comments` lists or
-  creates comments.
+  creates comments and replies. POST accepts `body`, optional
+  `parentCommentId`, and up to ten ready `attachmentIds` uploaded by the actor
+  to the same Issue. A file-only comment is valid.
 - `GET /api/workspaces/:workspaceSlug/issues/:issueId/activity` lists immutable
-  automated events, including attachment uploads.
+  automated events such as Issue creation, status movement, and priority
+  changes.
 - `PUT /api/workspaces/:workspaceSlug/issues/:issueId/labels` atomically
   replaces labels.
 - `GET /api/workspaces/:workspaceSlug/issue-metadata` returns active issue
@@ -214,4 +217,6 @@ authenticated and uses private no-store caching.
 
 Attachment intents accept `targetType` (`client`, `project`, or `issue`),
 `targetId`, `filename`, `contentType`, and `sizeBytes`. General files are capped
-at 10 MB. Browser code never receives S3 credentials or bucket object keys.
+at 10 MB. Issue uploads remain description attachments until a comment POST
+atomically assigns their IDs to that comment. Browser code never receives S3
+credentials or bucket object keys.

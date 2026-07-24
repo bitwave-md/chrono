@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { useAttachmentsQuery, useAttachmentShareLinksQuery, useCreateAttachmentShareMutation, useDeleteAttachmentMutation, useRevokeAttachmentShareMutation, useUploadAttachmentMutation } from "@/modules/workspace-ui/application/use-attachment-queries";
 import type { AttachmentTargetType } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
@@ -24,11 +25,13 @@ export function AttachmentSection({
   targetId,
   targetType,
   workspaceSlug,
+  variant = "section",
 }: {
   canUpload: boolean;
   targetId: string;
   targetType: AttachmentTargetType;
   workspaceSlug: string;
+  variant?: "section" | "inline";
 }) {
   const workspace = useWorkspaceIdentity();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +41,7 @@ export function AttachmentSection({
   const upload = useUploadAttachmentMutation(workspaceSlug, target, setProgress);
   const deletion = useDeleteAttachmentMutation(workspaceSlug, target);
   const canManage = workspace.role === "owner" || workspace.role === "admin";
+  const inline = variant === "inline";
 
   const selectFile = (file: File | undefined) => {
     if (!file) return;
@@ -49,14 +53,14 @@ export function AttachmentSection({
   };
 
   return (
-    <section className="mt-8">
-      <div className="flex items-center justify-between gap-3">
+    <section className={inline ? "mt-3" : "mt-8"}>
+      {!inline ? <div className="flex items-center justify-between gap-3">
         <div><h2 className="text-sm font-medium">Attachments</h2><p className="mt-0.5 text-xs text-muted-foreground">Private files, up to 10 MB each.</p></div>
         {canUpload ? <Button disabled={upload.isPending} size="sm" variant="outline" onClick={() => inputRef.current?.click()}>{upload.isPending ? <LoaderCircle className="animate-spin" /> : <Paperclip />}Add file</Button> : null}
-        <input className="hidden" ref={inputRef} type="file" onChange={(event) => { selectFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
-      </div>
+      </div> : null}
+      <input className="hidden" ref={inputRef} type="file" onChange={(event) => { selectFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
       {upload.isPending ? <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div> : null}
-      <div className="mt-3 overflow-hidden rounded-xl border bg-card/35">
+      <div className={cn("overflow-hidden rounded-lg border bg-card/35", !inline && "mt-3", inline && !attachments.data?.length && "hidden")}>
         {(attachments.data ?? []).map((attachment) => {
           const uploader = attachment.uploaderName ?? attachment.uploaderEmail;
           const mayDelete = canManage || attachment.uploaderEmail === workspace.userEmail;
@@ -72,9 +76,10 @@ export function AttachmentSection({
           );
         })}
         {attachments.isLoading ? <p className="p-5 text-sm text-muted-foreground">Loading attachments...</p> : null}
-        {!attachments.isLoading && !attachments.data?.length ? <div className="grid min-h-24 place-items-center px-4 text-center"><p className="text-sm text-muted-foreground">No files attached.</p></div> : null}
+        {!inline && !attachments.isLoading && !attachments.data?.length ? <div className="grid min-h-24 place-items-center px-4 text-center"><p className="text-sm text-muted-foreground">No files attached.</p></div> : null}
         {attachments.error ? <p className="p-4 text-sm text-destructive">{attachments.error.message}</p> : null}
       </div>
+      {inline && canUpload ? <Button className="mt-2 h-7 px-1.5 text-xs text-muted-foreground" disabled={upload.isPending} size="sm" variant="ghost" onClick={() => inputRef.current?.click()}>{upload.isPending ? <LoaderCircle className="animate-spin" /> : <Paperclip />}Attach file</Button> : null}
     </section>
   );
 }

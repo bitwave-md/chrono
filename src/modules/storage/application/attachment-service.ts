@@ -5,7 +5,7 @@ import { fileTypeFromBuffer } from "file-type";
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { attachments, attachmentShareLinks, issueActivityEvents, storedObjects, users, workspaceMemberships } from "@/db/schema";
+import { attachments, attachmentShareLinks, storedObjects, users, workspaceMemberships } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/modules/shared/application/application-error";
 import { AttachmentAccessService, type AttachmentTarget, targetColumns } from "@/modules/storage/application/attachment-access-service";
@@ -126,13 +126,6 @@ export class AttachmentService {
           state: "ready",
           readyAt: new Date(),
         }).where(and(eq(storedObjects.id, uploadId), eq(storedObjects.state, "pending"))).returning();
-        if (record.issueId) await transaction.insert(issueActivityEvents).values({
-          workspaceId: principal.workspaceId,
-          issueId: record.issueId,
-          actorMembershipId: principal.membershipId,
-          eventType: "attachment_uploaded",
-          payload: { attachmentId: record.attachmentId, filename: record.filename, sizeBytes: record.sizeBytes },
-        });
         return updated;
       });
       if (!ready) throw new ConflictError("The upload is no longer pending.");
@@ -225,7 +218,7 @@ export class AttachmentService {
 function targetCondition(target: AttachmentTarget) {
   if (target.type === "client") return eq(attachments.clientId, target.id);
   if (target.type === "project") return eq(attachments.projectId, target.id);
-  return eq(attachments.issueId, target.id);
+  return and(eq(attachments.issueId, target.id), isNull(attachments.commentId));
 }
 
 async function* streamChunks(stream: ReadableStream<Uint8Array>, inspect: (chunk: Uint8Array) => void) {

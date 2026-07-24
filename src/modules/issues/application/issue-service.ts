@@ -16,6 +16,8 @@ import {
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueContextResolver } from "@/modules/issues/application/issue-context-resolver";
+import { IssueActivityWriter } from "@/modules/issues/application/issue-activity-writer";
+import type { CreateIssueInput, IssueFilters, UpdateIssueInput } from "@/modules/issues/application/issue-contracts";
 import { IssueListEnricher } from "@/modules/issues/application/issue-list-enricher";
 import { IssueRelationValidator } from "@/modules/issues/application/issue-relation-validator";
 import { IssueStatusMapper } from "@/modules/issues/application/issue-status-mapper";
@@ -26,50 +28,9 @@ import {
   ValidationError,
 } from "@/modules/shared/application/application-error";
 
-const issuePriorities = ["none", "urgent", "high", "medium", "low"] as const;
-const issueVisibilities = ["internal", "client_shared", "restricted"] as const;
-export type IssuePriority = (typeof issuePriorities)[number];
-export type IssueVisibility = (typeof issueVisibilities)[number];
-
-export interface CreateIssueInput {
-  clientId: string;
-  projectId: string | null;
-  branchId: string | null;
-  assigneeMembershipIds: string[];
-  statusId: string | null;
-  parentIssueId: string | null;
-  title: string;
-  description: string | null;
-  priority: IssuePriority;
-  visibility: IssueVisibility;
-}
-
-export interface IssueFilters {
-  issueId?: string;
-  projectId?: string;
-  branchId?: string;
-  mainBranch?: boolean;
-  assigneeMembershipId?: string;
-  mine?: boolean;
-}
-
-export interface UpdateIssueInput {
-  expectedVersion: number;
-  projectId?: string | null;
-  branchId?: string | null;
-  assigneeMembershipIds?: string[];
-  statusId?: string | null;
-  issueTypeId?: string | null;
-  title?: string;
-  description?: string | null;
-  priority?: IssuePriority;
-  visibility?: IssueVisibility;
-  estimateMinutes?: number | null;
-  dueAt?: Date | null;
-}
-
 export class IssueService {
   readonly #clientAccess = new ClientAccessService();
+  readonly #activity = new IssueActivityWriter();
   readonly #contextResolver = new IssueContextResolver();
   readonly #enricher = new IssueListEnricher();
   readonly #notifications = new IssueNotificationWriter();
@@ -284,6 +245,7 @@ export class IssueService {
         null,
         input.assigneeMembershipIds,
       );
+      await this.#activity.created(transaction, activityContext(principal, issue.id), `${context.prefix}-${number}`);
 
       return { issue, identifier: `${context.prefix}-${number}` };
     }, { isolationLevel: "serializable", accessMode: "read write" });
@@ -412,7 +374,7 @@ export class IssueService {
         );
       }
 
-      const [[namespace], [status]] = await Promise.all([
+      const [[namespace], [status], [previousStatus]] = await Promise.all([
         transaction
           .select({ prefix: issueNamespaces.prefix })
           .from(issueNamespaces)
@@ -423,8 +385,14 @@ export class IssueService {
           .from(workflowStatuses)
           .where(eq(workflowStatuses.id, updated.statusId))
           .limit(1),
+        transaction
+          .select({ name: workflowStatuses.name })
+          .from(workflowStatuses)
+          .where(eq(workflowStatuses.id, current.statusId))
+          .limit(1),
       ]);
       if (updated.statusId !== current.statusId) {
+        await this.#activity.statusChanged(transaction, activityContext(principal, issueId), previousStatus?.name ?? "Unknown", status?.name ?? "Unknown");
         await this.#notifications.notifyInterested(
           transaction,
           principal,
@@ -432,6 +400,9 @@ export class IssueService {
           "status_changed",
           status?.name ?? "another status",
         );
+      }
+      if (updated.priority !== current.priority) {
+        await this.#activity.priorityChanged(transaction, activityContext(principal, issueId), current.priority, updated.priority);
       }
 
       return { issue: updated, identifier: `${namespace.prefix}-${updated.number}` };
@@ -496,4 +467,9 @@ export class IssueService {
   }
 }
 
-export { issuePriorities, issueVisibilities };
+function activityContext(principal: Principal, issueId: string) {
+  return { workspaceId: principal.workspaceId, issueId, actorMembershipId: principal.membershipId };
+}
+
+export { issuePriorities, issueVisibilities } from "@/modules/issues/application/issue-contracts";
+export type { IssuePriority, IssueVisibility, UpdateIssueInput } from "@/modules/issues/application/issue-contracts";

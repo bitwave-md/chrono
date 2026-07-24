@@ -61,6 +61,22 @@ Projects own Client context and namespace overrides, and Clients own their key
 and default Issue prefix. Optional settings should not turn the composer back
 into an always-visible configuration grid.
 
+## Issue activity
+
+Issue activity separates machine history from authored conversation:
+
+- Render creation, status, priority, and time records as compact unframed rows.
+- Render user comments as bordered cards with avatar, author, relative time,
+  body, and inline file or image content.
+- Keep replies inside their parent comment card and use the shared compact
+  reply composer at the card footer.
+- Put the primary attachment action inside the comment composer. Files uploaded
+  there must be linked atomically to the posted comment.
+- Keep direct Issue attachments immediately below the description without an
+  independent section heading or empty-state card.
+- Use TanStack Query mutations for comments, replies, uploads, and deletion;
+  composer text, selected files, and progress remain local ephemeral state.
+
 ## Change checklist
 
 Before introducing a new list or creation flow:
