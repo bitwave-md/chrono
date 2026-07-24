@@ -1,4 +1,5 @@
 import {
+  foreignKey,
   index,
   pgEnum,
   pgTable,
@@ -122,3 +123,21 @@ export const invitations = pgTable(
     ),
   ],
 );
+
+export const passwordResetLinks = pgTable("password_reset_links", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  targetMembershipId: uuid("target_membership_id").notNull(),
+  targetUserId: text("target_user_id").notNull(),
+  createdByMembershipId: uuid("created_by_membership_id").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { mode: "date", withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("password_reset_links_token_hash_unique").on(table.tokenHash),
+  foreignKey({ name: "password_reset_links_target_membership_fk", columns: [table.workspaceId, table.targetMembershipId, table.targetUserId], foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id, workspaceMemberships.userId] }).onDelete("cascade"),
+  foreignKey({ name: "password_reset_links_creator_membership_fk", columns: [table.workspaceId, table.createdByMembershipId], foreignColumns: [workspaceMemberships.workspaceId, workspaceMemberships.id] }).onDelete("cascade"),
+  index("password_reset_links_target_active_idx").on(table.targetUserId, table.expiresAt),
+]);

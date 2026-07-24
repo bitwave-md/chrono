@@ -44,15 +44,8 @@ INSTALL_DIR=${CHRONO_INSTALL_DIR:-"$HOME/chrono"}
 SOURCE_REF=${CHRONO_SOURCE_REF:-main}
 VERSION=${CHRONO_VERSION:-latest}
 PUBLIC_URL=${NEXTAUTH_URL:-$(prompt "Public Chrono URL" "http://localhost:3000")}
-OWNER_EMAIL=${AUTH_BOOTSTRAP_EMAIL:-$(prompt "Bootstrap owner email" "owner@example.com")}
-WORKSPACE_NAME=${AUTH_BOOTSTRAP_WORKSPACE_NAME:-$(prompt "Workspace name" "Chrono Workspace")}
-WORKSPACE_SLUG=${AUTH_BOOTSTRAP_WORKSPACE_SLUG:-$(slugify "$WORKSPACE_NAME")}
-SMTP_URL=${EMAIL_SERVER:-$(prompt "SMTP URL (optional)" "")}
-
-case "$OWNER_EMAIL" in
-  *@*.*) ;;
-  *) fail "AUTH_BOOTSTRAP_EMAIL must be a valid email address." ;;
-esac
+WORKSPACE_NAME=${AUTH_SETUP_WORKSPACE_NAME:-$(prompt "Workspace name" "Chrono Workspace")}
+WORKSPACE_SLUG=${AUTH_SETUP_WORKSPACE_SLUG:-$(slugify "$WORKSPACE_NAME")}
 
 [ -n "$WORKSPACE_SLUG" ] || fail "The workspace name must produce a valid slug."
 
@@ -71,7 +64,7 @@ esac
 
 POSTGRES_PASSWORD_VALUE=${POSTGRES_PASSWORD:-$(random_hex 24)}
 NEXTAUTH_SECRET_VALUE=${NEXTAUTH_SECRET:-$(random_hex 32)}
-BOOTSTRAP_TOKEN_VALUE=${AUTH_BOOTSTRAP_TOKEN:-$(random_hex 24)}
+SETUP_TOKEN_VALUE=${AUTH_SETUP_TOKEN:-$(random_hex 32)}
 MINIO_ROOT_PASSWORD_VALUE=${MINIO_ROOT_PASSWORD:-$(random_hex 24)}
 S3_SECRET_KEY_VALUE=${S3_SECRET_KEY:-$(random_hex 24)}
 
@@ -136,12 +129,9 @@ POSTGRES_USER=chrono
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD_VALUE
 NEXTAUTH_URL=$PUBLIC_URL
 NEXTAUTH_SECRET=$NEXTAUTH_SECRET_VALUE
-EMAIL_SERVER=$SMTP_URL
-EMAIL_FROM="Chrono <chrono@localhost>"
-AUTH_BOOTSTRAP_EMAIL=$OWNER_EMAIL
-AUTH_BOOTSTRAP_TOKEN=$BOOTSTRAP_TOKEN_VALUE
-AUTH_BOOTSTRAP_WORKSPACE_NAME=$WORKSPACE_NAME
-AUTH_BOOTSTRAP_WORKSPACE_SLUG=$WORKSPACE_SLUG
+AUTH_SETUP_TOKEN=$SETUP_TOKEN_VALUE
+AUTH_SETUP_WORKSPACE_NAME=$WORKSPACE_NAME
+AUTH_SETUP_WORKSPACE_SLUG=$WORKSPACE_SLUG
 EOF
   chmod 600 "$INSTALL_DIR/.env"
 }
@@ -167,8 +157,8 @@ fi
 say ""
 say "Chrono is installed in $INSTALL_DIR"
 say "URL: $PUBLIC_URL"
-say "Owner email: $OWNER_EMAIL"
-say "Owner setup key: $BOOTSTRAP_TOKEN_VALUE"
+say "Initial setup URL: $PUBLIC_URL/auth/setup"
+say "Installer setup code: $SETUP_TOKEN_VALUE"
 say ""
-say "Keep the setup key and $INSTALL_DIR/.env private."
+say "Keep the setup code and $INSTALL_DIR/.env private. It can recover the initial Workspace owner."
 say "Run 'cd $INSTALL_DIR && docker compose ps' to inspect the stack."

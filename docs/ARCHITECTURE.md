@@ -8,9 +8,10 @@ and Issues. Every Project is a direct child of one Client.
 
 The system is a modular monolith: one Next.js App Router application, one
 PostgreSQL database, and independently testable domain services behind thin API
-route handlers. Authentication uses signed NextAuth JWT sessions, an optional
-high-entropy bootstrap-owner credential, and optional email magic links. User
-and membership identity remains authoritative in PostgreSQL.
+route handlers. Authentication uses signed NextAuth JWT sessions and separate
+Argon2id credentials. Email is an unverified login identifier; invitation and
+recovery URLs are one-time bearer credentials. User and membership identity
+remains authoritative in PostgreSQL.
 
 ## Entity hierarchy
 
@@ -244,7 +245,7 @@ Animations use `@gsap/react` and compositor-friendly transform/opacity values.
 - Production Compose pulls matching versioned Next.js and Drizzle migrator
   images from GHCR, runs PostgreSQL and private MinIO internally, and optionally
   enables Caddy. External S3-compatible storage uses an override without MinIO.
-- The development override builds source targets and adds Mailpit.
+- The development override builds source targets and exposes MinIO only on loopback.
 - PostgreSQL data persists in a named volume.
 - Source files stay below 500 lines.
 - Route handlers remain thin and domain services encapsulate invariants.

@@ -7,20 +7,21 @@ Projects, Issues, native timers, manual time entries, and reporting.
 
 Chrono’s supported appliance installation requires only Docker Engine (or
 Docker Desktop) with the Docker Compose plugin. Node.js, PostgreSQL, npm, and
-SMTP are not required on the host.
+Email delivery is not required on the host; email addresses are unverified login identifiers.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/install.sh | sh
 ```
 
 The installer downloads `compose.yaml` into `~/chrono`, generates the database
-password, NextAuth secret, and owner setup key, runs every migration, and starts
+password, NextAuth secret, and high-entropy setup code, runs every migration, and starts
 Chrono at `http://localhost:3000`. It prefers versioned GHCR images and
 automatically falls back to a Docker source build when a public image is not
 available; neither path installs build tools on the host.
 
-Sign in using the owner email and setup key printed by the installer. The same
-values are stored in `~/chrono/.env`, which is created with mode `0600`.
+Open `/auth/setup` and enter the setup code printed by the installer to claim the
+first owner. Choose the email and password used for later sign-ins. The code is
+also stored in `~/chrono/.env`, which is created with mode `0600`.
 
 ### Domain and automatic HTTPS
 
@@ -36,19 +37,8 @@ Caddy obtains and renews the certificate automatically. Existing Nginx,
 Traefik, Caddy, Coolify, or hosting-panel users can leave the profile disabled,
 set `NEXTAUTH_URL`, and proxy to the configured local Chrono port.
 
-### Optional email sign-in
-
-SMTP is optional. Owner setup-key sign-in works without it. To enable magic
-links for approved members, set `EMAIL_SERVER` and `EMAIL_FROM` in
-`~/chrono/.env`, then apply the configuration:
-
-```sh
-cd ~/chrono
-docker compose up -d
-```
-
-Use an `smtp://` or `smtps://` URL and percent-encode special characters in
-credentials.
+Invitations and password recovery use one-time bearer URLs that administrators
+copy manually. Chrono does not send email or verify email ownership.
 
 ## Manual Compose installation
 
@@ -105,28 +95,27 @@ application never receives Docker socket access.
 ## Source development
 
 Copy `.env.example` to `.env`, replace the secrets, and start the source-built
-stack with PostgreSQL and Mailpit:
+stack with PostgreSQL and private MinIO:
 
 ```sh
 npm run stack:up
 ```
 
-Open Chrono at `http://localhost:3000`, Mailpit at `http://localhost:8025`, and
-the development-only MinIO console at `http://localhost:9001`. The development
+Open Chrono at `http://localhost:3000` and the development-only MinIO console at
+`http://localhost:9001`. The development
 override builds local Dockerfile targets and exposes persistence only on
 loopback.
 
 For a host-run Next.js process:
 
 ```sh
-docker compose -f compose.yaml -f compose.dev.yaml up -d db mailpit
+docker compose -f compose.yaml -f compose.dev.yaml up -d db storage storage-init
 npm ci
 npm run db:migrate
 npm run dev
 ```
 
-Use `EMAIL_SERVER=smtp://localhost:1025` only for a host-run process. The Docker
-application uses the internal address `smtp://mailpit:1025` from the override.
+For an empty database, open `/auth/setup` and use the setup code from `.env`.
 
 ## Documentation
 

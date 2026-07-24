@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import sharp from "sharp";
 
 const base = "http://localhost:3000";
-const email = process.env.AUTH_BOOTSTRAP_EMAIL ?? "owner@btw.md";
+const email = process.env.AUTH_VERIFY_EMAIL ?? "owner@btw.md";
+const password = process.env.AUTH_VERIFY_PASSWORD;
 const cookies = new Map<string, string>();
 
 function remember(response: Response) {
@@ -35,31 +36,18 @@ async function data<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body.data as T;
 }
 
-const start = Date.now();
 const csrfResponse = await fetch(`${base}/api/auth/csrf`);
 remember(csrfResponse);
 const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
-const signIn = await fetch(`${base}/api/auth/signin/email`, {
+if (!password) throw new Error("AUTH_VERIFY_PASSWORD is required for the password-auth storage tracer.");
+const signIn = await fetch(`${base}/api/auth/callback/credentials`, {
   method: "POST",
   headers: { Cookie: cookieHeader(), "Content-Type": "application/x-www-form-urlencoded" },
-  body: new URLSearchParams({ csrfToken, email, callbackUrl: `${base}/app`, json: "true" }),
+  body: new URLSearchParams({ csrfToken, email, password, callbackUrl: `${base}/app`, json: "true" }),
   redirect: "manual",
 });
 assert.ok(signIn.status >= 200 && signIn.status < 400, `email sign in failed: ${signIn.status}`);
 
-let link: string | null = null;
-for (let attempt = 0; attempt < 20 && !link; attempt += 1) {
-  const list = await fetch("http://127.0.0.1:8025/api/v1/messages").then((response) => response.json()) as { messages: Array<{ ID: string; Created: string; To: Array<{ Address: string }> }> };
-  const message = list.messages.find((item) => item.To.some((recipient) => recipient.Address === email) && new Date(item.Created).getTime() >= start - 2_000);
-  if (message) {
-    const detail = await fetch(`http://127.0.0.1:8025/api/v1/message/${message.ID}`).then((response) => response.json()) as { Text: string };
-    link = detail.Text.match(/https?:\/\/[^\s]+/)?.[0] ?? null;
-  }
-  if (!link) await new Promise((resolve) => setTimeout(resolve, 250));
-}
-assert.ok(link, "Magic-link email was not delivered.");
-const callback = await fetch(link, { headers: { Cookie: cookieHeader() }, redirect: "manual" });
-remember(callback);
 assert.ok(cookieHeader().includes("session-token"), "Authentication session was not created.");
 
 const workspace = "bitwave";

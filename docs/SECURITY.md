@@ -2,44 +2,23 @@
 
 ## Authentication baseline
 
-Chrono uses stable NextAuth 4, the Auth.js Drizzle adapter, and signed JWT
-sessions. JWT sessions are required because the self-hosting appliance supports
-the NextAuth Credentials provider for bootstrap-owner access. Users,
-memberships, invitations, and tenant authorization remain database-backed.
+Chrono uses NextAuth Credentials with signed JWT sessions. User passwords are
+stored separately as Argon2id hashes with a credential version. Email addresses
+are unverified login identifiers; Chrono never sends authentication email.
 
-The optional owner setup key is compared through a constant-time SHA-256 digest
-and is accepted only with the configured bootstrap email. The installer
-generates a high-entropy key and stores it in a mode-`0600` environment file.
-It is an operator credential: do not publish it in Compose files, logs, shell
-history, tickets, or screenshots.
+The installer setup code is accepted only during zero-user setup, or for
+emergency recovery of an active owner of the initial Workspace. It is compared
+in constant time and stored in a mode-`0600` environment file. Never publish it.
 
-Only the configured bootstrap email, an active workspace member, or an address
-with an unexpired invitation may request a sign-in link. Resource authorization
-continues to resolve active WorkspaceMembership records on the server; a valid
-session alone does not grant tenant access.
+Unknown login emails still perform dummy-hash verification and return a generic
+error. Failed attempts are bounded in memory. Resource authorization resolves
+active WorkspaceMembership records on the server; a valid session alone does
+not grant tenant access. Invitation and reset URLs are bearer credentials and
+must be transferred through a trusted channel.
 
 ## Dependency advisory review
 
-Reviewed again on 2026-07-22. `npm audit --omit=dev` reports five production
-advisories (two moderate and three high); the full audit reports nine (six
-moderate and three high). The Auth.js Drizzle adapter was advanced to its fixed
-1.11.3 patch. Remaining automated fixes propose incompatible historical major
-versions rather than a safe upgrade for the selected Next.js/NextAuth stack.
-
-### Nodemailer
-
-Stable NextAuth declares Nodemailer 7 as its supported peer while the advisory
-database recommends a newer major release. The reported vulnerable options are
-not exposed by Chrono's use of the built-in email provider:
-
-- Chrono does not supply raw messages, arbitrary headers, attachments, URLs, or
-  file paths.
-- The SMTP transport configuration is operator-controlled, not user-controlled.
-- User input is limited to the normalized recipient address.
-
-This is a documented temporary mitigation, not a claim that the package is
-patched. Upgrade the mail transport as soon as stable NextAuth supports a fixed
-Nodemailer release, or replace the provider with a separately reviewed transport.
+Reviewed dependency advisories remain tracked through the normal release process.
 
 ### Next.js PostCSS dependency
 
@@ -64,9 +43,8 @@ development server. It is not included in the final application runner image.
 ## Operational requirements
 
 - Use a long, random `NEXTAUTH_SECRET`.
-- Keep `AUTH_BOOTSTRAP_TOKEN`, `POSTGRES_PASSWORD`, and `NEXTAUTH_SECRET` random
+- Keep `AUTH_SETUP_TOKEN`, `POSTGRES_PASSWORD`, and `NEXTAUTH_SECRET` random
   and private; rotating `NEXTAUTH_SECRET` signs every user out.
-- When email sign-in is enabled, use a trusted SMTP server with TLS.
 - Terminate HTTPS through the optional Caddy profile or another trusted proxy.
 - Do not expose PostgreSQL publicly.
 - Back up PostgreSQL and the private object bucket as one snapshot and test restores.
@@ -122,5 +100,4 @@ installation environment, and rotate it independently of application secrets.
 React and React DOM were advanced to the current compatible 19.2.7 patch, and
 Node type definitions now match the Node 24 runtime. Next.js and the new UI
 dependencies are current. ESLint 10 and TypeScript 7 are deferred as major
-toolchain upgrades pending Next.js compatibility review. Nodemailer 9 remains
-incompatible with stable NextAuth's supported peer range.
+toolchain upgrades pending Next.js compatibility review.

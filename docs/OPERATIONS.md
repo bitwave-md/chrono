@@ -29,14 +29,13 @@ For unattended installation, provide the required identity and URL values:
 curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/install.sh |
   CHRONO_NONINTERACTIVE=1 \
   NEXTAUTH_URL=https://chrono.example.com \
-  AUTH_BOOTSTRAP_EMAIL=owner@example.com \
-  AUTH_BOOTSTRAP_WORKSPACE_NAME=Example \
+  AUTH_SETUP_WORKSPACE_NAME=Example \
   sh
 ```
 
 Optional installer variables include `CHRONO_INSTALL_DIR`, `CHRONO_VERSION`,
-`AUTH_BOOTSTRAP_WORKSPACE_SLUG`, `EMAIL_SERVER`, and pre-generated
-`POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`, or `AUTH_BOOTSTRAP_TOKEN` values.
+`AUTH_SETUP_WORKSPACE_SLUG`, and pre-generated `POSTGRES_PASSWORD`,
+`NEXTAUTH_SECRET`, or `AUTH_SETUP_TOKEN` values.
 
 The installer refuses to overwrite an existing `.env`. `CHRONO_FORCE=1` is for
 intentional configuration replacement, not upgrades.
@@ -47,15 +46,14 @@ builds the same runner and migrator targets inside Docker. Source-mode installs
 record `CHRONO_INSTALL_MODE=source` and retain `compose.build.yaml` plus the
 source directory; they still require no host Node.js or PostgreSQL.
 
-## Authentication and SMTP
+## Authentication and bearer links
 
-The installer creates an owner setup key. It authenticates only the configured
-`AUTH_BOOTSTRAP_EMAIL` and should be stored like a password. SMTP is optional;
-when `EMAIL_SERVER` is present, approved users may also request magic links.
-
-Changing `NEXTAUTH_SECRET` invalidates all signed sessions. Removing
-`AUTH_BOOTSTRAP_TOKEN` disables setup-key sign-in; configure and verify SMTP
-first if it is the only other login method.
+The installer creates an `AUTH_SETUP_TOKEN`. Open `/auth/setup` after the first
+start to choose the initial owner email and password. The email is not verified
+and is used only as a login identifier. Invitations and administrator password
+resets are one-time bearer URLs shown once for copy/paste; transfer them only
+through a trusted channel. Changing a password increments its credential
+version and invalidates existing sessions.
 
 ## HTTPS and reverse proxies
 
@@ -150,9 +148,8 @@ restore, and update helpers use the same external-storage topology.
 docker compose -f compose.yaml -f compose.build.yaml -f compose.dev.yaml up --build -d
 ```
 
-The override builds repository Dockerfile targets, publishes PostgreSQL on
-`127.0.0.1:5432`, and adds Mailpit on ports 1025 and 8025. It must not be used
-as the public production mail service.
+The override builds repository Dockerfile targets and publishes PostgreSQL and
+the MinIO console only on loopback.
 
 After the owner has signed in, demo data can be added idempotently with:
 

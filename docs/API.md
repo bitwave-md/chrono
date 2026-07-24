@@ -3,6 +3,24 @@
 The API is an internal browser-session boundary. Mutations require an active
 database session, an accessible Workspace membership, and a trusted `Origin`.
 
+## Authentication
+
+- `GET /api/auth/setup-status` reports whether the zero-user setup claim is open.
+- `POST /api/auth/setup/register` atomically creates the first owner, Workspace,
+  password credential, and default time-entry types using `AUTH_SETUP_TOKEN`.
+- `GET /api/auth/invitations/:token` inspects a valid one-time invitation.
+- `POST /api/auth/invitations/:token/register` creates a new invited account;
+  `POST .../accept` joins the exact authenticated existing account.
+- `PATCH /api/account/password` changes the authenticated user's password.
+- `POST /api/workspaces/:workspaceSlug/settings/members/:membershipId/password-reset`
+  creates a one-hour administrator reset URL shown once.
+- `GET|POST /api/auth/password-resets/:token` inspects or consumes that URL.
+- `POST /api/auth/emergency-recovery` resets an active initial-Workspace owner
+  using the installer setup code.
+
+Passwords are never trimmed. Invitation and recovery lists never expose raw
+tokens; create and refresh responses are the only places that return bearer URLs.
+
 ## Clients and members
 
 - `GET /api/workspaces/:workspaceSlug/clients` lists accessible Clients.

@@ -1,5 +1,22 @@
 # Chrono Roadmap
 
+## Email and password authentication
+
+Tracer bullet: install an empty Chrono instance, claim the first owner with the
+installer setup code, sign in with email and password, then invite a second
+person through a one-time registration link without SMTP.
+
+- [x] Add Argon2id credentials, credential-version sessions, and bounded login attempts.
+- [x] Add atomic first-owner setup and close setup after the first account.
+- [x] Replace implicit email invitation acceptance with one-time register/join links.
+- [x] Add authenticated password changes and administrator recovery links.
+- [x] Remove SMTP, Mailpit, bootstrap login, and Auth.js adapter persistence.
+- [x] Update installer, Compose, documentation, and reset the approved development data.
+- [x] Replay migrations and verify tests, lint, types, build, Docker health, and file limits.
+
+Completed on 2026-07-24. Password login, setup, invitations, recovery, and
+credential-version session invalidation are now database-backed and SMTP-free.
+
 ## Settings, storage, attachments, sharing, and updates
 
 Tracer bullet: install Chrono with its private object store, upload a safe file

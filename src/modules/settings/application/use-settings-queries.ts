@@ -42,7 +42,7 @@ export function useSettingsMembersQuery(workspaceSlug: string) {
   return useQuery({ queryKey: settingsKey(workspaceSlug, "members"), queryFn: () => new SettingsApiClient(workspaceSlug).members() });
 }
 export function useInviteMemberMutation(workspaceSlug: string) {
-  return useInvalidatingMutation(workspaceSlug, "members", (input: { email: string; role: WorkspaceIdentity["role"]; guestAccess?: { clients: Array<{ clientId: string; excludedProjectIds: string[] }> } }) => new SettingsApiClient(workspaceSlug).invite(input.email, input.role, input.guestAccess));
+  const queries = useQueryClient(); return useMutation({ mutationFn: (input: { email: string; role: WorkspaceIdentity["role"]; guestAccess?: { clients: Array<{ clientId: string; excludedProjectIds: string[] }> } }) => new SettingsApiClient(workspaceSlug).invite(input.email, input.role, input.guestAccess), onSuccess: () => queries.invalidateQueries({ queryKey: settingsKey(workspaceSlug, "members") }) });
 }
 export function useUpdateMemberMutation(workspaceSlug: string) {
   return useInvalidatingMutation(workspaceSlug, "members", (input: { membershipId: string; role?: WorkspaceIdentity["role"]; status?: "active" | "suspended" | "removed" }) => {
@@ -50,8 +50,10 @@ export function useUpdateMemberMutation(workspaceSlug: string) {
   });
 }
 export function useRefreshInvitationMutation(workspaceSlug: string) {
-  return useInvalidatingMutation(workspaceSlug, "members", (id: string) => new SettingsApiClient(workspaceSlug).refreshInvitation(id));
+  const queries = useQueryClient(); return useMutation({ mutationFn: (id: string) => new SettingsApiClient(workspaceSlug).refreshInvitation(id), onSuccess: () => queries.invalidateQueries({ queryKey: settingsKey(workspaceSlug, "members") }) });
 }
+export function useChangePasswordMutation(workspaceSlug: string) { return useMutation({ mutationFn: (input: { currentPassword: string; password: string }) => new SettingsApiClient(workspaceSlug).changePassword(input) }); }
+export function useCreatePasswordResetMutation(workspaceSlug: string) { return useMutation({ mutationFn: (membershipId: string) => new SettingsApiClient(workspaceSlug).createPasswordReset(membershipId) }); }
 export function useRevokeInvitationMutation(workspaceSlug: string) {
   return useInvalidatingMutation(workspaceSlug, "members", (id: string) => new SettingsApiClient(workspaceSlug).revokeInvitation(id));
 }

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAvatarMutation, useProfileQuery, useRemoveAvatarMutation, useUpdateProfileMutation } from "@/modules/settings/application/use-settings-queries";
 import { SettingsError, SettingsLoading, SettingsPageFrame, SettingsRow, SettingsSection } from "@/modules/settings/components/settings-primitives";
+import { AccountPasswordSettings } from "@/modules/settings/components/account-password-settings";
 
 export function AccountProfileSettings({ workspaceSlug }: { workspaceSlug: string }) {
   const profile = useProfileQuery(workspaceSlug);
@@ -50,6 +51,7 @@ export function AccountProfileSettings({ workspaceSlug }: { workspaceSlug: strin
           <div className="flex justify-end p-3"><Button disabled={update.isPending} size="sm" type="submit">{update.isPending ? <LoaderCircle className="animate-spin" /> : null}Save changes</Button></div>
         </SettingsSection>
       </form>
+      <AccountPasswordSettings workspaceSlug={workspaceSlug} />
     </SettingsPageFrame>
   );
 }

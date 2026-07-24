@@ -27,9 +27,9 @@ export class SettingsApiClient {
   general() { return this.#get<WorkspaceGeneralRecord>("/settings/general"); }
   updateGeneral(input: Partial<Pick<WorkspaceGeneralRecord, "name" | "iconType" | "iconKey" | "iconColor">>) { return this.#patch<WorkspaceGeneralRecord>("/settings/general", input); }
   members() { return this.#get<MemberSettingsRecord>("/settings/members"); }
-  invite(email: string, role: WorkspaceIdentity["role"], guestAccess?: { clients: Array<{ clientId: string; excludedProjectIds: string[] }> }) { return workspaceApiRequest(this.#workspaceBase, "/settings/members", { method: "POST", body: JSON.stringify({ email, role, ...(guestAccess ? { guestAccess } : {}) }) }); }
+  invite(email: string, role: WorkspaceIdentity["role"], guestAccess?: { clients: Array<{ clientId: string; excludedProjectIds: string[] }> }) { return workspaceApiRequest<{ registrationUrl: string }>(this.#workspaceBase, "/settings/members", { method: "POST", body: JSON.stringify({ email, role, ...(guestAccess ? { guestAccess } : {}) }) }); }
   updateMember(membershipId: string, input: { role?: WorkspaceIdentity["role"]; status?: "active" | "suspended" | "removed" }) { return this.#patch(`/settings/members/${encodeURIComponent(membershipId)}`, input); }
-  refreshInvitation(invitationId: string) { return workspaceApiRequest(this.#workspaceBase, `/settings/invitations/${encodeURIComponent(invitationId)}`, { method: "POST", body: "{}" }); }
+  refreshInvitation(invitationId: string) { return workspaceApiRequest<{ registrationUrl: string }>(this.#workspaceBase, `/settings/invitations/${encodeURIComponent(invitationId)}`, { method: "POST", body: "{}" }); }
   revokeInvitation(invitationId: string) { return workspaceApiRequest(this.#workspaceBase, `/settings/invitations/${encodeURIComponent(invitationId)}`, { method: "DELETE" }); }
   categories() { return this.#get<TimeCategoryRecord[]>("/time-categories"); }
   createCategory(input: { name: string; key: string; color: string; defaultBillable: boolean }) { return workspaceApiRequest<TimeCategoryRecord>(this.#workspaceBase, "/time-categories", { method: "POST", body: JSON.stringify(input) }); }
@@ -49,6 +49,8 @@ export class SettingsApiClient {
     return intent;
   }
   removeWorkspaceIcon() { return workspaceApiRequest(this.#workspaceBase, "/icon", { method: "DELETE" }); }
+  changePassword(input: { currentPassword: string; password: string }) { return workspaceApiRequest("/api", "/account/password", { method: "PATCH", body: JSON.stringify(input) }); }
+  createPasswordReset(membershipId: string) { return workspaceApiRequest<{ resetUrl: string; expiresAt: string }>(this.#workspaceBase, `/settings/members/${encodeURIComponent(membershipId)}/password-reset`, { method: "POST", body: "{}" }); }
 
   #get<T>(path: string) { return workspaceApiRequest<T>(this.#workspaceBase, path); }
   #patch<T>(path: string, input: unknown) { return workspaceApiRequest<T>(this.#workspaceBase, path, { method: "PATCH", body: JSON.stringify(input) }); }

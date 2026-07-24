@@ -54,17 +54,18 @@ export class WorkspaceAdministrationService {
     if (role === "guest" && !access?.clients.length) throw new ValidationError("A Guest must have access to at least one Client.");
     return db.transaction(async (transaction) => {
       await transaction.delete(invitations).where(and(eq(invitations.workspaceId, principal.workspaceId), eq(invitations.emailNormalized, email), isNull(invitations.acceptedAt)));
+      const token = randomBytes(32).toString("base64url");
       const [invitation] = await transaction.insert(invitations).values({
         workspaceId: principal.workspaceId,
         emailNormalized: email,
         role,
-        tokenHash: digest(randomBytes(32).toString("base64url")),
+        tokenHash: digest(token),
         createdByUserId: principal.userId,
         expiresAt: expiry(),
       }).returning({ id: invitations.id, email: invitations.emailNormalized, role: invitations.role, expiresAt: invitations.expiresAt, createdAt: invitations.createdAt });
       if (!invitation) throw new ConflictError("The invitation could not be created.");
       if (access) await this.#storeGuestAccess(transaction, principal.workspaceId, invitation.id, access);
-      return invitation;
+      return { ...invitation, registrationUrl: invitationUrl(token) };
     });
   }
 
@@ -84,14 +85,15 @@ export class WorkspaceAdministrationService {
 
   async refreshInvitation(principal: Principal, invitationId: string) {
     this.#assertAdministrator(principal);
+    const token = randomBytes(32).toString("base64url");
     const [invitation] = await db.update(invitations).set({
-      tokenHash: digest(randomBytes(32).toString("base64url")),
+      tokenHash: digest(token),
       expiresAt: expiry(),
     }).where(and(eq(invitations.workspaceId, principal.workspaceId), eq(invitations.id, invitationId), isNull(invitations.acceptedAt))).returning({
       id: invitations.id, email: invitations.emailNormalized, role: invitations.role, expiresAt: invitations.expiresAt, createdAt: invitations.createdAt,
     });
     if (!invitation) throw new NotFoundError("Invitation not found.");
-    return invitation;
+    return { ...invitation, registrationUrl: invitationUrl(token) };
   }
 
   async revokeInvitation(principal: Principal, invitationId: string) {
@@ -142,6 +144,7 @@ export class WorkspaceAdministrationService {
 
 function digest(value: string) { return createHash("sha256").update(value).digest("hex"); }
 function expiry() { return new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000); }
+function invitationUrl(token: string) { return `${(process.env.NEXTAUTH_URL ?? "http://localhost:3000").replace(/\/$/, "")}/join/${token}`; }
 
 function normalizeGuestAccess(input: GuestAccessInput | null): GuestAccessInput {
   if (!input || !Array.isArray(input.clients) || input.clients.length > 100) throw new ValidationError("Guest Client access must contain up to 100 Clients.");

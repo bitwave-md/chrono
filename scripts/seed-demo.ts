@@ -1,6 +1,6 @@
 import { closeDemoSeederDatabase, DemoWorkspaceSeeder } from "@/db/demo-seeder";
 
-const workspaceSlug = process.argv[2] ?? process.env.AUTH_BOOTSTRAP_WORKSPACE_SLUG ?? "bitwave";
+const workspaceSlug = process.argv[2] ?? process.env.AUTH_SETUP_WORKSPACE_SLUG ?? "bitwave";
 
 try {
   const summary = await new DemoWorkspaceSeeder().seed(workspaceSlug);
