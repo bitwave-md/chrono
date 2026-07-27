@@ -106,7 +106,8 @@ not installable through the one-click path.
 
 ## Upgrade review
 
-React and React DOM were advanced to the current compatible 19.2.7 patch, and
-Node type definitions now match the Node 24 runtime. Next.js and the new UI
-dependencies are current. ESLint 10 and TypeScript 7 are deferred as major
-toolchain upgrades pending Next.js compatibility review.
+React and React DOM use the compatible 19.2.7 patch, Next.js uses 16.2.12, and
+NextAuth uses 4.24.15, removing the reviewed critical authentication advisory.
+The remaining runtime audit findings are the tracked nested PostCSS and Sharp
+paths described above. Node types match Node 24. ESLint 10 and TypeScript 7 are
+deferred as major toolchain upgrades pending Next.js compatibility review.

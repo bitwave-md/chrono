@@ -6,18 +6,27 @@ Tracer bullet: publish an official `vYY.M.N` GitHub Release, notify the
 instance operator, and install it from Settings with an automatic coordinated
 backup while the Next.js container remains isolated from the Docker socket.
 
-- [ ] Publish stable calendar versions and digest-pinned multi-architecture images.
-- [ ] Discover the highest valid public release and report immutable build provenance.
-- [ ] Add the isolated updater sidecar and constrained request/status protocol.
-- [ ] Add operator-only update execution, progress, toast, and navigation badge.
-- [ ] Add the one-time existing-install bootstrap and versionless host fallback.
-- [ ] Verify failure recovery, release automation, builds, Docker health, and file limits.
+- [x] Publish stable calendar versions and digest-pinned multi-architecture images.
+- [x] Discover the highest valid public release and report immutable build provenance.
+- [x] Add the isolated updater sidecar and constrained request/status protocol.
+- [x] Add operator-only update execution, progress, toast, and navigation badge.
+- [x] Add the one-time existing-install bootstrap and versionless host fallback.
+- [x] Verify failure recovery, release automation, builds, Docker health, and file limits.
 
 Official versions use the UTC year and month plus a monthly sequence, such as
 `v26.7.1`. Ordinary commits, tags without published stable Releases, drafts,
 and prereleases are never offered to installations. The updater may install
 only the independently validated latest official release; it cannot execute
 arbitrary host commands or accept image references from the web application.
+
+Completed on 2026-07-27. The manual production workflow calculates `v26.7.1`
+as the first release, passes actionlint, and publishes exact amd64 and arm64
+image digests only after static checks and builds succeed. Calendar and
+manifest validation, constrained queue conflicts, source/manual/automatic
+capability, shell syntax, installer smoke installation, Compose rendering, 49
+tests, TypeScript, ESLint, the Next.js 16.2.12 production build, migration
+startup, and the live app/updater profile passed. The app, PostgreSQL, and
+storage are healthy; Next.js has no Docker socket mount.
 
 ## Guest time-report access
 
@@ -150,8 +159,9 @@ Production HTTP, optional HTTPS, source-build, and Mailpit development Compose
 models render successfully. The installer generated mode-`0600` secrets in an
 isolated smoke test. A clean multi-stage Docker build replayed migrations,
 started healthy PostgreSQL and Next.js containers, and authenticated the
-bootstrap owner through NextAuth’s CSRF-protected credentials callback. GHCR
-publication runs on version tags; until a package is public, the installer
+bootstrap owner through NextAuth’s CSRF-protected credentials callback. The
+original tag-triggered publication has been superseded by the serialized
+calendar-release workflow. Until an official package is public, the installer
 automatically uses the verified Docker source-build fallback.
 
 ## Entity header and deletion refinement
