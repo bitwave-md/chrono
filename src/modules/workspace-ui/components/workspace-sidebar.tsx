@@ -260,7 +260,11 @@ export function WorkspaceSidebar({ workspace, workspaces, clients }: WorkspaceSi
 
 function FavoriteIcon({ favorite }: { favorite: FavoriteRecord }) {
   if (favorite.targetType === "issue") {
-    return <CircleDot className="size-4" style={{ color: favorite.iconColor ?? undefined }} />;
+    return (
+      <span className="grid size-5 shrink-0 place-items-center">
+        <CircleDot className="!size-4" style={{ color: favorite.iconColor ?? undefined }} />
+      </span>
+    );
   }
   return (
     <EntityIcon

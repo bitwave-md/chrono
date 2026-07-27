@@ -270,7 +270,7 @@ function SidebarMenuButton({
       data-active={isActive}
       data-slot="sidebar-menu-button"
       className={cn(
-        "flex h-8 w-full items-center gap-2 overflow-hidden rounded-md px-2 text-left text-[13px] font-medium text-sidebar-foreground/78 outline-none transition-colors hover:bg-sidebar-accent/75 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 [&>span:last-child]:truncate [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-sidebar-foreground/58 data-[active=true]:[&_svg]:text-sidebar-accent-foreground",
+        "flex h-8 w-full items-center gap-2 overflow-hidden rounded-md px-2 text-left text-[13px] font-medium text-sidebar-foreground/78 outline-none transition-colors hover:bg-sidebar-accent/75 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:[&>*:not(:first-child)]:hidden [&>span:last-child]:truncate [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-sidebar-foreground/58 data-[active=true]:[&_svg]:text-sidebar-accent-foreground",
         className,
       )}
       {...props}
