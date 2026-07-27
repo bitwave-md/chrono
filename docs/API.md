@@ -193,10 +193,13 @@ unique within the Workspace. Issue-scoped log requests first authorize the
 Issue and then return its visible activity entries. Non-Issue report/list
 requests retain worker-level restrictions for regular members.
 
-Client time reports authorize Client visibility before querying. Owners and
-admins receive the Client-wide scope; members and guests receive only their
-own entries. The response declares `scope` and whether the 1,000-entry result
-was truncated.
+Client time reports authorize Client visibility before querying. Owners,
+admins, and Guests receive Client-wide scope while members receive only their
+own entries. Guest results include direct Client work and only Projects in the
+Guest's explicit Project roster. Supplying `projectId` requires access to that
+Project. The response declares `scope` and whether the 1,000-entry result was
+truncated. General time-log and Workspace-report endpoints remain unavailable
+to Guests.
 
 Manual time-log creation accepts an explicit `startedAt` epoch. The Issue UI
 derives it from the selected local work date and duration so the finalized

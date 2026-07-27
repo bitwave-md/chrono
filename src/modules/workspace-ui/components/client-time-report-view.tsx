@@ -27,9 +27,11 @@ type FilterKey = "from" | "to" | "projectId" | "categoryId" | "workerUserId";
 
 export function ClientTimeReportView({
   client,
+  projectScope,
   workspaceSlug,
 }: {
-  client: ClientRecord;
+  client: Pick<ClientRecord, "id" | "name">;
+  projectScope?: { id: string; name: string };
   workspaceSlug: string;
 }) {
   const router = useRouter();
@@ -38,7 +40,7 @@ export function ClientTimeReportView({
   const workspace = useWorkspaceIdentity();
   const range = parseClientReportRange(searchParams.get("from"), searchParams.get("to"));
   const preset = reportPresetForRange(range);
-  const projectId = optionalUuid(searchParams.get("projectId"));
+  const projectId = projectScope?.id ?? optionalUuid(searchParams.get("projectId"));
   const categoryId = optionalUuid(searchParams.get("categoryId"));
   const workerUserId = optionalUuid(searchParams.get("workerUserId"));
   const filters = {
@@ -83,6 +85,7 @@ export function ClientTimeReportView({
         projects={projectsQuery.data ?? []}
         range={range}
         showPeople={showPeople}
+        showProjects={!projectScope}
         workerUserId={workerUserId}
         onDimensionChange={(key, value) => update({ [key]: value })}
         onPresetChange={changePreset}
@@ -90,12 +93,12 @@ export function ClientTimeReportView({
         onReset={() => update({ from: undefined, to: undefined, projectId: undefined, categoryId: undefined, workerUserId: undefined })}
       />
       <div className="mx-auto grid w-full max-w-[1500px] gap-4 p-5 md:p-7">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Time report</h1><p className="mt-1 text-sm text-muted-foreground">{reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}.` : `Recorded work across ${client.name} Projects and Issues.`}</p></div>{reportQuery.isFetching ? <span className="text-xs text-muted-foreground">Updating…</span> : null}</div>
+        <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Time report</h1><p className="mt-1 text-sm text-muted-foreground">{projectScope ? `Recorded work for ${projectScope.name}.` : reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}.` : `Recorded work across ${client.name} Projects and Issues.`}</p></div>{reportQuery.isFetching ? <span className="text-xs text-muted-foreground">Updating…</span> : null}</div>
         {reportQuery.error ? <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">{reportQuery.error.message}</div> : null}
         {!reportQuery.isLoading && !reportQuery.error && !entries.length ? (
           <EmptyView
             className="min-h-[calc(100svh-300px)]"
-            description="Try another date range or record time on one of this Client’s Issues."
+            description={`Try another date range or record time on one of this ${projectScope ? "Project’s" : "Client’s"} Issues.`}
             icon={Clock3}
             title="No time entries in this period"
           />

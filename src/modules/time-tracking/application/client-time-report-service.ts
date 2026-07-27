@@ -17,7 +17,7 @@ export class ClientTimeReportService {
     clientId: string,
     filters: ClientTimeReportFilters,
   ) {
-    const entries = await this.#timeLogs.list(principal, {
+    const entries = await this.#timeLogs.listForReport(principal, {
       clientId,
       projectId: filters.projectId,
       categoryId: filters.categoryId,
@@ -30,10 +30,12 @@ export class ClientTimeReportService {
 
     return {
       entries,
-      scope: principal.role === "owner" || principal.role === "admin"
-        ? "client"
-        : "personal",
+      scope: clientTimeReportScope(principal),
       truncated: entries.length === 1_000,
     };
   }
+}
+
+export function clientTimeReportScope(principal: Principal): "client" | "personal" {
+  return principal.role === "member" ? "personal" : "client";
 }

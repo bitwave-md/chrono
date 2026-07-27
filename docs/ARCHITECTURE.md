@@ -195,8 +195,10 @@ epoch; the browser derives the live counter. Stopping or manually logging work
 invalidates the Issue time-log query, which updates Activity and both charts
 without duplicated component state.
 
-The Client `Time` tab keeps its period and dimension filters in canonical URL
-search parameters. TanStack Query keys include the complete filter object;
+The Client and Project `Time` tabs keep period and dimension filters in
+canonical URL search parameters. Project views lock the Project dimension.
+Guest reports include only direct Client work and explicitly accessible
+Projects. TanStack Query keys include the complete filter object;
 pure report utilities derive summary cards, daily trend points, and category,
 Project, and contributor breakdowns from the returned entries.
 

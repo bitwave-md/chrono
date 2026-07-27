@@ -28,6 +28,7 @@ import { AssigneeProperty } from "@/modules/workspace-ui/components/assignee-pro
 import { EntityIconPicker } from "@/modules/workspace-ui/components/client-icon-picker";
 import { DateProperty } from "@/modules/workspace-ui/components/date-property";
 import { ClientIcon } from "@/modules/workspace-ui/components/client-icon";
+import { ClientTimeReportView } from "@/modules/workspace-ui/components/client-time-report-view";
 import { EntityHeader } from "@/modules/workspace-ui/components/entity-header";
 import { MemberProperty } from "@/modules/workspace-ui/components/member-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
@@ -81,6 +82,7 @@ export function ProjectRouteView({ workspaceSlug, projectId, tab }: { workspaceS
       {tab === "overview" ? <ProjectOverview project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "activity" ? <ProjectActivity project={project} workspaceSlug={workspaceSlug} /> : null}
       {tab === "issues" ? <ProjectIssuesView project={project} workspaceSlug={workspaceSlug} /> : null}
+      {tab === "time" ? <ClientTimeReportView client={{ id: project.clientId, name: project.clientName }} projectScope={{ id: project.id, name: project.name }} workspaceSlug={workspaceSlug} /> : null}
       {tab === "members" ? <ProjectMembersView project={project} workspaceSlug={workspaceSlug} /> : null}
     </>
   );

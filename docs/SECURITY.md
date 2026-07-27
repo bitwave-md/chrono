@@ -63,8 +63,10 @@ Guests may create Issues in accessible scopes, comment and reply, publish
 Project updates, and upload safe attachments. Guest-created Issues are forced
 to `client_shared`. They may edit only text they authored and may delete or
 share only files they uploaded. Client/Project/workflow properties, assignments,
-labels, dates, member administration, timers, time logs, categories, reports,
-and Workspace settings remain forbidden at the service layer. Legacy Client
+labels, dates, member administration, timers, time-log creation, category
+management, Workspace reports, and Workspace settings remain forbidden at the
+service layer. Guests may read scoped Client and Project time reports; Client
+totals exclude Projects outside their explicit roster. Legacy Client
 permission values cannot unlock these operations. Tenant-safe foreign keys and
 server-side principal resolution remain the enforcement boundary; UI hiding is
 not treated as authorization.

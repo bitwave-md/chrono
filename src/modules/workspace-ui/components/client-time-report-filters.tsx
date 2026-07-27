@@ -18,6 +18,7 @@ export function ClientTimeReportFilters({
   projects,
   range,
   showPeople,
+  showProjects = true,
   categoryId,
   workerUserId,
   onDimensionChange,
@@ -32,6 +33,7 @@ export function ClientTimeReportFilters({
   projects: ProjectRecord[];
   range: ClientReportRange;
   showPeople: boolean;
+  showProjects?: boolean;
   categoryId?: string;
   workerUserId?: string;
   onDimensionChange: (key: "projectId" | "categoryId" | "workerUserId", value?: string) => void;
@@ -39,7 +41,7 @@ export function ClientTimeReportFilters({
   onRangeChange: (range: ClientReportRange) => void;
   onReset: () => void;
 }) {
-  const filtered = Boolean(projectId || categoryId || workerUserId || preset !== "this_month");
+  const filtered = Boolean((showProjects && projectId) || categoryId || workerUserId || preset !== "this_month");
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b px-5 py-3">
@@ -53,7 +55,7 @@ export function ClientTimeReportFilters({
         </SelectContent>
       </Select>
       <ReportDateRangePicker key={`${range.from.toISOString()}-${range.to.toISOString()}`} range={range} onChange={onRangeChange} />
-      <DimensionSelect label="All projects" value={projectId} options={projects.map((project) => ({ value: project.id, label: project.name }))} onChange={(value) => onDimensionChange("projectId", value)} />
+      {showProjects ? <DimensionSelect label="All projects" value={projectId} options={projects.map((project) => ({ value: project.id, label: project.name }))} onChange={(value) => onDimensionChange("projectId", value)} /> : null}
       <DimensionSelect label="All types" value={categoryId} options={categories.map((category) => ({ value: category.id, label: category.name }))} onChange={(value) => onDimensionChange("categoryId", value)} />
       {showPeople ? <DimensionSelect label="All people" value={workerUserId} options={members.map((member) => ({ value: member.userId, label: member.displayName ?? member.email }))} onChange={(value) => onDimensionChange("workerUserId", value)} /> : null}
       {filtered ? <Button aria-label="Reset report filters" className="rounded-full" size="icon-sm" variant="ghost" onClick={onReset}><RotateCcw /></Button> : null}

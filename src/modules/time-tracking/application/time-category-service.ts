@@ -30,7 +30,6 @@ export class TimeCategoryService {
   readonly #policy = new WorkspacePolicy();
 
   async list(principal: Principal) {
-    this.#policy.assertCanUseTimeTracking(principal);
     return db
       .select({
         id: timeCategories.id,

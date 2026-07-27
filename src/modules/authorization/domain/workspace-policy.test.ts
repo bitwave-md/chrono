@@ -15,7 +15,7 @@ const guest: Principal = {
   role: "guest",
 };
 
-test("WorkspacePolicy keeps Guest time and administration capabilities disabled", () => {
+test("WorkspacePolicy keeps Guest time mutations and Workspace reports disabled", () => {
   const policy = new WorkspacePolicy();
   const operations = [
     () => policy.assertCanContribute(guest),

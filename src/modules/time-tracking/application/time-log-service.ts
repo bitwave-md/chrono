@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, exists, gte, isNull, lt, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import {
@@ -6,6 +6,7 @@ import {
   issueNamespaces,
   issues,
   projectBranches,
+  projectMemberships,
   projects,
   timeCategories,
   timeLogs,
@@ -13,6 +14,7 @@ import {
 } from "@/db/schema";
 import type { Principal } from "@/modules/authorization/domain/principal";
 import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy";
+import { GuestAccessService } from "@/modules/authorization/application/guest-access-service";
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueService } from "@/modules/issues/application/issue-service";
 import {
@@ -50,9 +52,25 @@ export class TimeLogService {
   readonly #issues = new IssueService();
   readonly #clientAccess = new ClientAccessService();
   readonly #policy = new WorkspacePolicy();
+  readonly #guestAccess = new GuestAccessService();
 
   async list(principal: Principal, filters: TimeLogFilters) {
     this.#policy.assertCanUseTimeTracking(principal);
+    return this.#listVisible(principal, filters, false);
+  }
+
+  async listForReport(principal: Principal, filters: TimeLogFilters) {
+    if (principal.role === "guest") {
+      if (filters.projectId) await this.#guestAccess.assertCanReadProject(principal, filters.projectId);
+      else if (filters.clientId) await this.#clientAccess.assertCanRead(principal, filters.clientId);
+      else throw new ForbiddenError("Guest time reports require a Client or Project scope.");
+    } else {
+      this.#policy.assertCanUseTimeTracking(principal);
+    }
+    return this.#listVisible(principal, filters, true);
+  }
+
+  async #listVisible(principal: Principal, filters: TimeLogFilters, reportAccess: boolean) {
     this.#assertDateRange(filters.from, filters.to);
     if (filters.issueId) await this.#issues.get(principal, filters.issueId);
     else if (filters.clientId) await this.#clientAccess.assertCanRead(principal, filters.clientId);
@@ -60,6 +78,7 @@ export class TimeLogService {
       principal,
       filters.workerUserId,
       Boolean(filters.issueId),
+      reportAccess,
     );
     const conditions = [
       eq(timeLogs.workspaceId, principal.workspaceId),
@@ -79,6 +98,17 @@ export class TimeLogService {
       if (value) {
         conditions.push(eq(column, value));
       }
+    }
+
+    if (principal.role === "guest" && filters.clientId && !filters.projectId) {
+      conditions.push(or(
+        isNull(timeLogs.projectId),
+        exists(db.select({ value: sql`1` }).from(projectMemberships).where(and(
+          eq(projectMemberships.workspaceId, timeLogs.workspaceId),
+          eq(projectMemberships.projectId, timeLogs.projectId),
+          eq(projectMemberships.workspaceMembershipId, principal.membershipId),
+        ))),
+      )!);
     }
 
     const dateColumn = filters.dateBasis === "ended"
@@ -211,9 +241,11 @@ export class TimeLogService {
     principal: Principal,
     requestedWorkerUserId?: string,
     issueScoped = false,
+    reportAccess = false,
   ): string | undefined {
     if (
       issueScoped ||
+      (reportAccess && principal.role === "guest") ||
       principal.role === "owner" ||
       principal.role === "admin"
     ) {

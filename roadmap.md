@@ -1,5 +1,22 @@
 # Chrono Roadmap
 
+## Guest time-report access
+
+Tracer bullet: sign in as a Guest, open an accessible Client or Project Time
+tab, and review recorded work without gaining any time-entry mutation access or
+visibility into excluded Projects.
+
+- [x] Add tenant-safe Guest report visibility for accessible Clients and Projects.
+- [x] Add the Project Time route and reuse the existing report surface with fixed scope.
+- [x] Show Client and Project Time navigation to Guests.
+- [x] Verify read access, excluded-Project isolation, builds, tests, and file limits.
+
+Completed on 2026-07-27. Guest Client reports include direct Client work and
+only explicitly rostered Projects; Project reports require Project access and
+lock their Project filter. Guest timer, manual-entry, category-management, and
+Workspace-report policies remain unchanged. TypeScript, ESLint, 40 tests, the
+production build, route generation, and the source-file audit passed.
+
 ## Email and password authentication
 
 Tracer bullet: install an empty Chrono instance, claim the first owner with the
