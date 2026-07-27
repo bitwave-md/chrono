@@ -15,6 +15,7 @@ import { TimerDock } from "@/modules/workspace-ui/components/timer-dock";
 import { WorkspaceSidebar } from "@/modules/workspace-ui/components/workspace-sidebar";
 import { SettingsShell } from "@/modules/settings/components/settings-shell";
 import { usePreferencesQuery } from "@/modules/settings/application/use-settings-queries";
+import { UpdateNotificationBridge } from "@/modules/settings/components/update-notification-bridge";
 import type { WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
 import { useCommandMenu, useWorkspaceOverlay, useWorkspaceView, WorkspaceUiProvider } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
@@ -29,6 +30,7 @@ export function WorkspaceExperience(props: WorkspaceExperienceProps) {
     <WorkspaceUiProvider workspace={props.workspace}>
       <WorkspaceSidebarProvider>
         <WorkspacePreferenceBridge workspaceSlug={props.workspace.slug} />
+        <UpdateNotificationBridge enabled={props.workspace.isOperator} workspaceSlug={props.workspace.slug} />
         <WorkspaceShell {...props} />
       </WorkspaceSidebarProvider>
     </WorkspaceUiProvider>

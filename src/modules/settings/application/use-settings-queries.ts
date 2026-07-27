@@ -72,7 +72,21 @@ export function useStorageStatusQuery(workspaceSlug: string, enabled: boolean) {
   return useQuery({ queryKey: settingsKey(workspaceSlug, "storage"), queryFn: () => new SettingsApiClient(workspaceSlug).storage(), enabled });
 }
 export function useUpdateStatusQuery(workspaceSlug: string, enabled: boolean) {
-  return useQuery({ queryKey: settingsKey(workspaceSlug, "updates"), queryFn: () => new SettingsApiClient(workspaceSlug).updates(), enabled, staleTime: 15 * 60_000 });
+  return useQuery({
+    queryKey: settingsKey(workspaceSlug, "updates"),
+    queryFn: () => new SettingsApiClient(workspaceSlug).updates(),
+    enabled,
+    staleTime: 15 * 60_000,
+    refetchInterval: (query) => {
+      const stage = query.state.data?.job?.stage;
+      return stage && stage !== "completed" && stage !== "failed" ? 2_000 : 6 * 60 * 60_000;
+    },
+    refetchOnWindowFocus: true,
+  });
+}
+export function useStartUpdateMutation(workspaceSlug: string) {
+  const queries = useQueryClient();
+  return useMutation({ mutationFn: () => new SettingsApiClient(workspaceSlug).startUpdate(), onSuccess: () => queries.invalidateQueries({ queryKey: settingsKey(workspaceSlug, "updates") }) });
 }
 export function useAvatarMutation(workspaceSlug: string, onProgress: (value: number) => void) {
   const queries = useQueryClient();

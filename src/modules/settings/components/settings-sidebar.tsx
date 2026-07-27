@@ -19,6 +19,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import type { WorkspaceIdentity } from "@/modules/workspace-ui/domain/workspace-types";
+import { useUpdateStatusQuery } from "@/modules/settings/application/use-settings-queries";
 
 const sections = [
   { title: "Personal", operatorOnly: false, workspaceOnly: false, items: [
@@ -41,6 +42,7 @@ export function SettingsSidebar({ workspace }: { workspace: WorkspaceIdentity })
   const pathname = usePathname();
   const [search, setSearch] = useState("");
   const { isMobile, setOpenMobile } = useSidebar();
+  const updates = useUpdateStatusQuery(workspace.slug, workspace.isOperator);
   const root = `/app/${workspace.slug}`;
   const normalized = search.trim().toLowerCase();
   const finish = () => { if (isMobile) setOpenMobile(false); };
@@ -65,7 +67,8 @@ export function SettingsSidebar({ workspace }: { workspace: WorkspaceIdentity })
               <SidebarGroupContent><SidebarMenu>{items.map((item) => {
                 const href = `${root}/settings/${item.segment}`;
                 const Icon = item.icon;
-                return <SidebarMenuItem key={item.segment}><SidebarMenuButton asChild isActive={pathname === href}><Link href={href} onClick={finish}><Icon /><span>{item.label}</span></Link></SidebarMenuButton></SidebarMenuItem>;
+                const updateBadge = item.segment === "administration/updates" && updates.data?.updateAvailable;
+                return <SidebarMenuItem key={item.segment}><SidebarMenuButton asChild isActive={pathname === href}><Link href={href} onClick={finish}><Icon /><span>{item.label}</span>{updateBadge ? <span aria-label="Update available" className="ml-auto size-1.5 rounded-full bg-amber-400" /> : null}</Link></SidebarMenuButton></SidebarMenuItem>;
               })}</SidebarMenu></SidebarGroupContent>
             </SidebarGroup>
           );

@@ -7,6 +7,7 @@ import type {
   UpdateStatusRecord,
   WorkspaceGeneralRecord,
 } from "@/modules/settings/domain/settings-types";
+import type { UpdateJobRecord } from "@/modules/settings/domain/update-job";
 import type { TimeCategoryRecord, WorkspaceIdentity } from "@/modules/workspace-ui/domain/workspace-types";
 import { workspaceApiRequest } from "@/modules/workspace-ui/infrastructure/workspace-api-request";
 import { uploadRawFile } from "@/modules/workspace-ui/infrastructure/workspace-storage-api-client";
@@ -36,6 +37,7 @@ export class SettingsApiClient {
   updateCategory(categoryId: string, input: Partial<Pick<TimeCategoryRecord, "name" | "color" | "position" | "defaultBillable">> & { archived?: boolean }) { return this.#patch<TimeCategoryRecord>(`/time-categories/${encodeURIComponent(categoryId)}`, input); }
   storage() { return this.#get<StorageStatusRecord>("/settings/storage"); }
   updates() { return this.#get<UpdateStatusRecord>("/settings/updates"); }
+  startUpdate() { return workspaceApiRequest<UpdateJobRecord>(this.#workspaceBase, "/settings/updates", { method: "POST", body: "{}" }); }
 
   async uploadAvatar(file: File, onProgress: (value: number) => void) {
     const intent = await workspaceApiRequest<{ uploadId: string; uploadUrl: string }>("/api", "/account/avatar", { method: "POST", body: JSON.stringify(fileMetadata(file)) });

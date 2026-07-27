@@ -1,4 +1,5 @@
 import type { WorkspaceIdentity } from "@/modules/workspace-ui/domain/workspace-types";
+import type { UpdateJobRecord } from "@/modules/settings/domain/update-job";
 
 export interface AccountProfileRecord { id: string; name: string | null; email: string; image: string | null }
 export interface AccountPreferencesRecord {
@@ -59,4 +60,7 @@ export interface UpdateStatusRecord {
   rateLimitReset: string | null;
   checkedAt: string;
   command: string;
+  updateMode: "automatic" | "manual" | "source";
+  canStartUpdate: boolean;
+  job: UpdateJobRecord | null;
 }
