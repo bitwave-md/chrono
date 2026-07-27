@@ -1,4 +1,5 @@
 import type { Principal } from "@/modules/authorization/domain/principal";
+import { CalendarVersion } from "@/modules/settings/domain/calendar-version";
 import { InstanceOperatorPolicy } from "@/modules/settings/application/instance-operator-policy";
 import { GitHubReleaseClient, type ReleaseLookup } from "@/modules/settings/infrastructure/github-release-client";
 
@@ -9,7 +10,7 @@ export class UpdateService {
 
   async status(principal: Principal) {
     this.#operators.assertOperator(principal);
-    const installedVersion = process.env.CHRONO_VERSION?.trim() || "development";
+    const installedVersion = process.env.CHRONO_BUILD_VERSION?.trim() || "development";
     const repository = process.env.CHRONO_RELEASE_REPOSITORY?.trim() || "bitwave-md/chrono";
     const lookup = await this.#latest(repository);
     const release = lookup.release;
@@ -17,7 +18,7 @@ export class UpdateService {
     return {
       installedVersion,
       latestVersion,
-      updateAvailable: Boolean(latestVersion && normalize(latestVersion) !== normalize(installedVersion)),
+      updateAvailable: isUpdateAvailable(installedVersion, latestVersion),
       releaseName: release?.name ?? latestVersion,
       releaseNotes: release?.body ?? null,
       publishedAt: release?.published_at ?? null,
@@ -28,6 +29,7 @@ export class UpdateService {
       releaseAuthentication: this.#releases.authenticationMode,
       rateLimitReset: lookup.rateLimitReset,
       checkedAt: new Date().toISOString(),
+      buildCommit: process.env.CHRONO_BUILD_COMMIT?.trim() || null,
       command: latestVersion ? `./update.sh ${latestVersion}` : "./update.sh <release-version>",
     };
   }
@@ -41,4 +43,8 @@ export class UpdateService {
   }
 }
 
-function normalize(value: string) { return value.replace(/^v/, "").trim(); }
+function isUpdateAvailable(installed: string, latest: string | null): boolean {
+  const installedVersion = CalendarVersion.parse(installed);
+  const latestVersion = latest ? CalendarVersion.parse(latest) : null;
+  return Boolean(installedVersion && latestVersion?.isNewerThan(installedVersion));
+}

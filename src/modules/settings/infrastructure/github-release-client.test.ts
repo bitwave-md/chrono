@@ -22,14 +22,27 @@ test("GitHubReleaseClient uses a configured token and returns a release", async 
   let authorization: string | null = null;
   const fetcher = (async (_input: string | URL | Request, init?: RequestInit) => {
     authorization = new Headers(init?.headers).get("authorization");
-    return Response.json({ tag_name: "v1.2.3", name: "Chrono 1.2.3", body: "Notes", published_at: null, html_url: "https://github.com/bitwave-md/chrono/releases/v1.2.3" });
+    return Response.json([
+      release("v26.6.10"),
+      release("v26.7.2"),
+      release("v26.7.9", { prerelease: true }),
+      release("v1.2.3"),
+    ]);
   }) as typeof fetch;
   const client = new GitHubReleaseClient({ CHRONO_GITHUB_TOKEN: "secret" }, fetcher, silentLogger);
   const result = await client.latest("bitwave-md/chrono");
   assert.equal(result.state, "available");
-  assert.equal(result.release.tag_name, "v1.2.3");
+  assert.equal(result.release.tag_name, "v26.7.2");
   assert.equal(authorization, "Bearer secret");
   assert.equal(client.authenticationMode, "token");
+});
+
+test("GitHubReleaseClient rejects repositories without a stable calendar release", async () => {
+  const client = new GitHubReleaseClient({}, (async () => Response.json([
+    release("latest"),
+    release("v26.7.1", { draft: true }),
+  ])) as typeof fetch, silentLogger);
+  assert.equal((await client.latest("bitwave-md/chrono")).state, "not_found");
 });
 
 function responder(status: number, body: unknown, headers: HeadersInit = {}): typeof fetch {
@@ -37,3 +50,7 @@ function responder(status: number, body: unknown, headers: HeadersInit = {}): ty
 }
 
 const silentLogger = { warn: () => undefined };
+
+function release(tag_name: string, values: Partial<{ draft: boolean; prerelease: boolean }> = {}) {
+  return { tag_name, name: tag_name, body: "Notes", published_at: null, html_url: `https://github.com/bitwave-md/chrono/releases/${tag_name}`, draft: values.draft ?? false, prerelease: values.prerelease ?? false };
+}

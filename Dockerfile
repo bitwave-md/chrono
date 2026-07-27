@@ -7,6 +7,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 FROM base AS builder
+ARG CHRONO_BUILD_VERSION=development
+ARG CHRONO_BUILD_COMMIT=unknown
+ENV CHRONO_BUILD_VERSION=$CHRONO_BUILD_VERSION
+ENV CHRONO_BUILD_COMMIT=$CHRONO_BUILD_COMMIT
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
@@ -19,9 +23,13 @@ COPY src/db/schema ./src/db/schema
 CMD ["npm", "run", "db:migrate"]
 
 FROM base AS runner
+ARG CHRONO_BUILD_VERSION=development
+ARG CHRONO_BUILD_COMMIT=unknown
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV CHRONO_BUILD_VERSION=$CHRONO_BUILD_VERSION
+ENV CHRONO_BUILD_COMMIT=$CHRONO_BUILD_COMMIT
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs

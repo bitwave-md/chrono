@@ -1,9 +1,13 @@
+import { CalendarVersion } from "@/modules/settings/domain/calendar-version";
+
 export interface GitHubReleaseRecord {
   tag_name: string;
   name: string | null;
   body: string | null;
   published_at: string | null;
   html_url: string;
+  draft: boolean;
+  prerelease: boolean;
 }
 
 export type ReleaseLookup =
@@ -31,7 +35,7 @@ export class GitHubReleaseClient {
     }
     const [owner, name] = parts;
     try {
-      const response = await this.#fetch(`https://api.github.com/repos/${encodeURIComponent(owner!)}/${encodeURIComponent(name!)}/releases/latest`, {
+      const response = await this.#fetch(`https://api.github.com/repos/${encodeURIComponent(owner!)}/${encodeURIComponent(name!)}/releases?per_page=100`, {
         headers: {
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2026-03-10",
@@ -41,7 +45,13 @@ export class GitHubReleaseClient {
         cache: "no-store",
         signal: AbortSignal.timeout(5_000),
       });
-      if (response.ok) return { state: "available", release: await response.json() as GitHubReleaseRecord, message: "Latest release loaded.", rateLimitReset: null };
+      if (response.ok) {
+        const releases = await response.json() as GitHubReleaseRecord[];
+        const release = highestStableRelease(releases);
+        return release
+          ? { state: "available", release, message: "Latest release loaded.", rateLimitReset: null }
+          : failure("not_found", "No stable calendar-versioned release was found.");
+      }
 
       const requestId = response.headers.get("x-github-request-id");
       const remaining = response.headers.get("x-ratelimit-remaining");
@@ -60,6 +70,12 @@ export class GitHubReleaseClient {
       return failure("unavailable", "GitHub could not be reached before the request timed out.");
     }
   }
+}
+
+function highestStableRelease(releases: readonly GitHubReleaseRecord[]): GitHubReleaseRecord | null {
+  return releases
+    .filter((release) => !release.draft && !release.prerelease && CalendarVersion.parse(release.tag_name))
+    .sort((left, right) => CalendarVersion.parse(right.tag_name)!.compare(CalendarVersion.parse(left.tag_name)!))[0] ?? null;
 }
 
 function failure(state: ReleaseFailure["state"], message: string): ReleaseFailure {

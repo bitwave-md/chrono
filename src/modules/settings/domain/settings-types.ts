@@ -45,6 +45,7 @@ export interface StorageStatusRecord {
 }
 export interface UpdateStatusRecord {
   installedVersion: string;
+  buildCommit: string | null;
   latestVersion: string | null;
   updateAvailable: boolean;
   releaseName: string | null;
