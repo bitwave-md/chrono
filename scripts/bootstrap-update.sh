@@ -44,7 +44,7 @@ printf '%s' "$MIGRATOR_REF" | grep -Eq '^ghcr\.io/bitwave-md/chrono-migrator@sha
 printf '%s' "$UPDATER_REF" | grep -Eq '^ghcr\.io/bitwave-md/chrono-updater@sha256:[a-f0-9]{64}$' || fail "The updater image reference is invalid."
 
 printf 'Creating a pre-bootstrap backup...\n'
-if [ -x "$INSTALL_DIR/backup.sh" ]; then "$INSTALL_DIR/backup.sh"; else fail "The existing backup helper is missing."; fi
+if [ -x "$INSTALL_DIR/backup.sh" ]; then (cd "$INSTALL_DIR" && ./backup.sh); else fail "The existing backup helper is missing."; fi
 mkdir -p "$TMP_DIR/appliance"
 tar -xzf "$TMP_DIR/chrono-appliance.tar.gz" -C "$TMP_DIR/appliance"
 cp "$TMP_DIR/appliance/compose.yaml" "$INSTALL_DIR/compose.yaml"
