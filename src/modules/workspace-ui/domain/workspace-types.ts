@@ -338,6 +338,7 @@ export interface ProjectActivityRecord {
     createdAt: string;
     actorName: string | null;
     actorEmail: string | null;
+    actorAvatarUrl: string | null;
   }>;
 }
 

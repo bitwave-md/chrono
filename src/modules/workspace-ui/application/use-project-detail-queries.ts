@@ -75,6 +75,7 @@ export function useUpdateProjectMutation(workspaceSlug: string, projectId: strin
         queryClient.invalidateQueries({ queryKey }),
         queryClient.invalidateQueries({ queryKey: listQueryKey }),
         queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.favorites(workspaceSlug) }),
+        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.projectActivity(workspaceSlug, projectId) }),
       ]);
     },
   });

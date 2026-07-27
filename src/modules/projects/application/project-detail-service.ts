@@ -23,6 +23,7 @@ import { WorkspacePolicy } from "@/modules/authorization/domain/workspace-policy
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { ClientIcon, type ClientIconType } from "@/modules/clients/domain/client-icon";
 import type { ProjectPriority } from "@/modules/projects/application/project-service";
+import { ProjectActivityChangeSet } from "@/modules/projects/domain/project-activity-change-set";
 import {
   ConflictError,
   NotFoundError,
@@ -122,6 +123,7 @@ export class ProjectDetailService {
           createdAt: projectActivityEvents.createdAt,
           actorName: users.name,
           actorEmail: users.email,
+          actorAvatarUrl: users.image,
         })
         .from(projectActivityEvents)
         .leftJoin(workspaceMemberships, eq(workspaceMemberships.id, projectActivityEvents.actorMembershipId))
@@ -148,6 +150,30 @@ export class ProjectDetailService {
           input.iconColor ?? current.iconColor,
         )
       : null;
+    const currentAssignees = input.assigneeMembershipIds === undefined
+      ? []
+      : await this.#assignees(principal.workspaceId, projectId);
+    const changes = ProjectActivityChangeSet.between({
+      state: current.state,
+      priority: current.priority,
+      leadMembershipId: current.leadMembershipId,
+      summary: current.summary,
+      description: current.description,
+      visibility: current.visibility,
+      startDate: current.startDate,
+      targetDate: current.targetDate,
+      assigneeMembershipIds: currentAssignees.map((assignee) => assignee.membershipId),
+      iconType: current.iconType,
+      iconKey: current.iconKey,
+      iconColor: current.iconColor,
+    }, {
+      ...input,
+      ...(icon ? {
+        iconType: icon.type,
+        iconKey: icon.key,
+        iconColor: icon.color,
+      } : {}),
+    });
 
     return db.transaction(async (transaction) => {
       if (input.assigneeMembershipIds) {
@@ -189,17 +215,19 @@ export class ProjectDetailService {
 
       if (!updated) throw new NotFoundError("Project not found.");
 
-      if (input.assigneeMembershipIds) {
+      if (input.assigneeMembershipIds && changes.has("assignees")) {
         await this.#replaceAssignees(transaction, principal, projectId, input.assigneeMembershipIds);
       }
 
-      await transaction.insert(projectActivityEvents).values({
-        workspaceId: principal.workspaceId,
-        projectId,
-        actorMembershipId: principal.membershipId,
-        eventType: "project.updated",
-        payload: Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)),
-      });
+      if (changes.hasChanges) {
+        await transaction.insert(projectActivityEvents).values({
+          workspaceId: principal.workspaceId,
+          projectId,
+          actorMembershipId: principal.membershipId,
+          eventType: "project_properties_changed",
+          payload: changes.payload(),
+        });
+      }
 
       return updated;
     });
