@@ -1,11 +1,15 @@
 const VERSION_PATTERN = /^v(\d{2})\.([1-9]|1[0-2])\.([1-9]\d*)$/;
 
 export class CalendarVersion {
-  private constructor(
-    readonly year: number,
-    readonly month: number,
-    readonly sequence: number,
-  ) {}
+  readonly year: number;
+  readonly month: number;
+  readonly sequence: number;
+
+  private constructor(year: number, month: number, sequence: number) {
+    this.year = year;
+    this.month = month;
+    this.sequence = sequence;
+  }
 
   static parse(value: string): CalendarVersion | null {
     const match = VERSION_PATTERN.exec(value.trim());

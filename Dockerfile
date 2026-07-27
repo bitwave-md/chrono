@@ -16,11 +16,26 @@ COPY . .
 RUN npm run build
 
 FROM base AS migrator
+ARG CHRONO_BUILD_VERSION=development
+ARG CHRONO_BUILD_COMMIT=unknown
+ENV CHRONO_BUILD_VERSION=$CHRONO_BUILD_VERSION
+ENV CHRONO_BUILD_COMMIT=$CHRONO_BUILD_COMMIT
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY package.json package-lock.json drizzle.config.ts ./
 COPY drizzle ./drizzle
 COPY src/db/schema ./src/db/schema
 CMD ["npm", "run", "db:migrate"]
+
+FROM node:24-alpine AS updater
+ARG CHRONO_BUILD_VERSION=development
+ARG CHRONO_BUILD_COMMIT=unknown
+ENV CHRONO_BUILD_VERSION=$CHRONO_BUILD_VERSION
+ENV CHRONO_BUILD_COMMIT=$CHRONO_BUILD_COMMIT
+WORKDIR /opt/chrono
+RUN apk add --no-cache docker-cli docker-cli-compose
+COPY scripts/updater.mjs ./scripts/updater.mjs
+COPY src/modules/settings/domain/calendar-version.ts ./src/modules/settings/domain/calendar-version.ts
+CMD ["node", "scripts/updater.mjs", "watch"]
 
 FROM base AS runner
 ARG CHRONO_BUILD_VERSION=development

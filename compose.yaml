@@ -55,7 +55,7 @@ services:
       - chrono_postgres_data:/var/lib/postgresql/data
 
   migrate:
-    image: ${CHRONO_MIGRATOR_IMAGE:-ghcr.io/bitwave-md/chrono-migrator}:${CHRONO_VERSION:-latest}
+    image: ${CHRONO_MIGRATOR_REF:-${CHRONO_MIGRATOR_IMAGE:-ghcr.io/bitwave-md/chrono-migrator}:${CHRONO_VERSION:-latest}}
     pull_policy: ${CHRONO_PULL_POLICY:-missing}
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-chrono}
@@ -65,7 +65,7 @@ services:
     restart: "no"
 
   app:
-    image: ${CHRONO_APP_IMAGE:-ghcr.io/bitwave-md/chrono}:${CHRONO_VERSION:-latest}
+    image: ${CHRONO_APP_REF:-${CHRONO_APP_IMAGE:-ghcr.io/bitwave-md/chrono}:${CHRONO_VERSION:-latest}}
     pull_policy: ${CHRONO_PULL_POLICY:-missing}
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-chrono}
@@ -85,6 +85,7 @@ services:
       CHRONO_VERSION: ${CHRONO_VERSION:-latest}
       CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
       CHRONO_GITHUB_TOKEN: ${CHRONO_GITHUB_TOKEN:-}
+      CHRONO_INSTALL_MODE: ${CHRONO_INSTALL_MODE:-source}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -100,6 +101,24 @@ services:
     restart: unless-stopped
     volumes:
       - ${CHRONO_STATUS_DIR:-./data/status}:/var/lib/chrono:ro
+      - ${CHRONO_UPDATE_REQUEST_DIR:-./data/update-requests}:/var/lib/chrono-update
+
+  updater:
+    image: ${CHRONO_UPDATER_REF:-${CHRONO_UPDATER_IMAGE:-ghcr.io/bitwave-md/chrono-updater}:${CHRONO_VERSION:-latest}}
+    profiles: ["updates"]
+    environment:
+      CHRONO_INSTALL_DIR: ${CHRONO_INSTALL_DIR:-/installation}
+      CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
+      CHRONO_GITHUB_TOKEN: ${CHRONO_GITHUB_TOKEN:-}
+      CHRONO_STATUS_DIR: /var/lib/chrono
+      CHRONO_UPDATE_REQUEST_DIR: /var/lib/chrono-update
+    working_dir: ${CHRONO_INSTALL_DIR:-/installation}
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CHRONO_INSTALL_DIR:-.}:${CHRONO_INSTALL_DIR:-/installation}
+      - ${CHRONO_STATUS_DIR:-./data/status}:/var/lib/chrono
+      - ${CHRONO_UPDATE_REQUEST_DIR:-./data/update-requests}:/var/lib/chrono-update
 
   caddy:
     image: caddy:2-alpine

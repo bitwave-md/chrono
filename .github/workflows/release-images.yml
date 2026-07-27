@@ -1,15 +1,46 @@
-name: Publish release images
+name: Publish production release
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: chrono-production-release
+  cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
-  publish:
+  checks:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      commit: ${{ steps.commit.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - id: version
+        run: node --import tsx scripts/next-release-version.ts
+      - id: commit
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          CHRONO_BUILD_VERSION: ${{ steps.version.outputs.version }}
+          CHRONO_BUILD_COMMIT: ${{ steps.commit.outputs.commit }}
+
+  images:
+    needs: checks
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,8 +49,12 @@ jobs:
             image: ghcr.io/bitwave-md/chrono
           - target: migrator
             image: ghcr.io/bitwave-md/chrono-migrator
+          - target: updater
+            image: ghcr.io/bitwave-md/chrono-updater
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checks.outputs.commit }}
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -27,21 +62,65 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - id: metadata
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ matrix.image }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
-      - uses: docker/build-push-action@v6
+      - id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           target: ${{ matrix.target }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
+          tags: |
+            ${{ matrix.image }}:${{ needs.checks.outputs.version }}
+            ${{ matrix.image }}:latest
+          build-args: |
+            CHRONO_BUILD_VERSION=${{ needs.checks.outputs.version }}
+            CHRONO_BUILD_COMMIT=${{ needs.checks.outputs.commit }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/bitwave-md/chrono
+            org.opencontainers.image.revision=${{ needs.checks.outputs.commit }}
+            org.opencontainers.image.version=${{ needs.checks.outputs.version }}
           cache-from: type=gha,scope=${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+      - run: |
+          mkdir -p digest
+          printf '%s\n' '${{ steps.build.outputs.digest }}' > "digest/${{ matrix.target }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.target }}
+          path: digest/${{ matrix.target }}
+          retention-days: 1
+
+  release:
+    needs: [checks, images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digest-*
+          path: digests
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.checks.outputs.version }}
+          COMMIT: ${{ needs.checks.outputs.commit }}
+        run: |
+          APP_REF="ghcr.io/bitwave-md/chrono@$(cat digests/runner)"
+          MIGRATOR_REF="ghcr.io/bitwave-md/chrono-migrator@$(cat digests/migrator)"
+          UPDATER_REF="ghcr.io/bitwave-md/chrono-updater@$(cat digests/updater)"
+          printf '%s\n' "$VERSION" > chrono-version.txt
+          cat > chrono-release.json <<EOF
+          {"version":"$VERSION","commit":"$COMMIT","images":{"app":"$APP_REF","migrator":"$MIGRATOR_REF","updater":"$UPDATER_REF"}}
+          EOF
+          cat > chrono-release.env <<EOF
+          CHRONO_VERSION=$VERSION
+          CHRONO_APP_REF=$APP_REF
+          CHRONO_MIGRATOR_REF=$MIGRATOR_REF
+          CHRONO_UPDATER_REF=$UPDATER_REF
+          EOF
+          sha256sum chrono-version.txt chrono-release.json chrono-release.env > checksums.sha256
+          gh release create "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$COMMIT" \
+            --title "$VERSION" \
+            --generate-notes \
+            chrono-version.txt chrono-release.json chrono-release.env checksums.sha256
