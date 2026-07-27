@@ -191,7 +191,7 @@ class UpdateAgent {
       }
       await this.#status(request, "completed", `Chrono ${manifest.version} is healthy.`, startedAt, new Date().toISOString());
       await rm(this.#processingFile, { force: true });
-      await this.#commands.run("docker", ["compose", "up", "-d", "--no-deps", "updater"]);
+      await this.#commands.run("docker", ["compose", "up", "-d", "--no-deps", "updater"]).catch(() => undefined);
     } catch (error) {
       await this.#status(request, "failed", error instanceof Error ? error.message : "The update failed.", startedAt, new Date().toISOString(), stage);
       await rm(this.#processingFile, { force: true });

@@ -94,6 +94,9 @@ jobs:
     needs: [checks, images]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checks.outputs.commit }}
       - uses: actions/download-artifact@v4
         with:
           pattern: digest-*
@@ -117,10 +120,12 @@ jobs:
           CHRONO_MIGRATOR_REF=$MIGRATOR_REF
           CHRONO_UPDATER_REF=$UPDATER_REF
           EOF
-          sha256sum chrono-version.txt chrono-release.json chrono-release.env > checksums.sha256
+          tar -czf chrono-appliance.tar.gz compose.yaml compose.external-storage.yaml scripts/backup.sh scripts/restore.sh scripts/update.sh
+          cp scripts/bootstrap-update.sh bootstrap-update.sh
+          sha256sum chrono-version.txt chrono-release.json chrono-release.env chrono-appliance.tar.gz bootstrap-update.sh > checksums.sha256
           gh release create "$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$COMMIT" \
             --title "$VERSION" \
             --generate-notes \
-            chrono-version.txt chrono-release.json chrono-release.env checksums.sha256
+            chrono-version.txt chrono-release.json chrono-release.env chrono-appliance.tar.gz bootstrap-update.sh checksums.sha256

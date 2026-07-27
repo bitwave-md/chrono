@@ -6,25 +6,47 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd || pwd)
 if [ -f "$ROOT/compose.yaml" ]; then COMPOSE_ROOT=$ROOT; else COMPOSE_ROOT=$(pwd); fi
 ENV_FILE=${CHRONO_ENV_FILE:-$COMPOSE_ROOT/.env}
 [ -f "$ENV_FILE" ] || { printf 'Missing %s\n' "$ENV_FILE" >&2; exit 1; }
-VERSION=${1:-}
-[ -n "$VERSION" ] || { printf 'Usage: %s <release-version>\n' "$0" >&2; exit 1; }
+set -a
+. "$ENV_FILE"
+set +a
+
+[ "${CHRONO_INSTALL_MODE:-source}" = "image" ] || {
+  printf 'Automatic updates require an image installation. Run the documented one-time bootstrap first.\n' >&2
+  exit 1
+}
+
+VERSION=""
+if [ "$#" -gt 0 ]; then
+  [ "$#" -eq 2 ] && [ "$1" = "--version" ] || { printf 'Usage: %s [--version vYY.M.N]\n' "$0" >&2; exit 1; }
+  VERSION=$2
+  printf '%s' "$VERSION" | grep -Eq '^v[0-9]{2}\.([1-9]|1[0-2])\.[1-9][0-9]*$' || { printf 'Invalid Chrono version: %s\n' "$VERSION" >&2; exit 1; }
+fi
 
 cd "$COMPOSE_ROOT"
-if [ -x "$COMPOSE_ROOT/backup.sh" ]; then "$COMPOSE_ROOT/backup.sh"; else "$ROOT/scripts/backup.sh"; fi
+docker compose up -d updater >/dev/null
+if [ -n "$VERSION" ]; then
+  JOB_ID=$(docker compose exec -T updater node /opt/chrono/scripts/updater.mjs enqueue "$VERSION")
+else
+  JOB_ID=$(docker compose exec -T updater node /opt/chrono/scripts/updater.mjs enqueue)
+fi
+printf 'Chrono update queued (%s). The updater will back up and verify the installation.\n' "$JOB_ID"
 
-TMP=$ENV_FILE.tmp
-awk -v version="$VERSION" 'BEGIN { found=0 } /^CHRONO_VERSION=/ { print "CHRONO_VERSION=" version; found=1; next } { print } END { if (!found) print "CHRONO_VERSION=" version }' "$ENV_FILE" > "$TMP"
-chmod 600 "$TMP"
-mv "$TMP" "$ENV_FILE"
-
-docker compose pull app migrate
-docker compose run --rm migrate
-docker compose up -d --remove-orphans
-
+STATUS_DIR=${CHRONO_STATUS_DIR:-$COMPOSE_ROOT/data/status}
 ATTEMPTS=0
-until [ "$(docker compose ps --status running --format json app | grep -c 'healthy' || true)" -gt 0 ]; do
+while [ "$ATTEMPTS" -lt 900 ]; do
   ATTEMPTS=$((ATTEMPTS + 1))
-  [ "$ATTEMPTS" -lt 30 ] || { docker compose logs --tail=100 app; exit 1; }
+  if [ -f "$STATUS_DIR/update-status.json" ] && grep -q "\"id\":\"$JOB_ID\"" "$STATUS_DIR/update-status.json"; then
+    if grep -q '"stage":"completed"' "$STATUS_DIR/update-status.json"; then
+      printf 'Chrono update completed successfully.\n'
+      exit 0
+    fi
+    if grep -q '"stage":"failed"' "$STATUS_DIR/update-status.json"; then
+      printf 'Chrono update failed. Inspect %s/update.log and Docker logs.\n' "$STATUS_DIR" >&2
+      exit 1
+    fi
+  fi
   sleep 2
 done
-printf 'Chrono updated to %s and is healthy.\n' "$VERSION"
+
+printf 'Timed out waiting for the updater. Inspect %s/update.log and Docker logs.\n' "$STATUS_DIR" >&2
+exit 1

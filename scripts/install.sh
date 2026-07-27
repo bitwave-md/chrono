@@ -42,7 +42,7 @@ fi
 
 INSTALL_DIR=${CHRONO_INSTALL_DIR:-"$HOME/chrono"}
 SOURCE_REF=${CHRONO_SOURCE_REF:-main}
-VERSION=${CHRONO_VERSION:-latest}
+VERSION=${CHRONO_VERSION:-}
 PUBLIC_URL=${NEXTAUTH_URL:-$(prompt "Public Chrono URL" "http://localhost:3000")}
 WORKSPACE_NAME=${AUTH_SETUP_WORKSPACE_NAME:-$(prompt "Workspace name" "Chrono Workspace")}
 WORKSPACE_SLUG=${AUTH_SETUP_WORKSPACE_SLUG:-$(slugify "$WORKSPACE_NAME")}
@@ -62,6 +62,11 @@ case "$PUBLIC_URL" in
   http://*) CHRONO_BIND_ADDRESS_VALUE=0.0.0.0 ;;
 esac
 
+add_profile() {
+  current=$1 wanted=$2
+  case ",$current," in *",$wanted,"*) printf '%s' "$current";; *) if [ -n "$current" ]; then printf '%s,%s' "$current" "$wanted"; else printf '%s' "$wanted"; fi;; esac
+}
+
 POSTGRES_PASSWORD_VALUE=${POSTGRES_PASSWORD:-$(random_hex 24)}
 NEXTAUTH_SECRET_VALUE=${NEXTAUTH_SECRET:-$(random_hex 32)}
 SETUP_TOKEN_VALUE=${AUTH_SETUP_TOKEN:-$(random_hex 32)}
@@ -70,7 +75,9 @@ S3_SECRET_KEY_VALUE=${S3_SECRET_KEY:-$(random_hex 24)}
 
 umask 077
 mkdir -p "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR/data/status"
+INSTALL_DIR=$(CDPATH= cd -- "$INSTALL_DIR" && pwd)
+mkdir -p "$INSTALL_DIR/data/status" "$INSTALL_DIR/data/update-requests"
+chmod 733 "$INSTALL_DIR/data/update-requests"
 
 if [ -e "$INSTALL_DIR/.env" ] && [ "${CHRONO_FORCE:-0}" != "1" ]; then
   fail "$INSTALL_DIR/.env already exists. Set CHRONO_FORCE=1 only when intentionally replacing this installation configuration."
@@ -97,6 +104,28 @@ install_helper backup.sh
 install_helper restore.sh
 install_helper update.sh
 
+APP_REF_VALUE=""
+MIGRATOR_REF_VALUE=""
+UPDATER_REF_VALUE=""
+RELEASE_AVAILABLE=0
+if [ -z "${CHRONO_COMPOSE_SOURCE:-}" ]; then
+  RELEASE_URL=https://github.com/bitwave-md/chrono/releases
+  if [ -z "$VERSION" ]; then
+    VERSION=$(curl -fsSL "$RELEASE_URL/latest/download/chrono-version.txt" 2>/dev/null || true)
+  fi
+  if printf '%s' "$VERSION" | grep -Eq '^v[0-9]{2}\.([1-9]|1[0-2])\.[1-9][0-9]*$'; then
+    RELEASE_ENV=$(mktemp)
+    if curl -fsSL "$RELEASE_URL/download/$VERSION/chrono-release.env" -o "$RELEASE_ENV"; then
+      APP_REF_VALUE=$(sed -n 's/^CHRONO_APP_REF=//p' "$RELEASE_ENV")
+      MIGRATOR_REF_VALUE=$(sed -n 's/^CHRONO_MIGRATOR_REF=//p' "$RELEASE_ENV")
+      UPDATER_REF_VALUE=$(sed -n 's/^CHRONO_UPDATER_REF=//p' "$RELEASE_ENV")
+      if printf '%s\n%s\n%s\n' "$APP_REF_VALUE" "$MIGRATOR_REF_VALUE" "$UPDATER_REF_VALUE" | grep -Eqv '^ghcr\.io/bitwave-md/chrono(|-migrator|-updater)@sha256:[a-f0-9]{64}$'; then RELEASE_AVAILABLE=0; else RELEASE_AVAILABLE=1; fi
+    fi
+    rm -f "$RELEASE_ENV"
+  fi
+fi
+[ -n "$VERSION" ] || VERSION=latest
+
 write_environment() {
   pull_policy=$1
   install_mode=$2
@@ -104,15 +133,21 @@ write_environment() {
 CHRONO_VERSION=$VERSION
 CHRONO_APP_IMAGE=ghcr.io/bitwave-md/chrono
 CHRONO_MIGRATOR_IMAGE=ghcr.io/bitwave-md/chrono-migrator
+CHRONO_UPDATER_IMAGE=ghcr.io/bitwave-md/chrono-updater
+CHRONO_APP_REF=$APP_REF_VALUE
+CHRONO_MIGRATOR_REF=$MIGRATOR_REF_VALUE
+CHRONO_UPDATER_REF=$UPDATER_REF_VALUE
 CHRONO_PULL_POLICY=$pull_policy
 CHRONO_BUILD_CONTEXT=./source
 CHRONO_INSTALL_MODE=$install_mode
+CHRONO_INSTALL_DIR=$INSTALL_DIR
 CHRONO_RELEASE_REPOSITORY=bitwave-md/chrono
 CHRONO_GITHUB_TOKEN=${CHRONO_GITHUB_TOKEN:-}
 CHRONO_STATUS_DIR=./data/status
+CHRONO_UPDATE_REQUEST_DIR=./data/update-requests
 CHRONO_BIND_ADDRESS=$CHRONO_BIND_ADDRESS_VALUE
 CHRONO_PORT=3000
-COMPOSE_PROFILES=$COMPOSE_PROFILES_VALUE
+COMPOSE_PROFILES=$(if [ "$install_mode" = image ]; then add_profile "$COMPOSE_PROFILES_VALUE" updates; else printf '%s' "$COMPOSE_PROFILES_VALUE"; fi)
 CHRONO_DOMAIN=$CHRONO_DOMAIN_VALUE
 MINIO_ROOT_USER=chrono-root
 MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD_VALUE
@@ -139,7 +174,7 @@ EOF
 write_environment always image
 
 if [ "${CHRONO_SKIP_START:-0}" != "1" ]; then
-  if (cd "$INSTALL_DIR" && docker compose pull); then
+  if [ "$RELEASE_AVAILABLE" = "1" ] && (cd "$INSTALL_DIR" && docker compose pull); then
     (cd "$INSTALL_DIR" && docker compose up -d)
   else
     say "Prebuilt images are unavailable; falling back to a Docker source build."
@@ -149,6 +184,9 @@ if [ "${CHRONO_SKIP_START:-0}" != "1" ]; then
     curl -fsSL "https://github.com/bitwave-md/chrono/archive/$SOURCE_REF.tar.gz" |
       tar -xz --strip-components=1 -C "$INSTALL_DIR/source"
     cp "$INSTALL_DIR/source/compose.build.yaml" "$INSTALL_DIR/compose.build.yaml"
+    APP_REF_VALUE=""
+    MIGRATOR_REF_VALUE=""
+    UPDATER_REF_VALUE=""
     write_environment never source
     (cd "$INSTALL_DIR" && docker compose -f compose.yaml -f compose.build.yaml up --build -d)
   fi
