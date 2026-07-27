@@ -1,5 +1,24 @@
 # Chrono Roadmap
 
+## Calendar-versioned one-click updates
+
+Tracer bullet: publish an official `vYY.M.N` GitHub Release, notify the
+instance operator, and install it from Settings with an automatic coordinated
+backup while the Next.js container remains isolated from the Docker socket.
+
+- [ ] Publish stable calendar versions and digest-pinned multi-architecture images.
+- [ ] Discover the highest valid public release and report immutable build provenance.
+- [ ] Add the isolated updater sidecar and constrained request/status protocol.
+- [ ] Add operator-only update execution, progress, toast, and navigation badge.
+- [ ] Add the one-time existing-install bootstrap and versionless host fallback.
+- [ ] Verify failure recovery, release automation, builds, Docker health, and file limits.
+
+Official versions use the UTC year and month plus a monthly sequence, such as
+`v26.7.1`. Ordinary commits, tags without published stable Releases, drafts,
+and prereleases are never offered to installations. The updater may install
+only the independently validated latest official release; it cannot execute
+arbitrary host commands or accept image references from the web application.
+
 ## Guest time-report access
 
 Tracer bullet: sign in as a Guest, open an accessible Client or Project Time
