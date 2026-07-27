@@ -25,6 +25,7 @@ export function PropertyTrigger({ icon: Icon, iconElement, label, value, color, 
       className={cn("h-8 max-w-56 justify-start gap-1.5 px-2 text-muted-foreground hover:text-foreground", props.className)}
       disabled={props.disabled}
       size="sm"
+      type="button"
       variant="ghost"
       onClick={props.onClick}
     >

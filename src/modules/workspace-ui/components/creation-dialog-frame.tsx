@@ -54,7 +54,7 @@ export function CreationDialogFrame({
           <Button aria-label={expanded ? "Exit expanded view" : "Expand dialog"} size="icon-sm" type="button" variant="ghost" onClick={() => setExpanded((value) => !value)}>
             {expanded ? <Minimize2 /> : <Maximize2 />}
           </Button>
-          <DialogClose asChild><Button aria-label="Close" size="icon-sm" variant="ghost"><X /></Button></DialogClose>
+          <DialogClose asChild><Button aria-label="Close" size="icon-sm" type="button" variant="ghost"><X /></Button></DialogClose>
         </div>
       </DialogHeader>
       {children}

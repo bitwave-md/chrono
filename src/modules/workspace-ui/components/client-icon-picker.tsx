@@ -77,6 +77,7 @@ export function EntityIconPicker({
           aria-label={`Change ${label} icon`}
           className="size-12 rounded-xl p-0"
           disabled={disabled}
+          type="button"
           variant="ghost"
         >
           <EntityIcon className="size-12 rounded-xl" entity={entity} iconClassName={entity.iconType === "emoji" ? "text-2xl" : "size-7"} />

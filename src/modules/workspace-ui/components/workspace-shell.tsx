@@ -1,12 +1,13 @@
 "use client";
 
 import { type ReactNode, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { useActiveTimerQuery, useTimerSyncBridge } from "@/modules/workspace-ui/application/use-timer-query";
+import { useProjectBranchesQuery } from "@/modules/workspace-ui/application/use-project-branch-queries";
 import { useProjectsQuery, useClientsQuery, useMembersQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { useWorkspaceShortcuts } from "@/modules/workspace-ui/application/use-workspace-shortcuts";
 import { CommandMenu } from "@/modules/workspace-ui/components/command-menu";
@@ -17,6 +18,7 @@ import { SettingsShell } from "@/modules/settings/components/settings-shell";
 import { usePreferencesQuery } from "@/modules/settings/application/use-settings-queries";
 import { UpdateNotificationBridge } from "@/modules/settings/components/update-notification-bridge";
 import type { WorkspaceIdentity, WorkspaceOption } from "@/modules/workspace-ui/domain/workspace-types";
+import { IssueCreationRouteContext } from "@/modules/workspace-ui/domain/issue-creation-route-context";
 import { useCommandMenu, useWorkspaceOverlay, useWorkspaceView, WorkspaceUiProvider } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
 interface WorkspaceExperienceProps {
@@ -69,12 +71,20 @@ function WorkspaceShell({ workspace, workspaces, children }: WorkspaceExperience
 function ApplicationShell({ workspace, workspaces, children }: WorkspaceExperienceProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const creationRoute = IssueCreationRouteContext.from(pathname, searchParams.get("branch"));
   const clientsQuery = useClientsQuery(workspace.slug);
   const clients = clientsQuery.data ?? [];
-  const routeClientId = pathname.match(/\/clients\/([^/]+)/)?.[1] ?? null;
-  const activeClient = clients.find((client) => client.id === routeClientId) ?? clients[0] ?? null;
-  const projectsQuery = useProjectsQuery(workspace.slug, activeClient?.id ?? null);
-  const projects = projectsQuery.data ?? [];
+  const projectsQuery = useProjectsQuery(workspace.slug, null);
+  const allProjects = projectsQuery.data ?? [];
+  const activeProject = allProjects.find((project) => project.id === creationRoute.projectId) ?? null;
+  const activeClient = clients.find((client) => client.id === (creationRoute.clientId ?? activeProject?.clientId))
+    ?? (!creationRoute.clientId && !creationRoute.projectId ? clients[0] : null);
+  const projects = activeClient
+    ? allProjects.filter((project) => project.clientId === activeClient.id)
+    : [];
+  const branchesQuery = useProjectBranchesQuery(workspace.slug, activeProject?.id ?? null);
+  const branches = branchesQuery.data ?? [];
   const membersQuery = useMembersQuery(workspace.slug);
   const members = membersQuery.data ?? [];
   const activeTimerQuery = useActiveTimerQuery(workspace.slug);
@@ -109,7 +119,7 @@ function ApplicationShell({ workspace, workspaces, children }: WorkspaceExperien
       <CommandMenu
         clients={clients}
         open={commandOpen}
-        projects={projects}
+        projects={allProjects}
         workspaceRoot={`/app/${workspace.slug}`}
         onNavigate={(path) => router.push(path)}
         onOpenChange={setCommandOpen}
@@ -119,13 +129,13 @@ function ApplicationShell({ workspace, workspaces, children }: WorkspaceExperien
       {createIssueOpen && activeClient ? (
         <CreateIssueDialog
           clientId={activeClient.id}
-          filters={{}}
-          branches={[]}
+          filters={creationRoute.filters}
+          branches={branches}
           members={members}
           open
           projects={projects}
-          selectedProjectId={null}
-          selectedBranchId={null}
+          selectedProjectId={activeProject?.id ?? null}
+          selectedBranchId={creationRoute.branchId}
           workspaceSlug={workspace.slug}
           onOpenChange={(open) => (open ? openCreateIssue() : closeCreateIssue())}
         />
