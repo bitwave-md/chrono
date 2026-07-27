@@ -679,3 +679,17 @@ reversible service tracer favorited and resolved one Client, Project, and Issue,
 then removed all three. All existing Projects received icon identity, favorites
 remained membership-scoped, and the section stayed absent after cleanup.
 Twenty-five tests, the production Compose build, and container health passed.
+
+## Contextual creation and Project activity
+
+Tracer bullet: change one Project property, observe one field-specific compact
+activity entry, then create an Issue with `C` and retain the current Project and
+named Branch route context.
+
+- [ ] Record only meaningful Project changes with structured before/after values.
+- [ ] Merge Project updates and audit events into a compact chronological stream.
+- [ ] Coalesce rapid duplicate audit entries without hiding distinct transitions.
+- [ ] Keep creation property triggers from submitting their parent forms.
+- [ ] Derive global Issue creation Project and Branch defaults from the route.
+- [ ] Center icon-only sidebar content and verify desktop collapse behavior.
+- [ ] Run static checks, tests, production build, and Docker health verification.
