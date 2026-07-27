@@ -33,6 +33,10 @@ slugify() {
     sed 's/[^a-z0-9][^a-z0-9]*/-/g; s/^-//; s/-$//'
 }
 
+checksum() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
+
 command -v docker >/dev/null 2>&1 || fail "Docker is required. Install Docker Engine or Docker Desktop first."
 docker compose version >/dev/null 2>&1 || fail "The Docker Compose plugin is required."
 
@@ -114,14 +118,31 @@ if [ -z "${CHRONO_COMPOSE_SOURCE:-}" ]; then
     VERSION=$(curl -fsSL "$RELEASE_URL/latest/download/chrono-version.txt" 2>/dev/null || true)
   fi
   if printf '%s' "$VERSION" | grep -Eq '^v[0-9]{2}\.([1-9]|1[0-2])\.[1-9][0-9]*$'; then
-    RELEASE_ENV=$(mktemp)
-    if curl -fsSL "$RELEASE_URL/download/$VERSION/chrono-release.env" -o "$RELEASE_ENV"; then
-      APP_REF_VALUE=$(sed -n 's/^CHRONO_APP_REF=//p' "$RELEASE_ENV")
-      MIGRATOR_REF_VALUE=$(sed -n 's/^CHRONO_MIGRATOR_REF=//p' "$RELEASE_ENV")
-      UPDATER_REF_VALUE=$(sed -n 's/^CHRONO_UPDATER_REF=//p' "$RELEASE_ENV")
-      if printf '%s\n%s\n%s\n' "$APP_REF_VALUE" "$MIGRATOR_REF_VALUE" "$UPDATER_REF_VALUE" | grep -Eqv '^ghcr\.io/bitwave-md/chrono(|-migrator|-updater)@sha256:[a-f0-9]{64}$'; then RELEASE_AVAILABLE=0; else RELEASE_AVAILABLE=1; fi
+    RELEASE_FILES=$(mktemp -d)
+    RELEASE_BASE=$RELEASE_URL/download/$VERSION
+    if curl -fsSL "$RELEASE_BASE/chrono-release.env" -o "$RELEASE_FILES/chrono-release.env" \
+      && curl -fsSL "$RELEASE_BASE/chrono-appliance.tar.gz" -o "$RELEASE_FILES/chrono-appliance.tar.gz" \
+      && curl -fsSL "$RELEASE_BASE/checksums.sha256" -o "$RELEASE_FILES/checksums.sha256"; then
+      ENV_EXPECTED=$(awk '$2 == "chrono-release.env" { print $1 }' "$RELEASE_FILES/checksums.sha256")
+      APPLIANCE_EXPECTED=$(awk '$2 == "chrono-appliance.tar.gz" { print $1 }' "$RELEASE_FILES/checksums.sha256")
+      if [ -n "$ENV_EXPECTED" ] && [ -n "$APPLIANCE_EXPECTED" ] \
+        && [ "$(checksum "$RELEASE_FILES/chrono-release.env")" = "$ENV_EXPECTED" ] \
+        && [ "$(checksum "$RELEASE_FILES/chrono-appliance.tar.gz")" = "$APPLIANCE_EXPECTED" ]; then
+        APP_REF_VALUE=$(sed -n 's/^CHRONO_APP_REF=//p' "$RELEASE_FILES/chrono-release.env")
+        MIGRATOR_REF_VALUE=$(sed -n 's/^CHRONO_MIGRATOR_REF=//p' "$RELEASE_FILES/chrono-release.env")
+        UPDATER_REF_VALUE=$(sed -n 's/^CHRONO_UPDATER_REF=//p' "$RELEASE_FILES/chrono-release.env")
+        ENV_VERSION=$(sed -n 's/^CHRONO_VERSION=//p' "$RELEASE_FILES/chrono-release.env")
+        if [ "$ENV_VERSION" = "$VERSION" ] && ! printf '%s\n%s\n%s\n' "$APP_REF_VALUE" "$MIGRATOR_REF_VALUE" "$UPDATER_REF_VALUE" | grep -Eqv '^ghcr\.io/bitwave-md/chrono(|-migrator|-updater)@sha256:[a-f0-9]{64}$'; then
+          command -v tar >/dev/null 2>&1 || fail "tar is required to install the release appliance."
+          tar -xzf "$RELEASE_FILES/chrono-appliance.tar.gz" -C "$RELEASE_FILES"
+          cp "$RELEASE_FILES/compose.yaml" "$INSTALL_DIR/compose.yaml"
+          [ ! -f "$RELEASE_FILES/compose.external-storage.yaml" ] || cp "$RELEASE_FILES/compose.external-storage.yaml" "$INSTALL_DIR/compose.external-storage.yaml"
+          for helper in backup.sh restore.sh update.sh; do cp "$RELEASE_FILES/scripts/$helper" "$INSTALL_DIR/$helper"; chmod 700 "$INSTALL_DIR/$helper"; done
+          RELEASE_AVAILABLE=1
+        fi
+      fi
     fi
-    rm -f "$RELEASE_ENV"
+    rm -rf "$RELEASE_FILES"
   fi
 fi
 [ -n "$VERSION" ] || VERSION=latest
