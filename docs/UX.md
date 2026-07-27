@@ -47,6 +47,9 @@ and operator-only Administration groups. Each functional page uses a centered
 divided cards. Mobile navigation uses the shared off-canvas Sidebar. Profile,
 preferences, notifications, Workspace identity, members, time entry types,
 storage, and updates never appear as decorative placeholders.
+An available official release adds an amber Updates navigation dot and one
+operator toast per browser and version. The Updates page uses a confirmation
+dialog and compact persisted stage list rather than a blocking page overlay.
 
 ## Project experience
 

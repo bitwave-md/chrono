@@ -90,12 +90,19 @@ Anonymous share tokens contain 256 bits of entropy; PostgreSQL stores only
 their digest. Links expire within 30 days, are revocable, stop working when the
 creator loses access or the target is archived, and expose no visitor IP
 history. Public responses are attachment-only with `nosniff`, `no-referrer`,
-`noindex`, no-store caching, and rate limiting. The app has no Docker socket,
-and application updates remain host-side operations.
+`noindex`, no-store caching, and rate limiting. The app has no Docker socket or
+installation-directory mount. The updater sidecar has both because Docker API
+access is host-equivalent; it is not published on a network port and accepts
+only fixed, validated official-release requests through a constrained shared
+directory. Requested versions, manifests, repositories, image names, and
+SHA-256 digests are validated again inside that privileged boundary.
 
 Private GitHub release checks may use `CHRONO_GITHUB_TOKEN`. Use a fine-grained
 read-only token limited to the Chrono repository, keep it in the mode-`0600`
 installation environment, and rotate it independently of application secrets.
+Public repositories need no token. Drafts, prereleases, ordinary tags, invalid
+calendar versions, arbitrary registries, digest-less images, and downgrades are
+not installable through the one-click path.
 
 ## Upgrade review
 

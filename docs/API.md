@@ -222,7 +222,12 @@ entry ends on that date while the server continues to reject future periods.
 - `PATCH /api/workspaces/:workspaceSlug/settings/members/:membershipId` changes
   role or active, suspended, and removed state with last-owner protection.
 - `GET /api/workspaces/:workspaceSlug/settings/storage` and `/updates` expose
-  operator-only health and release metadata.
+  operator-only health, immutable build provenance, official release metadata,
+  updater capability, and persisted job progress.
+- `POST /api/workspaces/:workspaceSlug/settings/updates` accepts an empty JSON
+  object and queues only `install_latest`. It requires the instance operator,
+  a trusted same-origin request, a newer official release, and no active job;
+  success returns `202` with the queued job.
 - `PATCH /api/workspaces/:workspaceSlug/time-categories/:categoryId` renames,
   recolors, reorders, changes billing default, or archives a time entry type.
 

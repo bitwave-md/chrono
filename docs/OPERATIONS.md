@@ -9,11 +9,14 @@ The supported production package is one Compose project containing:
 - `db`: PostgreSQL 17 with a persistent named volume.
 - `storage`: pinned MinIO with a persistent named volume and no production port.
 - `storage-init`: one-shot private bucket, application user, and policy setup.
+- `updater`: isolated official-release installer under the `updates` profile.
 - `caddy`: optional automatic HTTPS under the `https` profile.
 
 The host needs Docker and the Compose plugin only. PostgreSQL and MinIO are not
 published to the host. The app waits for healthy persistence plus successful
-migration and bucket initialization jobs. It never mounts the Docker socket.
+migration and bucket initialization jobs. The app never mounts the Docker
+socket; only the updater does, and it accepts structured official-release jobs
+through a shared request directory rather than arbitrary commands.
 
 ## Guided and unattended installation
 
@@ -40,8 +43,9 @@ Optional installer variables include `CHRONO_INSTALL_DIR`, `CHRONO_VERSION`,
 The installer refuses to overwrite an existing `.env`. `CHRONO_FORCE=1` is for
 intentional configuration replacement, not upgrades.
 
-The installer first pulls matching GHCR images. If the package is not public or
-the selected tag is unavailable, it downloads the selected source archive and
+The installer resolves the latest published stable `vYY.M.N` release, verifies
+its manifest, and pins exact GHCR image digests. If no release is available, it
+downloads the selected source archive and
 builds the same runner and migrator targets inside Docker. Source-mode installs
 record `CHRONO_INSTALL_MODE=source` and retain `compose.build.yaml` plus the
 source directory; they still require no host Node.js or PostgreSQL.
@@ -98,33 +102,61 @@ CHRONO_RESTORE_CONFIRM=restore ./restore.sh ~/chrono/backups/chrono-<timestamp>
 Never mix the database from one backup with objects from another. Named volumes
 protect only against container replacement.
 
+## One-time updater bootstrap
+
+Installations created before `v26.7.1` have no updater service in their copied
+Compose file. Perform this transition once on the Docker host:
+
+```sh
+cd /tmp
+curl -fsSLO https://github.com/bitwave-md/chrono/releases/latest/download/bootstrap-update.sh
+curl -fsSLO https://github.com/bitwave-md/chrono/releases/latest/download/checksums.sha256
+EXPECTED=$(awk '$2 == "bootstrap-update.sh" { print $1 }' checksums.sha256)
+ACTUAL=$(sha256sum bootstrap-update.sh 2>/dev/null | awk '{print $1}' || shasum -a 256 bootstrap-update.sh | awk '{print $1}')
+test "$EXPECTED" = "$ACTUAL" && CHRONO_INSTALL_DIR="$HOME/chrono" ./bootstrap-update.sh
+```
+
+The helper creates a full backup before replacing managed Compose/helper files.
+It preserves `.env`, named volumes, `COMPOSE_FILE`, Caddy or Cloudflare Tunnel
+configuration, external-storage settings, and secrets. It pins the latest
+digest manifest and enables the `updates` profile.
+
 ## Upgrade and rollback
 
-Run `./update.sh <release-version>`. It creates a backup, updates
-`CHRONO_VERSION`, pulls the matching app and migrator, runs migrations, restarts
-the stack, and waits for a healthy application. Settings → Updates displays the
-same command and release notes but cannot execute it.
+The instance operator receives a once-per-version toast and Settings badge for
+new official releases. Settings → Updates confirms and queues a one-click job.
+The updater validates the release independently, creates a full backup, pulls
+digest-pinned app, migrator, and updater images, migrates, restarts, and verifies
+health. Live progress survives an app or host restart.
+
+If the UI is unavailable, run `./update.sh` to enqueue the latest release and
+wait for completion. `./update.sh --version vYY.M.N` is an advanced recovery
+option for another published non-downgrade release.
 
 Release checks use `CHRONO_RELEASE_REPOSITORY` in `owner/repository` form. For
 a private repository, set `CHRONO_GITHUB_TOKEN` to a fine-grained, read-only
 token with repository metadata/content access, then recreate the app service.
 The token is sent only to `api.github.com` and is never returned to the browser.
-A repository without a published GitHub Release is reported separately from a
-network or rate-limit failure.
+A public commit or tag is not a production release. Only stable published
+GitHub Releases with canonical calendar tags and valid digest manifests are
+offered. A repository without one is reported separately from network or
+rate-limit failure.
 
-To move a source-fallback installation onto published images, set
-`CHRONO_INSTALL_MODE=image`, `CHRONO_PULL_POLICY=always`, and the desired
-`CHRONO_VERSION` in `.env`, then use the standard pull and startup commands
-without `compose.build.yaml`. Until images are available, replace the retained
+Source-development installations intentionally disable automatic updates. To
+move an existing source fallback onto official images, use the one-time updater
+bootstrap after a release is published. Until then, replace the retained
 `source` directory with the desired release archive and run:
 
 ```sh
 docker compose -f compose.yaml -f compose.build.yaml up --build -d
 ```
 
-Application rollback uses the previous matching image tag. Database rollback
-is not automatic: restore the pre-upgrade backup if a migration is not backward
-compatible. Never mix app and migrator versions.
+Migration failure leaves the current app and configuration active. If the new
+app fails health verification, the updater restores the previous image
+references. Database restore is never automatic: releases use one-version
+expand/contract compatibility, and an operator must restore the coordinated
+pre-update backup when database rollback is required. Never mix app and
+migrator versions.
 
 ## External S3-compatible storage
 

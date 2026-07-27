@@ -15,9 +15,10 @@ curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/inst
 
 The installer downloads `compose.yaml` into `~/chrono`, generates the database
 password, NextAuth secret, and high-entropy setup code, runs every migration, and starts
-Chrono at `http://localhost:3000`. It prefers versioned GHCR images and
-automatically falls back to a Docker source build when a public image is not
-available; neither path installs build tools on the host.
+Chrono at `http://localhost:3000`. It pins the latest official GitHub Release
+and its digest-addressed GHCR images. If no official release is available, it
+falls back to a Docker source build; neither path installs build tools on the
+host.
 
 Open `/auth/setup` and enter the setup code printed by the installer to claim the
 first owner. Choose the email and password used for later sign-ins. The code is
@@ -80,17 +81,26 @@ Restore only from a matching database-and-object snapshot:
 CHRONO_RESTORE_CONFIRM=restore ./restore.sh ~/chrono/backups/chrono-<timestamp>
 ```
 
-The update helper backs up first, locks the app and migrator to one release,
-runs migrations, restarts Compose, and verifies health:
+Image installations notify the instance operator when a newer official release
+exists. Settings → Updates can create a coordinated backup and install it with
+one button. The versionless host helper provides the same recovery path:
 
 ```sh
-./update.sh v0.2.0
+./update.sh
 ```
+
+Existing installations created before `v26.7.1` need one host-side bootstrap.
+Download `bootstrap-update.sh` and `checksums.sha256` from the latest GitHub
+Release, verify the script's listed SHA-256 digest, then run it. See
+[Self-Hosted Operations](docs/OPERATIONS.md#one-time-updater-bootstrap) for the
+exact commands.
 
 Never treat either Docker volume as a backup. Keep encrypted backup copies
 outside the Docker host and test restores. The operator-only Settings → Storage
 and Updates pages report health and guide these host commands; the web
-application never receives Docker socket access.
+application never receives Docker socket access. Only the constrained updater
+container mounts it; Next.js can enqueue `install_latest` through a shared
+request directory and read progress from a separate status directory.
 
 ## Source development
 
@@ -121,6 +131,7 @@ For an empty database, open `/auth/setup` and use the setup code from `.env`.
 
 - `docs/ARCHITECTURE.md` — system boundaries and data model
 - `docs/OPERATIONS.md` — installation, upgrades, backup, and recovery
+- `docs/RELEASES.md` — official versioning and production publication
 - `docs/SECURITY.md` — authentication and deployment requirements
 - `docs/API.md` — HTTP endpoints
 - `docs/PERFORMANCE.md` — measured performance notes

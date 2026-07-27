@@ -189,6 +189,15 @@ column and divided cards reuse the same shadcn primitives. TanStack Query owns
 every profile, preference, membership, storage, and update request; local form
 and upload-progress state stays component-scoped.
 
+Official application updates preserve the same state boundary. TanStack Query
+polls operator-only release and job state and performs the enqueue mutation; a
+small UI bridge derives the once-per-version toast and badge. Next.js can write
+only a structured `install_latest` request directory and read host-produced
+status. The isolated updater alone mounts the Docker socket and installation
+directory, validates GitHub release manifests, executes fixed backup and
+Compose stages, and persists resumable status. No Docker command or image
+reference is accepted from browser input.
+
 Issue timer and manual-entry controls live below the comment composer rather
 than in the property rail. Starting a timer persists only its authoritative
 epoch; the browser derives the live counter. Stopping or manually logging work

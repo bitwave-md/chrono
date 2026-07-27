@@ -17,3 +17,8 @@ Profile again with realistic cardinalities before introducing derived storage.
 Candidate pressure points are exact Project/assignee Issue lists and high-volume
 dimension/date report filters; add tenant-leading composite indexes only when
 real plans show material filtering or sorting cost.
+
+Official release discovery is cached server-side for 15 minutes. Operator
+clients refetch on focus and every six hours; only an active update job polls at
+two-second intervals. The updater performs network, backup, image, migration,
+and health work outside the Next.js process.
