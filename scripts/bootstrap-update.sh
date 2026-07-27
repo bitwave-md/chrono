@@ -56,7 +56,11 @@ chmod 733 "$INSTALL_DIR/data/update-requests"
 PROFILES=$(add_profile "${COMPOSE_PROFILES:-}" updates)
 export CHRONO_VERSION=$VERSION CHRONO_APP_REF=$APP_REF CHRONO_MIGRATOR_REF=$MIGRATOR_REF CHRONO_UPDATER_REF=$UPDATER_REF CHRONO_INSTALL_DIR=$INSTALL_DIR COMPOSE_PROFILES=$PROFILES
 cd "$INSTALL_DIR"
-docker compose pull app migrate updater
+# Pull immutable references directly. Compose's `missing` policy can treat a
+# different local tag from the same repository as cached and skip the digest.
+docker pull "$APP_REF"
+docker pull "$MIGRATOR_REF"
+docker pull "$UPDATER_REF"
 docker compose run --rm --no-deps migrate
 
 set_value CHRONO_VERSION "$VERSION" "$ENV_FILE"
