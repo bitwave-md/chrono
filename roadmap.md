@@ -686,10 +686,17 @@ Tracer bullet: change one Project property, observe one field-specific compact
 activity entry, then create an Issue with `C` and retain the current Project and
 named Branch route context.
 
-- [ ] Record only meaningful Project changes with structured before/after values.
-- [ ] Merge Project updates and audit events into a compact chronological stream.
-- [ ] Coalesce rapid duplicate audit entries without hiding distinct transitions.
-- [ ] Keep creation property triggers from submitting their parent forms.
-- [ ] Derive global Issue creation Project and Branch defaults from the route.
-- [ ] Center icon-only sidebar content and verify desktop collapse behavior.
-- [ ] Run static checks, tests, production build, and Docker health verification.
+- [x] Record only meaningful Project changes with structured before/after values.
+- [x] Merge Project updates and audit events into a compact chronological stream.
+- [x] Coalesce rapid duplicate audit entries without hiding distinct transitions.
+- [x] Keep creation property triggers from submitting their parent forms.
+- [x] Derive global Issue creation Project and Branch defaults from the route.
+- [x] Center icon-only sidebar content and verify desktop collapse behavior.
+- [x] Run static checks, tests, production build, and Docker health verification.
+
+Completed on 2026-07-28. Project mutations now compare normalized persisted
+values before writing one structured audit event, while the Activity view
+renders authored updates and compact property changes in one chronological
+stream. Global Issue creation retains Client, Project Main, named Branch, and
+All-branches route context. TypeScript, ESLint, fifty-six tests, the production
+build, rebuilt Compose application, and health endpoint passed.
