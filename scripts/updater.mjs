@@ -177,7 +177,9 @@ class UpdateAgent {
       stage = "backing_up"; await this.#status(request, stage, "Creating a coordinated backup.", startedAt);
       await this.#commands.run(path.join(this.#installDir, "backup.sh"), []);
       stage = "pulling"; await this.#status(request, stage, "Pulling verified release images.", startedAt);
-      await this.#commands.run("docker", ["compose", "pull", "app", "migrate", "updater"], releaseEnvironment);
+      for (const reference of [manifest.images.app, manifest.images.migrator, manifest.images.updater]) {
+        await this.#commands.run("docker", ["pull", reference]);
+      }
       stage = "migrating"; await this.#status(request, stage, "Applying database migrations.", startedAt);
       await this.#commands.run("docker", ["compose", "run", "--rm", "--no-deps", "migrate"], releaseEnvironment);
       await this.#environment.install(releaseEnvironment);
