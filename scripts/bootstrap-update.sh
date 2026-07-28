@@ -54,7 +54,7 @@ for helper in backup.sh restore.sh update.sh; do cp "$TMP_DIR/appliance/scripts/
 mkdir -p "$INSTALL_DIR/data/status" "$INSTALL_DIR/data/update-requests"
 chmod 733 "$INSTALL_DIR/data/update-requests"
 PROFILES=$(add_profile "${COMPOSE_PROFILES:-}" updates)
-export CHRONO_VERSION=$VERSION CHRONO_APP_REF=$APP_REF CHRONO_MIGRATOR_REF=$MIGRATOR_REF CHRONO_UPDATER_REF=$UPDATER_REF CHRONO_INSTALL_DIR=$INSTALL_DIR COMPOSE_PROFILES=$PROFILES
+export CHRONO_VERSION=$VERSION CHRONO_APP_REF=$APP_REF CHRONO_MIGRATOR_REF=$MIGRATOR_REF CHRONO_UPDATER_REF=$UPDATER_REF CHRONO_INSTALL_MODE=image CHRONO_INSTALL_DIR=$INSTALL_DIR COMPOSE_PROFILES=$PROFILES
 cd "$INSTALL_DIR"
 # Pull immutable references directly. Compose's `missing` policy can treat a
 # different local tag from the same repository as cached and skip the digest.
