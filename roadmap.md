@@ -712,4 +712,7 @@ agent executable is resolved independently of that directory.
 - [x] Map the host Docker socket group into the isolated updater.
 - [x] Resolve rootless Docker sockets from the active Docker context.
 - [x] Avoid passing rootless subordinate host GIDs into the container.
+- [x] Isolate updater agent paths from child Compose interpolation.
+- [x] Restore previous image references after post-migration failures.
+- [x] Show durable plain-language update progress and recovery outcomes.
 - [x] Validate Compose rendering, foreign-directory startup, and Docker API access.

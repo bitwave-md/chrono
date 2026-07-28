@@ -49,7 +49,9 @@ preferences, notifications, Workspace identity, members, time entry types,
 storage, and updates never appear as decorative placeholders.
 An available official release adds an amber Updates navigation dot and one
 operator toast per browser and version. The Updates page uses a confirmation
-dialog and compact persisted stage list rather than a blocking page overlay.
+dialog and a persisted progress surface with percentage, current-stage context,
+restart/reconnect state, timestamps, and plain-language completion or recovery
+outcomes. Technical failure output stays available in a collapsed detail.
 
 ## Project experience
 

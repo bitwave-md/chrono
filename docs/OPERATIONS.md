@@ -131,7 +131,10 @@ The instance operator receives a once-per-version toast and Settings badge for
 new official releases. Settings → Updates confirms and queues a one-click job.
 The updater validates the release independently, creates a full backup, pulls
 digest-pinned app, migrator, and updater images, migrates, restarts, and verifies
-health. Live progress survives an app or host restart.
+health. Live progress shows every stage, expected reconnects, automatic recovery,
+and completion without requiring console access. It survives an app or host
+restart. Updater-only mount paths are isolated from the variables consumed by
+child Compose commands.
 
 If the UI is unavailable, run `./update.sh` to enqueue the latest release and
 wait for completion. `./update.sh --version vYY.M.N` is an advanced recovery

@@ -81,7 +81,10 @@ export function useUpdateStatusQuery(workspaceSlug: string, enabled: boolean) {
       const stage = query.state.data?.job?.stage;
       return stage && stage !== "completed" && stage !== "failed" ? 2_000 : 6 * 60 * 60_000;
     },
+    refetchIntervalInBackground: true,
+    refetchOnReconnect: "always",
     refetchOnWindowFocus: true,
+    retry: false,
   });
 }
 export function useStartUpdateMutation(workspaceSlug: string) {
