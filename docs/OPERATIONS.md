@@ -119,9 +119,10 @@ test "$EXPECTED" = "$ACTUAL" && CHRONO_INSTALL_DIR="$HOME/chrono" ./bootstrap-up
 The helper creates a full backup before replacing managed Compose/helper files.
 It preserves `.env`, named volumes, `COMPOSE_FILE`, Caddy or Cloudflare Tunnel
 configuration, external-storage settings, and secrets. It pins the latest
-digest manifest, enables the `updates` profile, and records the Docker socket
-group ID required by the isolated updater. Operators with a nonstandard socket
-may set `CHRONO_DOCKER_GID` explicitly before running the helper.
+digest manifest, enables the `updates` profile, and records the active Docker
+context's Unix socket path and group ID for the isolated updater. Operators
+with a nonstandard context may set `CHRONO_DOCKER_SOCKET` and
+`CHRONO_DOCKER_GID` explicitly before running the helper.
 
 ## Upgrade and rollback
 

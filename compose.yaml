@@ -118,7 +118,7 @@ services:
     working_dir: ${CHRONO_INSTALL_DIR:-/installation}
     restart: unless-stopped
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CHRONO_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
       - ${CHRONO_INSTALL_DIR:-.}:${CHRONO_INSTALL_DIR:-/installation}
       - ${CHRONO_STATUS_DIR:-./data/status}:/var/lib/chrono
       - ${CHRONO_UPDATE_REQUEST_DIR:-./data/update-requests}:/var/lib/chrono-update
