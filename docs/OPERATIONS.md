@@ -122,7 +122,8 @@ configuration, external-storage settings, and secrets. It pins the latest
 digest manifest, enables the `updates` profile, and records the active Docker
 context's Unix socket path and group ID for the isolated updater. Operators
 with a nonstandard context may set `CHRONO_DOCKER_SOCKET` and
-`CHRONO_DOCKER_GID` explicitly before running the helper.
+`CHRONO_DOCKER_GID` explicitly before running the helper. Rootless Docker uses
+container group `0` instead of its host-side subordinate group mapping.
 
 ## Upgrade and rollback
 

@@ -15,6 +15,10 @@ docker_socket_path() {
 }
 docker_socket_gid() {
   socket=$1
+  if docker info --format '{{json .SecurityOptions}}' 2>/dev/null | grep -q 'name=rootless'; then
+    printf 0
+    return
+  fi
   gid=$(stat -c '%g' "$socket" 2>/dev/null || stat -f '%g' "$socket" 2>/dev/null || true)
   printf '%s' "${gid:-0}"
 }

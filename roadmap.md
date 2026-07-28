@@ -711,4 +711,5 @@ agent executable is resolved independently of that directory.
 - [x] Pin the same absolute command in the managed Compose appliance.
 - [x] Map the host Docker socket group into the isolated updater.
 - [x] Resolve rootless Docker sockets from the active Docker context.
+- [x] Avoid passing rootless subordinate host GIDs into the container.
 - [x] Validate Compose rendering, foreign-directory startup, and Docker API access.
