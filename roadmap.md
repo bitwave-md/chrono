@@ -709,4 +709,5 @@ agent executable is resolved independently of that directory.
 
 - [x] Use the updater image's absolute agent path in its default command.
 - [x] Pin the same absolute command in the managed Compose appliance.
-- [x] Validate Compose rendering and updater startup from a foreign directory.
+- [x] Map the host Docker socket group into the isolated updater.
+- [x] Validate Compose rendering, foreign-directory startup, and Docker API access.

@@ -37,6 +37,12 @@ checksum() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi
 }
 
+docker_socket_gid() {
+  socket=${CHRONO_DOCKER_SOCKET:-/var/run/docker.sock}
+  gid=$(stat -c '%g' "$socket" 2>/dev/null || stat -f '%g' "$socket" 2>/dev/null || true)
+  printf '%s' "${gid:-0}"
+}
+
 command -v docker >/dev/null 2>&1 || fail "Docker is required. Install Docker Engine or Docker Desktop first."
 docker compose version >/dev/null 2>&1 || fail "The Docker Compose plugin is required."
 
@@ -76,6 +82,7 @@ NEXTAUTH_SECRET_VALUE=${NEXTAUTH_SECRET:-$(random_hex 32)}
 SETUP_TOKEN_VALUE=${AUTH_SETUP_TOKEN:-$(random_hex 32)}
 MINIO_ROOT_PASSWORD_VALUE=${MINIO_ROOT_PASSWORD:-$(random_hex 24)}
 S3_SECRET_KEY_VALUE=${S3_SECRET_KEY:-$(random_hex 24)}
+DOCKER_GID_VALUE=${CHRONO_DOCKER_GID:-$(docker_socket_gid)}
 
 umask 077
 mkdir -p "$INSTALL_DIR"
@@ -166,6 +173,7 @@ CHRONO_RELEASE_REPOSITORY=bitwave-md/chrono
 CHRONO_GITHUB_TOKEN=${CHRONO_GITHUB_TOKEN:-}
 CHRONO_STATUS_DIR=./data/status
 CHRONO_UPDATE_REQUEST_DIR=./data/update-requests
+CHRONO_DOCKER_GID=$DOCKER_GID_VALUE
 CHRONO_BIND_ADDRESS=$CHRONO_BIND_ADDRESS_VALUE
 CHRONO_PORT=3000
 COMPOSE_PROFILES=$(if [ "$install_mode" = image ]; then add_profile "$COMPOSE_PROFILES_VALUE" updates; else printf '%s' "$COMPOSE_PROFILES_VALUE"; fi)

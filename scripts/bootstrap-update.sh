@@ -4,6 +4,11 @@ set -eu
 
 fail() { printf 'Chrono bootstrap: %s\n' "$*" >&2; exit 1; }
 checksum() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
+docker_socket_gid() {
+  socket=${CHRONO_DOCKER_SOCKET:-/var/run/docker.sock}
+  gid=$(stat -c '%g' "$socket" 2>/dev/null || stat -f '%g' "$socket" 2>/dev/null || true)
+  printf '%s' "${gid:-0}"
+}
 set_value() {
   key=$1 value=$2 file=$3 temporary=$3.tmp
   awk -v key="$key" -v value="$value" 'BEGIN { found=0 } index($0, key "=") == 1 { print key "=" value; found=1; next } { print } END { if (!found) print key "=" value }' "$file" > "$temporary"
@@ -54,7 +59,8 @@ for helper in backup.sh restore.sh update.sh; do cp "$TMP_DIR/appliance/scripts/
 mkdir -p "$INSTALL_DIR/data/status" "$INSTALL_DIR/data/update-requests"
 chmod 733 "$INSTALL_DIR/data/update-requests"
 PROFILES=$(add_profile "${COMPOSE_PROFILES:-}" updates)
-export CHRONO_VERSION=$VERSION CHRONO_APP_REF=$APP_REF CHRONO_MIGRATOR_REF=$MIGRATOR_REF CHRONO_UPDATER_REF=$UPDATER_REF CHRONO_INSTALL_MODE=image CHRONO_INSTALL_DIR=$INSTALL_DIR CHRONO_PULL_POLICY=always COMPOSE_PROFILES=$PROFILES
+DOCKER_GID=${CHRONO_DOCKER_GID:-$(docker_socket_gid)}
+export CHRONO_VERSION=$VERSION CHRONO_APP_REF=$APP_REF CHRONO_MIGRATOR_REF=$MIGRATOR_REF CHRONO_UPDATER_REF=$UPDATER_REF CHRONO_INSTALL_MODE=image CHRONO_INSTALL_DIR=$INSTALL_DIR CHRONO_PULL_POLICY=always CHRONO_DOCKER_GID=$DOCKER_GID COMPOSE_PROFILES=$PROFILES
 cd "$INSTALL_DIR"
 # Pull immutable references directly. Compose's `missing` policy can treat a
 # different local tag from the same repository as cached and skip the digest.
@@ -72,6 +78,7 @@ set_value CHRONO_INSTALL_MODE image "$ENV_FILE"
 set_value CHRONO_PULL_POLICY always "$ENV_FILE"
 set_value CHRONO_INSTALL_DIR "$INSTALL_DIR" "$ENV_FILE"
 set_value CHRONO_UPDATE_REQUEST_DIR ./data/update-requests "$ENV_FILE"
+set_value CHRONO_DOCKER_GID "$DOCKER_GID" "$ENV_FILE"
 set_value COMPOSE_PROFILES "$PROFILES" "$ENV_FILE"
 docker compose up -d --remove-orphans
 

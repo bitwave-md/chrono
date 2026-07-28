@@ -107,6 +107,8 @@ services:
     image: ${CHRONO_UPDATER_REF:-${CHRONO_UPDATER_IMAGE:-ghcr.io/bitwave-md/chrono-updater}:${CHRONO_VERSION:-latest}}
     profiles: ["updates"]
     command: ["node", "/opt/chrono/scripts/updater.mjs", "watch"]
+    group_add:
+      - ${CHRONO_DOCKER_GID:-0}
     environment:
       CHRONO_INSTALL_DIR: ${CHRONO_INSTALL_DIR:-/installation}
       CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
