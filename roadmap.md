@@ -700,3 +700,13 @@ renders authored updates and compact property changes in one chronological
 stream. Global Issue creation retains Client, Project Main, named Branch, and
 All-branches route context. TypeScript, ESLint, fifty-six tests, the production
 build, rebuilt Compose application, and health endpoint passed.
+
+## Updater startup reliability
+
+Tracer bullet: start the updater from an image installation whose Compose
+working directory points at the host installation and confirm the bundled
+agent executable is resolved independently of that directory.
+
+- [x] Use the updater image's absolute agent path in its default command.
+- [x] Pin the same absolute command in the managed Compose appliance.
+- [x] Validate Compose rendering and updater startup from a foreign directory.

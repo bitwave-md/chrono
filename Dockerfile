@@ -35,7 +35,7 @@ WORKDIR /opt/chrono
 RUN apk add --no-cache docker-cli docker-cli-compose
 COPY scripts/updater.mjs ./scripts/updater.mjs
 COPY src/modules/settings/domain/calendar-version.ts ./src/modules/settings/domain/calendar-version.ts
-CMD ["node", "scripts/updater.mjs", "watch"]
+CMD ["node", "/opt/chrono/scripts/updater.mjs", "watch"]
 
 FROM base AS runner
 ARG CHRONO_BUILD_VERSION=development
