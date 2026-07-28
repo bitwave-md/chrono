@@ -30,8 +30,11 @@ test("UpdateControlStore validates persisted status", async () => {
   const status = path.join(root, "status.json");
   try {
     await mkdir(root, { recursive: true });
-    await writeFile(status, JSON.stringify({ id: "job", stage: "pulling", targetVersion: "v26.7.1", message: "Pulling", requestedAt: "2026-07-27T00:00:00Z" }));
-    assert.equal((await new UpdateControlStore({}, root, status).readJob())?.stage, "pulling");
+    await writeFile(status, JSON.stringify({ id: "job", stage: "failed", targetVersion: "v26.7.1", message: "Stopped", requestedAt: "2026-07-27T00:00:00Z", details: "Pull failed", rollbackState: "completed" }));
+    const job = await new UpdateControlStore({}, root, status).readJob();
+    assert.equal(job?.stage, "failed");
+    assert.equal(job?.details, "Pull failed");
+    assert.equal(job?.rollbackState, "completed");
     await writeFile(status, JSON.stringify({ id: "job", stage: "arbitrary" }));
     assert.equal(await new UpdateControlStore({}, root, status).readJob(), null);
   } finally { await rm(root, { recursive: true, force: true }); }

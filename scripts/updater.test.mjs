@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateManifest } from "./updater.mjs";
+import { failureMessage, validateManifest } from "./updater.mjs";
 
 const digest = "a".repeat(64);
 const valid = {
@@ -21,4 +21,10 @@ test("updater accepts a matching digest-pinned release manifest", () => {
 test("updater rejects mismatched versions and arbitrary image repositories", () => {
   assert.throws(() => validateManifest(valid, "v26.7.2"), /invalid/);
   assert.throws(() => validateManifest({ ...valid, images: { ...valid.images, app: `ghcr.io/attacker/chrono@sha256:${digest}` } }, "v26.7.1"), /app image/);
+});
+
+test("updater reports rollback outcomes without exposing command output", () => {
+  assert.match(failureMessage("restarting", "completed"), /restored/);
+  assert.match(failureMessage("restarting", "failed"), /operator attention/);
+  assert.match(failureMessage("backing_up", "not_needed"), /No changes/);
 });

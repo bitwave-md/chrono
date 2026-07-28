@@ -113,8 +113,8 @@ services:
       CHRONO_INSTALL_DIR: ${CHRONO_INSTALL_DIR:-/installation}
       CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
       CHRONO_GITHUB_TOKEN: ${CHRONO_GITHUB_TOKEN:-}
-      CHRONO_STATUS_DIR: /var/lib/chrono
-      CHRONO_UPDATE_REQUEST_DIR: /var/lib/chrono-update
+      CHRONO_AGENT_STATUS_DIR: /var/lib/chrono
+      CHRONO_AGENT_REQUEST_DIR: /var/lib/chrono-update
     working_dir: ${CHRONO_INSTALL_DIR:-/installation}
     restart: unless-stopped
     volumes:

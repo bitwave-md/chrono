@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { ConflictError } from "@/modules/shared/application/application-error";
 import { CalendarVersion } from "@/modules/settings/domain/calendar-version";
-import { updateStages, type UpdateJobRecord } from "@/modules/settings/domain/update-job";
+import { updateRollbackStates, updateStages, type UpdateJobRecord } from "@/modules/settings/domain/update-job";
 
 export type UpdateMode = "automatic" | "manual" | "source";
 
@@ -46,7 +46,9 @@ export class UpdateControlStore {
         requestedAt: value.requestedAt,
         startedAt: value.startedAt ?? null,
         completedAt: value.completedAt ?? null,
-        failureStage: value.failureStage ?? null,
+        failureStage: value.failureStage && updateStages.includes(value.failureStage) ? value.failureStage : null,
+        details: typeof value.details === "string" ? value.details : null,
+        rollbackState: value.rollbackState && updateRollbackStates.includes(value.rollbackState) ? value.rollbackState : null,
       };
     } catch {
       return null;
@@ -65,7 +67,7 @@ export class UpdateControlStore {
       if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new ConflictError("An update is already queued.");
       throw error;
     }
-    return { ...request, stage: "queued", message: "Update queued.", startedAt: null, completedAt: null, failureStage: null };
+    return { ...request, stage: "queued", message: "Update queued.", startedAt: null, completedAt: null, failureStage: null, details: null, rollbackState: null };
   }
 
   async #exists(name: string): Promise<boolean> {

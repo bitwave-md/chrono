@@ -195,7 +195,10 @@ small UI bridge derives the once-per-version toast and badge. Next.js can write
 only a structured `install_latest` request directory and read host-produced
 status. The isolated updater alone mounts the Docker socket and installation
 directory, validates GitHub release manifests, executes fixed backup and
-Compose stages, and persists resumable status. No Docker command or image
+Compose stages, and persists resumable status. Agent mount paths use a separate
+environment namespace so they cannot override child Compose interpolation.
+Post-migration startup or health failures restore the previous image references
+and app before reporting their recovery outcome. No Docker command or image
 reference is accepted from browser input.
 
 Issue timer and manual-entry controls live below the comment composer rather

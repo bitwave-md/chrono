@@ -122,8 +122,8 @@ class UpdateAgent {
 
   constructor() {
     this.#installDir = process.env.CHRONO_INSTALL_DIR || process.cwd();
-    this.#requestDir = process.env.CHRONO_UPDATE_REQUEST_DIR || "/var/lib/chrono-update";
-    this.#statusDir = process.env.CHRONO_STATUS_DIR || "/var/lib/chrono";
+    this.#requestDir = process.env.CHRONO_AGENT_REQUEST_DIR || process.env.CHRONO_UPDATE_REQUEST_DIR || "/var/lib/chrono-update";
+    this.#statusDir = process.env.CHRONO_AGENT_STATUS_DIR || process.env.CHRONO_STATUS_DIR || "/var/lib/chrono";
     this.#pendingFile = path.join(this.#requestDir, "pending.json");
     this.#processingFile = path.join(this.#requestDir, "processing.json");
     this.#statusFile = path.join(this.#statusDir, "update-status.json");
@@ -159,9 +159,11 @@ class UpdateAgent {
   async #process(request) {
     const startedAt = request.startedAt || new Date().toISOString();
     let stage = "validating";
+    let previous = null;
+    let releaseInstalled = false;
     try {
       if (!request.id || !CalendarVersion.parse(request.targetVersion)) throw new Error("The update request is invalid.");
-      const previous = request.previousEnvironment || await this.#environment.snapshot();
+      previous = request.previousEnvironment || await this.#environment.snapshot();
       if (!request.previousEnvironment) {
         request = { ...request, previousEnvironment: previous, startedAt };
         await JsonFile.write(this.#processingFile, request);
@@ -183,26 +185,50 @@ class UpdateAgent {
       stage = "migrating"; await this.#status(request, stage, "Applying database migrations.", startedAt);
       await this.#commands.run("docker", ["compose", "run", "--rm", "--no-deps", "migrate"], releaseEnvironment);
       await this.#environment.install(releaseEnvironment);
+      releaseInstalled = true;
       stage = "restarting"; await this.#status(request, stage, "Restarting Chrono.", startedAt);
       await this.#commands.run("docker", ["compose", "up", "-d", "--no-deps", "app"]);
       stage = "verifying"; await this.#status(request, stage, "Waiting for the new application to become healthy.", startedAt);
       if (!await applicationHealthy()) {
-        await this.#environment.install(previous);
-        await this.#commands.run("docker", ["compose", "up", "-d", "--no-deps", "app"]);
-        throw new Error("The new application failed its health check; the previous image was restored.");
+        throw new Error("The new application did not pass its health check.");
       }
       await this.#status(request, "completed", `Chrono ${manifest.version} is healthy.`, startedAt, new Date().toISOString());
       await rm(this.#processingFile, { force: true });
       await this.#commands.run("docker", ["compose", "up", "-d", "--no-deps", "updater"]).catch(() => undefined);
     } catch (error) {
-      await this.#status(request, "failed", error instanceof Error ? error.message : "The update failed.", startedAt, new Date().toISOString(), stage);
+      const details = error instanceof Error ? error.message : "The update failed.";
+      const rollbackState = releaseInstalled && previous ? await this.#rollback(previous) : "not_needed";
+      await this.#status(request, "failed", failureMessage(stage, rollbackState), startedAt, new Date().toISOString(), stage, { details, rollbackState });
       await rm(this.#processingFile, { force: true });
     }
   }
 
-  async #status(request, stage, message, startedAt, completedAt = null, failureStage = null) {
-    await JsonFile.write(this.#statusFile, { id: request.id, stage, targetVersion: request.targetVersion, message, requestedAt: request.requestedAt, startedAt, completedAt, failureStage });
+  async #rollback(previous) {
+    try {
+      await this.#environment.install(previous);
+      await this.#commands.run("docker", ["compose", "up", "-d", "--no-deps", "app"]);
+      return await applicationHealthy() ? "completed" : "failed";
+    } catch (error) {
+      await appendFile(path.join(this.#statusDir, "update.log"), `\nAutomatic rollback failed: ${error instanceof Error ? error.message : "Unknown error"}\n`);
+      return "failed";
+    }
   }
+
+  async #status(request, stage, message, startedAt, completedAt = null, failureStage = null, metadata = {}) {
+    await JsonFile.write(this.#statusFile, { id: request.id, stage, targetVersion: request.targetVersion, message, requestedAt: request.requestedAt, startedAt, completedAt, failureStage, ...metadata });
+  }
+}
+
+function failureMessage(stage, rollbackState) {
+  if (rollbackState === "completed") return "The update stopped and Chrono restored the previous version.";
+  if (rollbackState === "failed") return "The update stopped and automatic recovery needs operator attention.";
+  const messages = {
+    validating: "The official release could not be validated. No changes were made.",
+    backing_up: "The safety backup could not be created. No changes were made.",
+    pulling: "The release could not be downloaded. No changes were made.",
+    migrating: "The database update could not be completed. The current app remains active.",
+  };
+  return messages[stage] || "The update stopped before the new version was activated.";
 }
 
 function validateManifest(value, expectedVersion) {
@@ -238,4 +264,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   else throw new Error(`Unknown updater command: ${command}`);
 }
 
-export { JsonFile, ReleaseResolver, validateManifest };
+export { JsonFile, ReleaseResolver, failureMessage, validateManifest };

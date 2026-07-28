@@ -223,7 +223,9 @@ entry ends on that date while the server continues to reject future periods.
   role or active, suspended, and removed state with last-owner protection.
 - `GET /api/workspaces/:workspaceSlug/settings/storage` and `/updates` expose
   operator-only health, immutable build provenance, official release metadata,
-  updater capability, and persisted job progress.
+  updater capability, and persisted job progress. Terminal failures include a
+  plain-language outcome, optional technical details, and automatic rollback
+  state.
 - `POST /api/workspaces/:workspaceSlug/settings/updates` accepts an empty JSON
   object and queues only `install_latest`. It requires the instance operator,
   a trusted same-origin request, a newer official release, and no active job;
