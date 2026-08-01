@@ -150,6 +150,13 @@ scope, date validation, and snapshotted dimensions rather than duplicating
 report SQL. Client-wide queries are capped at 1,000 finalized entries and use
 completion-date boundaries so manual work dates match report periods.
 
+One domain aggregator is authoritative for browser and printable Client/Project
+reports. It derives daily totals, dimension breakdowns, and Issue-grouped entry
+sets from authorized logs. A separate document model applies presentation-only
+whole-hour rounding before the PDF renderer creates a Unicode-capable landscape
+A4 document. Exact persisted durations and browser totals are never rounded or
+mutated by export formatting.
+
 ## Authorization
 
 `WorkspaceMembership` is the tenant principal. Resource services enforce:

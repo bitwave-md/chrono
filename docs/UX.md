@@ -85,8 +85,11 @@ Client pages expose Overview, Issues, Projects, Time, and Members tabs. Time
 defaults to the current calendar month and offers previous-month, rolling
 30-day, and custom two-month range selection. Project, time-entry type, and
 authorized contributor filters are URL-backed. The report combines total and
-billable summaries, daily trend, category and Project breakdowns, and a dense
-entry table linking back to its Issue and Project/Branch context.
+billable summaries, labeled daily bars, a time-entry-type pie chart, Project
+breakdowns, and a dense entry table grouped by Issue with task totals and links
+to Issue and Project/Branch context. The top-right export action downloads the
+same filtered report as a landscape A4 PDF. Printable durations round to the
+nearest whole hour with half-hours rounding up; the browser retains exact time.
 
 Guest navigation contains only accessible Clients and Projects and omits Time
 and Workspace administration. Guest invitation expands Client selections into

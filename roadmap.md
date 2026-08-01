@@ -193,6 +193,9 @@ filters, and reconcile summary totals with the underlying Issue entries.
 - [x] Authorize Client-scoped time-entry reporting with role-aware visibility.
 - [x] Add current-month presets and a custom shadcn date-range picker.
 - [x] Add summary, trend, category, Project, contributor, and entry-detail views.
+- [x] Group entry details by Issue with exact per-task totals.
+- [x] Render labeled daily bars and a time-entry-type pie chart.
+- [x] Export the filtered report as a Unicode-capable landscape A4 PDF.
 - [x] Verify filter URLs, aggregation accuracy, responsive UX, and Docker runtime.
 
 The Client Time report was completed and runtime-verified on 2026-07-18. A
@@ -200,6 +203,14 @@ reversible service tracer reconciled Client-wide and Project-filtered totals,
 and an authenticated HTTP tracer returned `200` for both the report API and
 canonical Time page. The current-month default, preset/custom ranges, URL
 filters, 29-test suite, production build, and rebuilt Compose stack passed.
+
+The printable reporting refinement was completed on 2026-08-01. The browser
+keeps exact durations, groups entries by Issue, labels every daily bar, and
+renders time-entry types as a pie chart. The authenticated PDF export reuses
+the same filters and authorization, rounds each displayed duration to the
+nearest whole hour, embeds Unicode fonts, and warns when the 1,000-entry query
+limit truncates the report. Unit tests, lint, type checking, and the production
+build passed; the standalone bundle includes PDFKit and the report fonts.
 
 ## Issue time tracking experience
 

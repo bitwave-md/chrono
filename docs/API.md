@@ -181,6 +181,8 @@ the affected scope returns `409 conflict` until it is stopped.
 - `GET /api/workspaces/:workspaceSlug/clients/:clientId/time-report` returns up
   to 1,000 Client-scoped finalized entries for a required `from`/`to` period,
   with optional `projectId`, `categoryId`, and `workerUserId` filters.
+- `GET /api/workspaces/:workspaceSlug/clients/:clientId/time-report/export`
+  accepts the same filters and returns an authenticated landscape A4 PDF.
 
 Time-log filters are `issueId`, `clientId`, `projectId`, `categoryId`,
 `branchId`, `workerUserId`, `from`, and `to`. Report grouping accepts `issue`,
@@ -200,6 +202,12 @@ Guest's explicit Project roster. Supplying `projectId` requires access to that
 Project. The response declares `scope` and whether the 1,000-entry result was
 truncated. General time-log and Workspace-report endpoints remain unavailable
 to Guests.
+
+The PDF response is private and non-cacheable, uses attachment disposition,
+and never exposes storage URLs. It contains summary totals, labeled daily bars,
+a time-entry-type pie chart, Project totals, and entries grouped by Issue. Each
+displayed duration is independently rounded to the nearest whole hour, with
+30 minutes rounding up. A truncated export includes a visible warning.
 
 Manual time-log creation accepts an explicit `startedAt` epoch. The Issue UI
 derives it from the selected local work date and duration so the finalized
