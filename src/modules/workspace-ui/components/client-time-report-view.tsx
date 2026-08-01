@@ -1,10 +1,12 @@
 "use client";
 
-import { BriefcaseBusiness, Clock3, ReceiptText, Users } from "lucide-react";
+import { BriefcaseBusiness, Clock3, Download, LoaderCircle, ReceiptText, Users } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useClientTimeReportQuery } from "@/modules/workspace-ui/application/use-client-time-report-query";
+import { useClientTimeReportQuery, useExportClientTimeReportMutation } from "@/modules/workspace-ui/application/use-client-time-report-query";
 import { useMembersQuery, useProjectsQuery, useTimeCategoriesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { ClientTimeEntryTable } from "@/modules/workspace-ui/components/client-time-entry-table";
 import { ClientTimeReportCharts } from "@/modules/workspace-ui/components/client-time-report-charts";
@@ -51,6 +53,7 @@ export function ClientTimeReportView({
     workerUserId,
   };
   const reportQuery = useClientTimeReportQuery(workspaceSlug, client.id, filters);
+  const exportReport = useExportClientTimeReportMutation(workspaceSlug, client.id);
   const projectsQuery = useProjectsQuery(workspaceSlug, client.id);
   const categoriesQuery = useTimeCategoriesQuery(workspaceSlug);
   const membersQuery = useMembersQuery(workspaceSlug);
@@ -73,6 +76,20 @@ export function ClientTimeReportView({
     if (next === "this_month") update({ from: undefined, to: undefined });
     else changeRange(reportRangeForPreset(next));
   };
+  const exportPdf = () => exportReport.mutate(filters, {
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      toast.success("Time report exported");
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -93,7 +110,7 @@ export function ClientTimeReportView({
         onReset={() => update({ from: undefined, to: undefined, projectId: undefined, categoryId: undefined, workerUserId: undefined })}
       />
       <div className="mx-auto grid w-full max-w-[1500px] gap-4 p-5 md:p-7">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Time report</h1><p className="mt-1 text-sm text-muted-foreground">{projectScope ? `Recorded work for ${projectScope.name}.` : reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}.` : `Recorded work across ${client.name} Projects and Issues.`}</p></div>{reportQuery.isFetching ? <span className="text-xs text-muted-foreground">Updating…</span> : null}</div>
+        <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Time report</h1><p className="mt-1 text-sm text-muted-foreground">{projectScope ? `Recorded work for ${projectScope.name}.` : reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}.` : `Recorded work across ${client.name} Projects and Issues.`}</p></div><div className="flex items-center gap-3">{reportQuery.isFetching ? <span className="text-xs text-muted-foreground">Updating…</span> : null}<Button disabled={!entries.length || exportReport.isPending} size="sm" type="button" variant="outline" onClick={exportPdf}>{exportReport.isPending ? <LoaderCircle className="animate-spin" /> : <Download />}Export PDF</Button></div></div>
         {reportQuery.error ? <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">{reportQuery.error.message}</div> : null}
         {!reportQuery.isLoading && !reportQuery.error && !entries.length ? (
           <EmptyView
@@ -108,7 +125,7 @@ export function ClientTimeReportView({
             <SummaryCards report={report} />
             <ClientTimeReportCharts categories={report.categories} daily={report.daily} projects={report.projects} />
             {reportQuery.data?.truncated ? <p className="rounded-lg border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">This view is limited to the newest 1,000 matching entries. Narrow the period for a complete reconciliation.</p> : null}
-            <ClientTimeEntryTable entries={entries} workspaceSlug={workspaceSlug} />
+            <ClientTimeEntryTable tasks={report.tasks} workspaceSlug={workspaceSlug} />
           </>
         ) : null}
       </div>

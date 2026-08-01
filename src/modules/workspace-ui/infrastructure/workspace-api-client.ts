@@ -24,6 +24,10 @@ import type {
   TimeLogRecord,
   WorkflowStatusRecord,
 } from "@/modules/workspace-ui/domain/workspace-types";
+import { clientTimeReportPath, type ClientTimeReportFilters } from "@/modules/workspace-ui/infrastructure/client-time-report-path";
+
+export type { ClientTimeReportFilters } from "@/modules/workspace-ui/infrastructure/client-time-report-path";
+
 interface ApiEnvelope<T> {
   data: T;
 }
@@ -92,14 +96,6 @@ export interface StartTimerRequest {
   issueId: string;
   categoryId: string | null;
   note: string | null;
-}
-
-export interface ClientTimeReportFilters {
-  from: string;
-  to: string;
-  projectId?: string;
-  categoryId?: string;
-  workerUserId?: string;
 }
 
 export class WorkspaceApiError extends Error {
@@ -223,13 +219,7 @@ export class WorkspaceApiClient {
     clientId: string,
     filters: ClientTimeReportFilters,
   ): Promise<ClientTimeReportRecord> {
-    const parameters = new URLSearchParams({ from: filters.from, to: filters.to });
-    if (filters.projectId) parameters.set("projectId", filters.projectId);
-    if (filters.categoryId) parameters.set("categoryId", filters.categoryId);
-    if (filters.workerUserId) parameters.set("workerUserId", filters.workerUserId);
-    return this.#get(
-      `/clients/${encodeURIComponent(clientId)}/time-report?${parameters.toString()}`,
-    );
+    return this.#get(clientTimeReportPath(clientId, filters));
   }
 
   addClientMember(

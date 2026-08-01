@@ -33,6 +33,9 @@ test("Client report totals entries across categories, projects, and workers", ()
   assert.equal(report.contributors, 2);
   assert.equal(report.projects[0]?.seconds, 5_400);
   assert.deepEqual(report.categories.map((row) => row.name), ["Developing", "Testing"]);
+  assert.equal(report.tasks.length, 1);
+  assert.equal(report.tasks[0]?.totalSeconds, 5_400);
+  assert.equal(report.tasks[0]?.entries.length, 2);
 });
 
 function entry(overrides: Partial<TimeLogRecord>): TimeLogRecord {

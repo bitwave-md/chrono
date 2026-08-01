@@ -17,7 +17,7 @@ export class ClientTimeReportService {
     clientId: string,
     filters: ClientTimeReportFilters,
   ) {
-    const entries = await this.#timeLogs.listForReport(principal, {
+    const rows = await this.#timeLogs.listForReport(principal, {
       clientId,
       projectId: filters.projectId,
       categoryId: filters.categoryId,
@@ -27,11 +27,16 @@ export class ClientTimeReportService {
       dateBasis: "ended",
       limit: 1_000,
     });
+    const entries = rows.map((entry) => ({
+      ...entry,
+      startedAt: entry.startedAt.toISOString(),
+      endedAt: entry.endedAt.toISOString(),
+    }));
 
     return {
       entries,
       scope: clientTimeReportScope(principal),
-      truncated: entries.length === 1_000,
+      truncated: rows.length === 1_000,
     };
   }
 }
