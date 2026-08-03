@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { database, db } from "@/db/client";
 import { demoClients, type DemoClientFixture, type DemoProjectFixture } from "@/db/demo-fixtures";
+import { DemoTimeLogSeeder } from "@/db/demo-time-log-seeder";
 import {
   clients,
   issues,
@@ -25,6 +26,7 @@ interface SeedSummary {
   projects: number;
   branches: number;
   issues: number;
+  timeLogs: number;
 }
 
 interface ProjectContext {
@@ -39,7 +41,8 @@ export class DemoWorkspaceSeeder {
   readonly #projectDetails = new ProjectDetailService();
   readonly #branches = new ProjectBranchService();
   readonly #issues = new IssueService();
-  readonly #summary: SeedSummary = { clients: 0, projects: 0, branches: 0, issues: 0 };
+  readonly #timeLogs = new DemoTimeLogSeeder();
+  readonly #summary: SeedSummary = { clients: 0, projects: 0, branches: 0, issues: 0, timeLogs: 0 };
 
   async seed(workspaceSlug: string): Promise<SeedSummary> {
     const principal = await this.#principal(workspaceSlug);
@@ -50,6 +53,8 @@ export class DemoWorkspaceSeeder {
         await this.#project(principal, clientId, projectFixture);
       }
     }
+
+    this.#summary.timeLogs = await this.#timeLogs.seed(principal);
 
     return { ...this.#summary };
   }

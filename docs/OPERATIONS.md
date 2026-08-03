@@ -195,3 +195,7 @@ After the owner has signed in, demo data can be added idempotently with:
 ```sh
 npm run db:seed:demo
 ```
+
+The command also creates four current-month time entries per demo Project,
+spread across Issues, dates, time-entry types, branches, durations, and billing
+states. Replaying it within the same calendar month does not duplicate entries.

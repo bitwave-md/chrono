@@ -612,6 +612,9 @@ any current workspace data.
 - [x] Include Project priority, lead, target date, health, and assignment data.
 - [x] Add a reusable `db:seed:demo` command with Workspace selection.
 - [x] Replay the command twice and verify database counts and application health.
+- [x] Seed varied current-month time entries for every demo Project.
+- [x] Keep time fixtures idempotent within a Workspace and calendar month.
+- [x] Verify Client/Project report totals and a second no-op replay.
 
 The fixture command only creates entities missing by stable Client key, Project
 slug, Branch slug, or Project-scoped Issue title. Existing records and user
@@ -620,7 +623,13 @@ changes are left intact.
 Runtime verification on 2026-07-17 created three Clients, seven Projects,
 eight Branches, and forty Issues on the first replay. The second replay created
 zero records. Together with the existing DaCredit fixtures, the demo Workspace
-contains four Clients, eight Projects, eight Branches, and forty-two Issues.
+contains four Clients, eight Projects, eight Branches, and forty Issues.
+
+The time-report fixture extension was runtime-verified on 2026-08-03. It added
+32 current-month logs across all eight Projects, 24 Issues, five time-entry
+types, three daily buckets, and mixed billing states. Each Client received
+eight entries totaling 14.2 exact hours. A second replay created zero entities
+or logs, and the 62-test suite, ESLint, and TypeScript checks passed.
 
 ## First-class Client Issues
 
