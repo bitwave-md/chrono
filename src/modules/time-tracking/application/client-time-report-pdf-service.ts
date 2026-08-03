@@ -17,9 +17,11 @@ const palette = {
 export class ClientTimeReportPdfService {
   async generate(input: TimeReportDocumentInput): Promise<Buffer> {
     const document = new TimeReportDocument(input);
-    const pdf = new PDFDocument({ size: "A4", layout: "landscape", margin: 36, info: { Title: `Time report - ${document.subjectName}`, Author: "Chrono" } });
-    pdf.registerFont("Noto", fontPath("NotoSans-Regular.ttf"));
-    pdf.registerFont("Noto-Bold", fontPath("NotoSans-Bold.ttf"));
+    const regularFont = fontPath("NotoSans-Regular.ttf");
+    const boldFont = fontPath("NotoSans-Bold.ttf");
+    const pdf = new PDFDocument({ size: "A4", layout: "landscape", margin: 36, font: regularFont, info: { Title: `Time report - ${document.subjectName}`, Author: "Chrono" } });
+    pdf.registerFont("Noto", regularFont);
+    pdf.registerFont("Noto-Bold", boldFont);
     const chunks: Buffer[] = [];
     const completed = new Promise<Buffer>((resolve, reject) => {
       pdf.on("data", (chunk: Buffer) => chunks.push(chunk));
