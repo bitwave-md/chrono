@@ -1,5 +1,28 @@
 # Chrono Roadmap
 
+## Time-entry editing
+
+Tracer bullet: open a Client or Project Time report, edit a finalized entry's
+duration, type, and note in the canonical composer dialog, then see the report
+and related Issue activity refresh without losing the entry's completion time.
+
+- [x] Add tenant-safe, versioned time-entry update authorization and API support.
+- [x] Add the canonical edit dialog and permission-aware report-row action.
+- [x] Refresh report and Issue caches after successful edits.
+- [x] Verify validation, authorization, concurrency, UX, builds, and file limits.
+
+Edits preserve the original `endedAt` timestamp and billing state. Owners and
+admins may edit any visible Workspace entry, members may edit their own, and
+Guests retain read-only report access.
+
+Completed and runtime-verified on 2026-08-17. Client and Project report rows
+open the shared rounded composer with exact hours, minutes, seconds, type, and
+note controls. A PostgreSQL tracer confirmed completion-time preservation,
+note normalization, category tenancy rejection, and optimistic version
+conflicts before removing its temporary entry. The 66-test suite, ESLint,
+TypeScript, production and Docker builds, Compose health, and strict source-file
+line audit passed.
+
 ## Calendar-versioned one-click updates
 
 Tracer bullet: publish an official `vYY.M.N` GitHub Release, notify the

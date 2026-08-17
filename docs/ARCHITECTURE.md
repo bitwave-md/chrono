@@ -138,6 +138,13 @@ also snapshot the Branch active when work begins. Reports aggregate by Issue,
 Project, Branch, Client, category, or worker while remaining
 historically stable after Issue movement.
 
+Finalized time-entry edits are versioned transactions. They preserve `endedAt`
+and `billable`, derive a new `startedAt` from the requested exact duration, and
+validate the replacement category inside the same Workspace. Owners and admins
+may edit visible entries; members are constrained to their own worker ID and
+Guests remain read-only. Report and Issue time-log caches are invalidated after
+the authoritative mutation succeeds.
+
 Time categories are Workspace-owned metadata. A data migration and the
 Workspace provisioner establish Planning, Documenting, Developing, Testing,
 and Other without removing custom categories. Issue detail loads finalized

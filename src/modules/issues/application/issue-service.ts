@@ -46,7 +46,6 @@ export class IssueService {
     if (clientId) {
       await this.#clientAccess.assertCanRead(principal, clientId);
     }
-
     const conditions = [
       eq(issues.workspaceId, principal.workspaceId),
       isNull(issues.archivedAt),

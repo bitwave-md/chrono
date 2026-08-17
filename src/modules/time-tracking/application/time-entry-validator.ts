@@ -26,15 +26,7 @@ export class TimeEntryValidator {
       throw new ValidationError("Manual start time must be valid.");
     }
 
-    if (
-      !Number.isInteger(durationSeconds) ||
-      durationSeconds < 1 ||
-      durationSeconds > maximumManualDurationSeconds
-    ) {
-      throw new ValidationError(
-        "Manual durations must contain 1 second to 31 days.",
-      );
-    }
+    this.#assertDuration(durationSeconds);
 
     const endedAt = new Date(startedAt.getTime() + durationSeconds * 1_000);
 
@@ -43,6 +35,20 @@ export class TimeEntryValidator {
     }
 
     return { startedAt, endedAt, durationSeconds };
+  }
+
+  editedPeriod(endedAt: Date, durationSeconds: number) {
+    if (Number.isNaN(endedAt.getTime())) {
+      throw new ValidationError("Time entry completion time must be valid.");
+    }
+
+    this.#assertDuration(durationSeconds);
+
+    return {
+      startedAt: new Date(endedAt.getTime() - durationSeconds * 1_000),
+      endedAt,
+      durationSeconds,
+    };
   }
 
   timerPeriod(startedAt: Date, requestedStop: Date) {
@@ -54,5 +60,17 @@ export class TimeEntryValidator {
     );
 
     return { startedAt, endedAt, durationSeconds };
+  }
+
+  #assertDuration(durationSeconds: number): void {
+    if (
+      !Number.isInteger(durationSeconds) ||
+      durationSeconds < 1 ||
+      durationSeconds > maximumManualDurationSeconds
+    ) {
+      throw new ValidationError(
+        "Time entry durations must contain 1 second to 31 days.",
+      );
+    }
   }
 }

@@ -125,7 +125,13 @@ export function ClientTimeReportView({
             <SummaryCards report={report} />
             <ClientTimeReportCharts categories={report.categories} daily={report.daily} projects={report.projects} />
             {reportQuery.data?.truncated ? <p className="rounded-lg border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">This view is limited to the newest 1,000 matching entries. Narrow the period for a complete reconciliation.</p> : null}
-            <ClientTimeEntryTable tasks={report.tasks} workspaceSlug={workspaceSlug} />
+            <ClientTimeEntryTable
+              canCreateTimeTypes={workspace.role === "owner" || workspace.role === "admin"}
+              canEditEntries={workspace.role !== "guest"}
+              categories={categoriesQuery.data ?? []}
+              tasks={report.tasks}
+              workspaceSlug={workspaceSlug}
+            />
           </>
         ) : null}
       </div>

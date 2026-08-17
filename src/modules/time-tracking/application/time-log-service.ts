@@ -18,11 +18,14 @@ import { GuestAccessService } from "@/modules/authorization/application/guest-ac
 import { ClientAccessService } from "@/modules/clients/application/client-access-service";
 import { IssueService } from "@/modules/issues/application/issue-service";
 import {
+  ConflictError,
   ForbiddenError,
+  NotFoundError,
   ValidationError,
 } from "@/modules/shared/application/application-error";
 import { TimeAttributionResolver } from "@/modules/time-tracking/application/time-attribution-resolver";
 import { TimeEntryValidator } from "@/modules/time-tracking/application/time-entry-validator";
+import { TimeLogEditPolicy } from "@/modules/time-tracking/application/time-log-edit-policy";
 
 export interface CreateManualTimeLogInput {
   issueId: string;
@@ -31,6 +34,13 @@ export interface CreateManualTimeLogInput {
   durationSeconds: number;
   note: string | null;
   billable: boolean | null;
+}
+
+export interface UpdateTimeLogInput {
+  expectedVersion: number;
+  categoryId: string | null;
+  durationSeconds: number;
+  note: string | null;
 }
 
 export interface TimeLogFilters {
@@ -51,6 +61,7 @@ export class TimeLogService {
   readonly #entryValidator = new TimeEntryValidator();
   readonly #issues = new IssueService();
   readonly #clientAccess = new ClientAccessService();
+  readonly #editPolicy = new TimeLogEditPolicy();
   readonly #policy = new WorkspacePolicy();
   readonly #guestAccess = new GuestAccessService();
 
@@ -232,6 +243,78 @@ export class TimeLogService {
           .returning();
 
         return timeLog;
+      },
+      { isolationLevel: "serializable", accessMode: "read write" },
+    );
+  }
+
+  async update(
+    principal: Principal,
+    timeLogId: string,
+    input: UpdateTimeLogInput,
+  ) {
+    this.#policy.assertCanUseTimeTracking(principal);
+    const note = this.#entryValidator.normalizeNote(input.note);
+
+    return db.transaction(
+      async (transaction) => {
+        const [current] = await transaction
+          .select({
+            id: timeLogs.id,
+            endedAt: timeLogs.endedAt,
+            version: timeLogs.version,
+            workerUserId: timeLogs.workerUserId,
+          })
+          .from(timeLogs)
+          .where(and(
+            eq(timeLogs.id, timeLogId),
+            eq(timeLogs.workspaceId, principal.workspaceId),
+            isNull(timeLogs.archivedAt),
+          ))
+          .limit(1)
+          .for("update");
+
+        if (!current) throw new NotFoundError("Time entry not found.");
+        this.#editPolicy.assertCanEdit(principal, current.workerUserId);
+        if (current.version !== input.expectedVersion) {
+          throw new ConflictError(
+            "The time entry changed since it was loaded. Refresh and retry.",
+          );
+        }
+
+        const category = await this.#attributionResolver.resolveCategory(
+          transaction,
+          principal,
+          input.categoryId,
+        );
+        const period = this.#entryValidator.editedPeriod(
+          current.endedAt,
+          input.durationSeconds,
+        );
+        const [updated] = await transaction
+          .update(timeLogs)
+          .set({
+            categoryId: category?.id ?? null,
+            note,
+            ...period,
+            version: sql`${timeLogs.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(and(
+            eq(timeLogs.id, current.id),
+            eq(timeLogs.workspaceId, principal.workspaceId),
+            eq(timeLogs.version, input.expectedVersion),
+            isNull(timeLogs.archivedAt),
+          ))
+          .returning();
+
+        if (!updated) {
+          throw new ConflictError(
+            "The time entry changed since it was loaded. Refresh and retry.",
+          );
+        }
+
+        return updated;
       },
       { isolationLevel: "serializable", accessMode: "read write" },
     );

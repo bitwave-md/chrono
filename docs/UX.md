@@ -90,9 +90,13 @@ breakdowns, and a dense entry table grouped by Issue with task totals and links
 to Issue and Project/Branch context. The top-right export action downloads the
 same filtered report as a landscape A4 PDF. Printable durations round to the
 nearest whole hour with half-hours rounding up; the browser retains exact time.
+Editable rows expose a restrained pencil action. Its canonical composer dialog
+edits exact hours, minutes, seconds, time-entry type, and note while keeping the
+entry's completion time and billing state unchanged.
 
-Guest navigation contains only accessible Clients and Projects and omits Time
-and Workspace administration. Guest invitation expands Client selections into
+Guest navigation contains only accessible Clients and Projects, includes their
+read-only Time reports, and omits time mutation plus Workspace administration.
+Guest invitation expands Client selections into
 their current Projects, permits explicit Project exclusions, and explains that
 future Projects require a Project Members grant. Project Members is a
 route-backed tab with a searchable add control for authorized administrators

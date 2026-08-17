@@ -10,11 +10,13 @@ export const workspaceQueryKeys = {
     ["workspace", workspaceSlug, "client", clientId, "resources"] as const,
   clientMembers: (workspaceSlug: string, clientId: string) =>
     ["workspace", workspaceSlug, "client", clientId, "members"] as const,
+  clientTimeReportsRoot: (workspaceSlug: string) =>
+    ["workspace", workspaceSlug, "client-time-reports"] as const,
   clientTimeReport: (
     workspaceSlug: string,
     clientId: string,
     filters: ClientTimeReportFilters,
-  ) => ["workspace", workspaceSlug, "client", clientId, "time-report", filters] as const,
+  ) => [...workspaceQueryKeys.clientTimeReportsRoot(workspaceSlug), clientId, filters] as const,
   projectsRoot: (workspaceSlug: string) =>
     ["workspace", workspaceSlug, "projects"] as const,
   projects: (workspaceSlug: string, clientId: string | null) =>

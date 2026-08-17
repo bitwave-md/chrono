@@ -34,7 +34,7 @@ export function TimeEntryTypePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button className="max-w-48 justify-between rounded-full" disabled={disabled} size="sm" variant="outline">
+        <Button className="max-w-48 justify-between rounded-full" disabled={disabled} size="sm" type="button" variant="outline">
           <span className="size-2.5 rounded-full" style={{ backgroundColor: selected?.color ?? fallbackColor }} />
           <span className="min-w-0 flex-1 truncate text-left">{selected?.name ?? "Select type"}</span>
           <ChevronDown className="size-3.5 text-muted-foreground" />

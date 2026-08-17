@@ -174,6 +174,9 @@ the affected scope returns `409 conflict` until it is stopped.
   or stops the current user's authoritative timer.
 - `GET|POST /api/workspaces/:workspaceSlug/time-logs` lists finalized logs or
   creates a manual entry.
+- `PATCH /api/workspaces/:workspaceSlug/time-logs/:timeLogId` updates a
+  finalized entry's duration, time-entry type, and note using
+  `expectedVersion` optimistic concurrency.
 - `GET|POST /api/workspaces/:workspaceSlug/time-categories` lists or manages
   reporting categories.
 - `GET /api/workspaces/:workspaceSlug/time-reports?groupBy=:dimension`
@@ -188,6 +191,10 @@ Time-log filters are `issueId`, `clientId`, `projectId`, `categoryId`,
 `branchId`, `workerUserId`, `from`, and `to`. Report grouping accepts `issue`,
 `project`, `branch`, `client`, `category`, or `worker`; null Branch attribution
 is returned as `Main`.
+
+Time-entry edits preserve the original completion timestamp and billable
+state. Owners and admins may edit any Workspace entry available to them;
+members may edit only their own entries, and Guests cannot mutate time data.
 
 Every Workspace is provisioned with Planning, Documenting, Developing, Testing,
 and Other. Owners and admins may add further categories; category keys remain

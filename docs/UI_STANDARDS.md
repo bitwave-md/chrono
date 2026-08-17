@@ -56,6 +56,12 @@ Every primary entity creation dialog should:
 - Use the shared GSAP frame animation; do not add per-dialog entrance effects.
 - Keep remote creation in a custom TanStack Query mutation hook.
 
+Focused entity-edit dialogs may reuse the same frame when the change benefits
+from writing space and compact property pills. Time-entry editing is the
+reference: duration is prominent, the note uses the open writing surface, the
+type remains a pill, every non-submit property trigger uses `type="button"`,
+and the rounded save action supports `Cmd/Ctrl + Enter`.
+
 Entity-specific controls remain orthogonal: Issues own workflow and assignment,
 Projects own Client context and namespace overrides, and Clients own their key
 and default Issue prefix. Optional settings should not turn the composer back

@@ -98,6 +98,15 @@ export interface StartTimerRequest {
   note: string | null;
 }
 
+export interface UpdateTimeLogRequest {
+  timeLogId: string;
+  issueId: string;
+  expectedVersion: number;
+  categoryId: string | null;
+  durationSeconds: number;
+  note: string | null;
+}
+
 export class WorkspaceApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -448,19 +457,16 @@ export class WorkspaceApiClient {
   stopTimer(): Promise<unknown> {
     return this.#request("/timers/active", { method: "DELETE" });
   }
-  addManualTime(input: {
-    issueId: string;
-    categoryId: string | null;
-    durationSeconds: number;
-    note: string | null;
-    startedAt: string;
-  }): Promise<unknown> {
+  addManualTime(input: { issueId: string; categoryId: string | null; durationSeconds: number; note: string | null; startedAt: string }): Promise<unknown> {
     return this.#request("/time-logs", {
       method: "POST",
-      body: JSON.stringify({
-        ...input,
-        billable: null,
-      }),
+      body: JSON.stringify({ ...input, billable: null }),
+    });
+  }
+  updateTimeLog(input: UpdateTimeLogRequest): Promise<unknown> {
+    return this.#request(`/time-logs/${encodeURIComponent(input.timeLogId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ expectedVersion: input.expectedVersion, categoryId: input.categoryId, durationSeconds: input.durationSeconds, note: input.note }),
     });
   }
   async #get<T>(path: string): Promise<T> {
