@@ -185,12 +185,17 @@ the affected scope returns `409 conflict` until it is stopped.
   to 1,000 Client-scoped finalized entries for a required `from`/`to` period,
   with optional `projectId`, `categoryId`, and `workerUserId` filters.
 - `GET /api/workspaces/:workspaceSlug/clients/:clientId/time-report/export`
-  accepts the same filters and returns an authenticated landscape A4 PDF.
+  accepts the same filters plus an optional validated IANA `timeZone` and
+  returns an authenticated landscape A4 PDF.
 
 Time-log filters are `issueId`, `clientId`, `projectId`, `categoryId`,
 `branchId`, `workerUserId`, `from`, and `to`. Report grouping accepts `issue`,
 `project`, `branch`, `client`, `category`, or `worker`; null Branch attribution
 is returned as `Main`.
+
+The PDF client supplies the browser timezone while retaining the exact
+inclusive `from` and exclusive `to` instants used by the database query. The
+timezone controls daily grouping, labels, period text, and entry dates only.
 
 Time-entry edits preserve the original completion timestamp and billable
 state. Owners and admins may edit any Workspace entry available to them;

@@ -4,6 +4,7 @@ import { TimeLogService } from "@/modules/time-tracking/application/time-log-ser
 export interface ClientTimeReportFilters {
   from: Date;
   to: Date;
+  timeZone?: string;
   projectId?: string;
   categoryId?: string;
   workerUserId?: string;

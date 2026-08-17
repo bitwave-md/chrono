@@ -1,6 +1,5 @@
-import { addDays, format } from "date-fns";
-
 import type { aggregateTimeReport } from "@/modules/time-tracking/domain/time-report-summary";
+import { ReportCalendar } from "@/modules/time-tracking/domain/report-calendar";
 
 type TimeReportSummary = ReturnType<typeof aggregateTimeReport>;
 
@@ -8,7 +7,7 @@ export interface TimeReportDocumentInput {
   subjectName: string;
   subjectType: "Client" | "Project";
   scope: "client" | "personal";
-  range: { from: Date; to: Date };
+  range: { from: Date; to: Date; timeZone?: string };
   report: TimeReportSummary;
   truncated?: boolean;
   generatedAt?: Date;
@@ -39,12 +38,13 @@ export class TimeReportDocument {
   }>;
 
   constructor(input: TimeReportDocumentInput) {
+    const calendar = new ReportCalendar(input.range.timeZone);
     const totalCategorySeconds = input.report.categories.reduce((sum, row) => sum + row.seconds, 0);
     this.subjectName = input.subjectName;
     this.subjectType = input.subjectType;
     this.scopeLabel = input.scope === "personal" ? "Personal visibility" : "Client-wide visibility";
-    this.periodLabel = `${format(input.range.from, "MMM d, yyyy")} - ${format(addDays(input.range.to, -1), "MMM d, yyyy")}`;
-    this.generatedLabel = format(input.generatedAt ?? new Date(), "MMM d, yyyy HH:mm");
+    this.periodLabel = periodLabel(calendar, input);
+    this.generatedLabel = calendar.dateTimeLabel(input.generatedAt ?? new Date());
     this.totalHours = roundHours(input.report.totalSeconds);
     this.billableHours = roundHours(input.report.billableSeconds);
     this.entryCount = input.report.entryCount;
@@ -67,7 +67,7 @@ export class TimeReportDocument {
       project: task.projectName ? `${task.projectName}${task.branchName ? ` / ${task.branchName}` : ""}` : "Client work",
       hours: roundHours(task.totalSeconds),
       entries: task.entries.map((entry) => ({
-        date: format(new Date(entry.endedAt), "MMM d, yyyy"),
+        date: calendar.longLabel(calendar.dateKey(new Date(entry.endedAt))),
         person: entry.workerName ?? entry.workerEmail,
         type: entry.categoryName ?? "Uncategorized",
         note: entry.note ?? "No note",
@@ -76,6 +76,16 @@ export class TimeReportDocument {
       })),
     }));
   }
+}
+
+function periodLabel(
+  calendar: ReportCalendar,
+  input: TimeReportDocumentInput,
+): string {
+  const first = input.report.daily[0]?.date ?? calendar.dateKey(input.range.from);
+  const last = input.report.daily.at(-1)?.date
+    ?? calendar.dateKey(new Date(input.range.to.getTime() - 1));
+  return `${calendar.longLabel(first)} - ${calendar.longLabel(last)}`;
 }
 
 export function roundHours(seconds: number): number {

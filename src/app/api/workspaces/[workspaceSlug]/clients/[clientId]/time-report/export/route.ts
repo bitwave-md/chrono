@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-
 import { ServerPrincipalResolver } from "@/modules/authorization/application/server-principal-resolver";
 import { EntityId } from "@/modules/shared/domain/entity-id";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
@@ -36,7 +34,9 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       report: summary,
       truncated: result.truncated,
     });
-    const filename = `chrono-time-report-${format(filters.from, "yyyy-MM-dd")}-${format(filters.to, "yyyy-MM-dd")}.pdf`;
+    const firstDay = summary.daily[0]?.date ?? "from";
+    const lastDay = summary.daily.at(-1)?.date ?? "to";
+    const filename = `chrono-time-report-${firstDay}-${lastDay}.pdf`;
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Cache-Control": "private, no-store",

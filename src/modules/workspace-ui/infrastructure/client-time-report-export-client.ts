@@ -13,7 +13,8 @@ export class ClientTimeReportExportClient {
   }
 
   async download(clientId: string, filters: ClientTimeReportFilters): Promise<{ blob: Blob; filename: string }> {
-    const path = clientTimeReportPath(clientId, filters, "/export");
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const path = clientTimeReportPath(clientId, { ...filters, timeZone }, "/export");
     const response = await fetch(`${this.#basePath}${path}`, { credentials: "same-origin" });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({})) as ApiErrorEnvelope;

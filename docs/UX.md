@@ -90,6 +90,8 @@ breakdowns, and a dense entry table grouped by Issue with task totals and links
 to Issue and Project/Branch context. The top-right export action downloads the
 same filtered report as a landscape A4 PDF. Printable durations round to the
 nearest whole hour with half-hours rounding up; the browser retains exact time.
+PDF periods and daily columns use the exporting browser's timezone, so monthly
+reports always begin and end on the dates selected in the report controls.
 Editable rows expose a restrained pencil action. Its canonical composer dialog
 edits exact hours, minutes, seconds, time-entry type, and note while keeping the
 entry's completion time and billing state unchanged.

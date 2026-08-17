@@ -164,6 +164,12 @@ whole-hour rounding before the PDF renderer creates a Unicode-capable landscape
 A4 document. Exact persisted durations and browser totals are never rounded or
 mutated by export formatting.
 
+PDF calendar presentation uses the exporter's validated IANA timezone. Query
+boundaries remain exact timestamps, while a dedicated report-calendar domain
+object assigns entries to local date keys and enumerates the selected calendar
+days without assuming every day contains exactly 24 hours. This prevents
+positive-offset and daylight-saving ranges from losing or inventing edge days.
+
 ## Authorization
 
 `WorkspaceMembership` is the tenant principal. Resource services enforce:

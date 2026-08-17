@@ -1,5 +1,25 @@
 # Chrono Roadmap
 
+## Time-report PDF calendar boundaries
+
+Tracer bullet: export a monthly Time report from a non-UTC browser and verify
+that the PDF chart begins on the selected first day, ends on the selected last
+day, and assigns entries to those same local calendar dates.
+
+- [x] Carry the exporter's validated IANA timezone without changing query instants.
+- [x] Generate PDF daily buckets and labels from timezone-aware calendar dates.
+- [x] Cover positive-offset and daylight-saving month boundaries.
+- [x] Verify PDF output, builds, Docker health, and file limits.
+
+The database continues filtering by exact inclusive/exclusive timestamps. The
+timezone affects report presentation and calendar-day grouping only.
+
+Completed and runtime-verified on 2026-08-17. A production-like UTC process
+exported the August report with `Europe/Chisinau` presentation and produced
+exactly 31 columns from August 1 through August 31 plus a valid PDF. Positive
+offset and daylight-saving regressions, 70 tests, ESLint, TypeScript, the
+production and Docker builds, Compose health, and the strict line audit passed.
+
 ## Time-entry editing
 
 Tracer bullet: open a Client or Project Time report, edit a finalized entry's

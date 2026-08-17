@@ -13,6 +13,15 @@ export class SearchInput {
     return value ? new EntityId(value, key).value : undefined;
   }
 
+  optionalString(key: string, maximumLength = 255): string | undefined {
+    const value = this.#parameters.get(key)?.trim();
+    if (!value) return undefined;
+    if (value.length > maximumLength) {
+      throw new ValidationError(`${key} must be at most ${maximumLength} characters.`);
+    }
+    return value;
+  }
+
   optionalDateTime(key: string): Date | undefined {
     const value = this.#parameters.get(key);
 
