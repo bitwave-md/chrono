@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { AccountPreferencesRecord, NotificationPreferencesRecord, WorkspaceGeneralRecord } from "@/modules/settings/domain/settings-types";
+import type { AccountPreferencesRecord, NotificationPreferencesRecord, UpdateStatusRecord, WorkspaceGeneralRecord } from "@/modules/settings/domain/settings-types";
 import { SettingsApiClient } from "@/modules/settings/infrastructure/settings-api-client";
 import type { TimeCategoryRecord, WorkspaceIdentity } from "@/modules/workspace-ui/domain/workspace-types";
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
@@ -79,7 +79,8 @@ export function useUpdateStatusQuery(workspaceSlug: string, enabled: boolean) {
     staleTime: 15 * 60_000,
     refetchInterval: (query) => {
       const stage = query.state.data?.job?.stage;
-      return stage && stage !== "completed" && stage !== "failed" ? 2_000 : 6 * 60 * 60_000;
+      if (stage && stage !== "completed" && stage !== "failed") return 2_000;
+      return query.state.data?.updateMode === "manual" ? 10_000 : 6 * 60 * 60_000;
     },
     refetchIntervalInBackground: true,
     refetchOnReconnect: "always",
@@ -89,7 +90,14 @@ export function useUpdateStatusQuery(workspaceSlug: string, enabled: boolean) {
 }
 export function useStartUpdateMutation(workspaceSlug: string) {
   const queries = useQueryClient();
-  return useMutation({ mutationFn: () => new SettingsApiClient(workspaceSlug).startUpdate(), onSuccess: () => queries.invalidateQueries({ queryKey: settingsKey(workspaceSlug, "updates") }) });
+  const key = settingsKey(workspaceSlug, "updates");
+  return useMutation({
+    mutationFn: () => new SettingsApiClient(workspaceSlug).startUpdate(),
+    onSuccess: (job) => {
+      queries.setQueryData<UpdateStatusRecord>(key, (current) => current ? { ...current, job, canStartUpdate: false } : current);
+      queries.invalidateQueries({ queryKey: key });
+    },
+  });
 }
 export function useAvatarMutation(workspaceSlug: string, onProgress: (value: number) => void) {
   const queries = useQueryClient();

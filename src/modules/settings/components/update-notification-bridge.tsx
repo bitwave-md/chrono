@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { ToastSurface } from "@/components/ui/toast-surface";
 import { useUpdateStatusQuery } from "@/modules/settings/application/use-settings-queries";
+import { UpdateProgressOverlay } from "@/modules/settings/components/update-progress-overlay";
+import { updateInProgress } from "@/modules/settings/domain/update-job";
 
 export function UpdateNotificationBridge({ enabled, workspaceSlug }: { enabled: boolean; workspaceSlug: string }) {
   const query = useUpdateStatusQuery(workspaceSlug, enabled);
@@ -16,6 +18,7 @@ export function UpdateNotificationBridge({ enabled, workspaceSlug }: { enabled: 
   useEffect(() => {
     const value = query.data;
     if (!value) return;
+    if (value.job && updateInProgress(value.job)) localStorage.setItem("chrono:pending-update-job", value.job.id);
     const pendingJob = localStorage.getItem("chrono:pending-update-job");
     if (pendingJob && value.job?.id === pendingJob && (value.job.stage === "completed" || value.job.stage === "failed")) {
       const successful = value.job.stage === "completed";
@@ -23,7 +26,7 @@ export function UpdateNotificationBridge({ enabled, workspaceSlug }: { enabled: 
       else toast.error(value.job.message);
       localStorage.removeItem("chrono:pending-update-job");
     }
-    if (!value.updateAvailable || !value.latestVersion) return;
+    if (updateInProgress(value.job) || !value.updateAvailable || !value.latestVersion) return;
     const notificationKey = `chrono:update-notified:${value.latestVersion}`;
     if (localStorage.getItem(notificationKey)) return;
     localStorage.setItem(notificationKey, new Date().toISOString());
@@ -35,5 +38,8 @@ export function UpdateNotificationBridge({ enabled, workspaceSlug }: { enabled: 
     ), { duration: 12_000 });
   }, [query.data, router, workspaceSlug]);
 
-  return null;
+  const value = query.data;
+  return value?.job && updateInProgress(value.job)
+    ? <UpdateProgressOverlay connectionInterrupted={query.isError} installedVersion={value.installedVersion} job={value.job} />
+    : null;
 }

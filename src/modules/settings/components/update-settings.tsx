@@ -44,7 +44,7 @@ export function UpdateSettings({ workspaceSlug }: { workspaceSlug: string }) {
           <div className="text-xs leading-5 text-muted-foreground">A coordinated database and object-storage backup is created before migration.</div>
           <Button disabled={!value.canStartUpdate || running || start.isPending} onClick={() => setConfirming(true)}>
             {running ? <LoaderCircle className="animate-spin" /> : null}
-            {running ? "Updating" : value.updateAvailable && value.latestVersion ? value.job?.stage === "failed" ? `Retry ${value.latestVersion}` : `Update to ${value.latestVersion}` : "Up to date"}
+            {updateButtonLabel(value, running)}
           </Button>
         </div>
       </SettingsSection>
@@ -64,6 +64,14 @@ export function UpdateSettings({ workspaceSlug }: { workspaceSlug: string }) {
       </Dialog>
     </SettingsPageFrame>
   );
+}
+
+function updateButtonLabel(value: UpdateStatusRecord, running: boolean): string {
+  if (running) return "Updating";
+  if (value.updateMode === "manual") return "Host repair required";
+  if (value.updateMode === "source") return "Source installation";
+  if (!value.updateAvailable || !value.latestVersion) return "Up to date";
+  return value.job?.stage === "failed" ? `Retry ${value.latestVersion}` : `Update to ${value.latestVersion}`;
 }
 
 function ReleaseValue({ value }: { value: UpdateStatusRecord }) {
