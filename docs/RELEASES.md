@@ -25,6 +25,11 @@ self-hosting appliance, bootstrap helper, and SHA-256 checksums. The installed
 app reports the build version and commit baked into its image rather than
 editable runtime environment values.
 
+The image appliance starts its updater service without an optional profile.
+The source-build override remains profile-gated. Each release's host helper can
+repair a missing or unhealthy older control plane from checksum-verified assets
+before it submits the ordinary latest-release job.
+
 ## Migration compatibility
 
 Every release migration must remain compatible with the immediately previous

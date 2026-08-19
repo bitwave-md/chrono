@@ -51,7 +51,11 @@ An available official release adds an amber Updates navigation dot and one
 operator toast per browser and version. The Updates page uses a confirmation
 dialog and a persisted progress surface with percentage, current-stage context,
 restart/reconnect state, timestamps, and plain-language completion or recovery
-outcomes. Technical failure output stays available in a collapsed detail.
+outcomes. While a job is active, a global modal blurs and blocks the application,
+shows the server stage and percentage, and remains mounted through temporary
+reconnect failures. The authoritative completed or failed state releases the
+interface and triggers a toast. Technical failure output stays available in a
+collapsed detail.
 
 ## Project experience
 

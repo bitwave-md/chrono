@@ -217,6 +217,12 @@ status. The isolated updater alone mounts the Docker socket and installation
 directory, validates GitHub release manifests, executes fixed backup and
 Compose stages, and persists resumable status. Agent mount paths use a separate
 environment namespace so they cannot override child Compose interpolation.
+The updater publishes a short-lived heartbeat only after it can reach the same
+Docker daemon as the host CLI. A writable request directory alone never enables
+the update button. Image appliances start this control plane unconditionally;
+the source-build overlay keeps it profile-gated. The versionless host helper
+can checksum-verify and restore a missing control plane before enqueueing, so
+recovery does not depend on the component being recovered.
 Post-migration startup or health failures restore the previous image references
 and app before reporting their recovery outcome. No Docker command or image
 reference is accepted from browser input.

@@ -1,5 +1,31 @@
 # Chrono Roadmap
 
+## Resilient self-hosted updates
+
+Tracer bullet: recover an image installation whose updater container is
+missing, queue the latest official release through the repaired control plane,
+and keep every operator informed with a blocking in-app progress surface while
+Chrono restarts.
+
+- [x] Make updater readiness authoritative instead of inferring it from a writable directory.
+- [x] Make the host update helper repair a missing or unhealthy updater safely.
+- [x] Support rootless and rootful Docker sockets without invalid supplemental groups.
+- [x] Show global, restart-tolerant progress throughout the application.
+- [x] Verify recovery, status polling, builds, Docker health, and file limits.
+
+The host helper remains the recovery boundary because Next.js never receives
+the Docker socket. Fresh image installations start the updater by default;
+source-development installations keep it behind an explicit Compose profile.
+
+Completed and runtime-verified on 2026-08-19. Image Compose now starts the
+updater by default, source Compose keeps it opt-in, and a fresh heartbeat
+requires both installation access and a successful Docker API probe. The host
+helper recovered a simulated missing worker from checksum-verified assets
+before queueing normally. The global operator modal tracked every update stage
+and reconnect state through TanStack Query. Seventy-two tests, shell syntax,
+TypeScript, ESLint, the production and Docker builds, live application and
+updater health, and the strict source-file line audit passed.
+
 ## Time-report PDF calendar boundaries
 
 Tracer bullet: export a monthly Time report from a non-UTC browser and verify

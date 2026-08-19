@@ -9,7 +9,7 @@ The supported production package is one Compose project containing:
 - `db`: PostgreSQL 17 with a persistent named volume.
 - `storage`: pinned MinIO with a persistent named volume and no production port.
 - `storage-init`: one-shot private bucket, application user, and policy setup.
-- `updater`: isolated official-release installer under the `updates` profile.
+- `updater`: isolated official-release installer, always running for image installations.
 - `caddy`: optional automatic HTTPS under the `https` profile.
 
 The host needs Docker and the Compose plugin only. PostgreSQL and MinIO are not
@@ -17,6 +17,8 @@ published to the host. The app waits for healthy persistence plus successful
 migration and bucket initialization jobs. The app never mounts the Docker
 socket; only the updater does, and it accepts structured official-release jobs
 through a shared request directory rather than arbitrary commands.
+Source-development overlays place the updater behind the explicit `updates`
+profile, so ordinary local builds do not run the privileged control plane.
 
 ## Guided and unattended installation
 
@@ -74,7 +76,7 @@ the original `Host`, `X-Forwarded-Host`, and `X-Forwarded-Proto` headers.
 ```sh
 cd ~/chrono
 docker compose ps
-docker compose logs --tail=200 app migrate db storage storage-init
+docker compose logs --tail=200 app updater migrate db storage storage-init
 curl --fail http://127.0.0.1:3000/api/health
 ```
 
@@ -102,10 +104,13 @@ CHRONO_RESTORE_CONFIRM=restore ./restore.sh ~/chrono/backups/chrono-<timestamp>
 Never mix the database from one backup with objects from another. Named volumes
 protect only against container replacement.
 
-## One-time updater bootstrap
+## Missing-updater recovery
 
-Installations created before `v26.7.1` have no updater service in their copied
-Compose file. Perform this transition once on the Docker host:
+Older installations can discover releases even when their copied Compose file
+never started `chrono-updater-1`. The web application cannot repair that
+privileged boundary because it intentionally has no Docker access. Run this
+verified transition once as the same non-root user whose `docker info` command
+works:
 
 ```sh
 cd /tmp
@@ -116,14 +121,20 @@ ACTUAL=$(sha256sum bootstrap-update.sh 2>/dev/null | awk '{print $1}' || shasum 
 test "$EXPECTED" = "$ACTUAL" && CHRONO_INSTALL_DIR="$HOME/chrono" ./bootstrap-update.sh
 ```
 
-The helper creates a full backup before replacing managed Compose/helper files.
+Do not prefix the command with `sudo` when using rootless Docker. The helper
+creates a full backup before replacing managed Compose/helper files.
 It preserves `.env`, named volumes, `COMPOSE_FILE`, Caddy or Cloudflare Tunnel
 configuration, external-storage settings, and secrets. It pins the latest
-digest manifest, enables the `updates` profile, and records the active Docker
-context's Unix socket path and group ID for the isolated updater. Operators
-with a nonstandard context may set `CHRONO_DOCKER_SOCKET` and
-`CHRONO_DOCKER_GID` explicitly before running the helper. Rootless Docker uses
-container group `0` instead of its host-side subordinate group mapping.
+digest manifest and records the active Docker context's Unix socket path for
+the isolated updater. Operators with a nonstandard context may set
+`CHRONO_DOCKER_SOCKET` explicitly before running the helper.
+
+Current host helpers are self-healing. `./update.sh` checks the updater's fresh
+heartbeat and Docker API access before queueing. If the service is missing,
+stopped, profile-disabled, or unhealthy, it downloads the checksum-verified
+bootstrap asset, backs up the managed control-plane files, repairs only the
+updater, and then queues the normal backed-up update job. It never deletes
+PostgreSQL or object-storage volumes and never removes unrelated containers.
 
 ## Upgrade and rollback
 
@@ -132,9 +143,11 @@ new official releases. Settings → Updates confirms and queues a one-click job.
 The updater validates the release independently, creates a full backup, pulls
 digest-pinned app, migrator, and updater images, migrates, restarts, and verifies
 health. Live progress shows every stage, expected reconnects, automatic recovery,
-and completion without requiring console access. It survives an app or host
-restart. Updater-only mount paths are isolated from the variables consumed by
-child Compose commands.
+and completion without requiring console access. A global blocking progress
+surface disables interaction, survives the application restart, and reports
+reconnection rather than disappearing. It survives an app or host restart.
+Updater-only mount paths are isolated from the variables consumed by child
+Compose commands.
 
 If the UI is unavailable, run `./update.sh` to enqueue the latest release and
 wait for completion. `./update.sh --version vYY.M.N` is an advanced recovery

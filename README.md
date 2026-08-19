@@ -89,10 +89,17 @@ one button. The versionless host helper provides the same recovery path:
 ./update.sh
 ```
 
-Existing installations created before `v26.7.1` need one host-side bootstrap.
+Image installations always run the isolated updater and verify its heartbeat
+before enabling the button. The update opens a global progress surface with
+backup, download, migration, restart, reconnect, and health-check stages. If
+an older installation is missing the updater, the current host helper repairs
+the control plane before queueing the release.
+
+Existing installations whose `docker compose ps` output has no updater need
+one host-side bootstrap.
 Download `bootstrap-update.sh` and `checksums.sha256` from the latest GitHub
 Release, verify the script's listed SHA-256 digest, then run it. See
-[Self-Hosted Operations](docs/OPERATIONS.md#one-time-updater-bootstrap) for the
+[Self-Hosted Operations](docs/OPERATIONS.md#missing-updater-recovery) for the
 exact commands.
 
 Never treat either Docker volume as a backup. Keep encrypted backup copies

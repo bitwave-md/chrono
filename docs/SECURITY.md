@@ -96,6 +96,10 @@ access is host-equivalent; it is not published on a network port and accepts
 only fixed, validated official-release requests through a constrained shared
 directory. Requested versions, manifests, repositories, image names, and
 SHA-256 digests are validated again inside that privileged boundary.
+Its readiness heartbeat is written only after a Docker API probe succeeds.
+Rootless installations mount the active Docker context socket directly and do
+not request unmappable supplemental host groups. Next.js can neither repair nor
+start this boundary; the checksum-verified host helper performs that recovery.
 
 Private GitHub release checks may use `CHRONO_GITHUB_TOKEN`. Use a fine-grained
 read-only token limited to the Chrono repository, keep it in the mode-`0600`
