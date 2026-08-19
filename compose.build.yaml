@@ -16,3 +16,4 @@ services:
       context: ${CHRONO_BUILD_CONTEXT:-.}
       target: updater
     pull_policy: build
+    profiles: ["updates"]

@@ -47,16 +47,6 @@ docker_socket_path() {
   printf '%s' /var/run/docker.sock
 }
 
-docker_socket_gid() {
-  socket=$1
-  if docker info --format '{{json .SecurityOptions}}' 2>/dev/null | grep -q 'name=rootless'; then
-    printf 0
-    return
-  fi
-  gid=$(stat -c '%g' "$socket" 2>/dev/null || stat -f '%g' "$socket" 2>/dev/null || true)
-  printf '%s' "${gid:-0}"
-}
-
 command -v docker >/dev/null 2>&1 || fail "Docker is required. Install Docker Engine or Docker Desktop first."
 docker compose version >/dev/null 2>&1 || fail "The Docker Compose plugin is required."
 
@@ -86,11 +76,6 @@ case "$PUBLIC_URL" in
   http://*) CHRONO_BIND_ADDRESS_VALUE=0.0.0.0 ;;
 esac
 
-add_profile() {
-  current=$1 wanted=$2
-  case ",$current," in *",$wanted,"*) printf '%s' "$current";; *) if [ -n "$current" ]; then printf '%s,%s' "$current" "$wanted"; else printf '%s' "$wanted"; fi;; esac
-}
-
 POSTGRES_PASSWORD_VALUE=${POSTGRES_PASSWORD:-$(random_hex 24)}
 NEXTAUTH_SECRET_VALUE=${NEXTAUTH_SECRET:-$(random_hex 32)}
 SETUP_TOKEN_VALUE=${AUTH_SETUP_TOKEN:-$(random_hex 32)}
@@ -98,12 +83,12 @@ MINIO_ROOT_PASSWORD_VALUE=${MINIO_ROOT_PASSWORD:-$(random_hex 24)}
 S3_SECRET_KEY_VALUE=${S3_SECRET_KEY:-$(random_hex 24)}
 DOCKER_SOCKET_VALUE=${CHRONO_DOCKER_SOCKET:-$(docker_socket_path)}
 case "$DOCKER_SOCKET_VALUE" in /*) ;; *) fail "CHRONO_DOCKER_SOCKET must be an absolute path." ;; esac
-DOCKER_GID_VALUE=${CHRONO_DOCKER_GID:-$(docker_socket_gid "$DOCKER_SOCKET_VALUE")}
 
 umask 077
 mkdir -p "$INSTALL_DIR"
 INSTALL_DIR=$(CDPATH= cd -- "$INSTALL_DIR" && pwd)
 mkdir -p "$INSTALL_DIR/data/status" "$INSTALL_DIR/data/update-requests"
+chmod 755 "$INSTALL_DIR/data/status"
 chmod 733 "$INSTALL_DIR/data/update-requests"
 
 if [ -e "$INSTALL_DIR/.env" ] && [ "${CHRONO_FORCE:-0}" != "1" ]; then
@@ -190,10 +175,9 @@ CHRONO_GITHUB_TOKEN=${CHRONO_GITHUB_TOKEN:-}
 CHRONO_STATUS_DIR=./data/status
 CHRONO_UPDATE_REQUEST_DIR=./data/update-requests
 CHRONO_DOCKER_SOCKET=$DOCKER_SOCKET_VALUE
-CHRONO_DOCKER_GID=$DOCKER_GID_VALUE
 CHRONO_BIND_ADDRESS=$CHRONO_BIND_ADDRESS_VALUE
 CHRONO_PORT=3000
-COMPOSE_PROFILES=$(if [ "$install_mode" = image ]; then add_profile "$COMPOSE_PROFILES_VALUE" updates; else printf '%s' "$COMPOSE_PROFILES_VALUE"; fi)
+COMPOSE_PROFILES=$COMPOSE_PROFILES_VALUE
 CHRONO_DOMAIN=$CHRONO_DOMAIN_VALUE
 MINIO_ROOT_USER=chrono-root
 MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD_VALUE

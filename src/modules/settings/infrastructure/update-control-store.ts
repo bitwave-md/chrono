@@ -13,21 +13,31 @@ export class UpdateControlStore {
   readonly #source: Record<string, string | undefined>;
   readonly #requestDirectory: string;
   readonly #statusFile: string;
+  readonly #heartbeatFile: string;
+  readonly #now: () => number;
 
   constructor(
     source: Record<string, string | undefined> = process.env,
     requestDirectory = "/var/lib/chrono-update",
     statusFile = "/var/lib/chrono/update-status.json",
+    heartbeatFile = "/var/lib/chrono/updater-heartbeat.json",
+    now = Date.now,
   ) {
     this.#source = source;
     this.#requestDirectory = requestDirectory;
     this.#statusFile = statusFile;
+    this.#heartbeatFile = heartbeatFile;
+    this.#now = now;
   }
 
   async mode(): Promise<UpdateMode> {
     if (this.#source.CHRONO_INSTALL_MODE !== "image") return "source";
     try {
       await access(this.#requestDirectory, constants.W_OK | constants.X_OK);
+      const heartbeat = JSON.parse(await readFile(this.#heartbeatFile, "utf8")) as { updatedAt?: unknown };
+      if (typeof heartbeat.updatedAt !== "string") return "manual";
+      const age = this.#now() - Date.parse(heartbeat.updatedAt);
+      if (!Number.isFinite(age) || age < -60_000 || age > 20_000) return "manual";
       return "automatic";
     } catch {
       return "manual";

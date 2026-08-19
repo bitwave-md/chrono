@@ -18,10 +18,41 @@ class JsonFile {
     try { return JSON.parse(await readFile(file, "utf8")); } catch { return null; }
   }
 
-  static async write(file, value) {
+  static async write(file, value, mode = 0o600) {
     const temporary = `${file}.${process.pid}.tmp`;
-    await writeFile(temporary, `${JSON.stringify(value)}\n`, { mode: 0o600 });
+    await writeFile(temporary, `${JSON.stringify(value)}\n`, { mode });
     await rename(temporary, file);
+  }
+}
+
+class UpdaterHeartbeat {
+  #file;
+  #pending = Promise.resolve();
+
+  constructor(statusDirectory) {
+    this.#file = path.join(statusDirectory, "updater-heartbeat.json");
+  }
+
+  record() {
+    this.#pending = this.#pending
+      .catch(() => undefined)
+      .then(() => JsonFile.write(this.#file, { updatedAt: new Date().toISOString() }, 0o644));
+    return this.#pending;
+  }
+}
+
+class DockerDaemonProbe {
+  check() {
+    return new Promise((resolve, reject) => {
+      const child = spawn("docker", ["info", "--format", "{{.ServerVersion}}"], { stdio: "ignore" });
+      const timeout = setTimeout(() => child.kill("SIGKILL"), 4_000);
+      child.on("error", (error) => { clearTimeout(timeout); reject(error); });
+      child.on("exit", (code) => {
+        clearTimeout(timeout);
+        if (code === 0) resolve();
+        else reject(new Error("The updater cannot reach the Docker API."));
+      });
+    });
   }
 }
 
@@ -119,6 +150,8 @@ class UpdateAgent {
   #environment;
   #releases;
   #commands;
+  #heartbeat;
+  #docker = new DockerDaemonProbe();
 
   constructor() {
     this.#installDir = process.env.CHRONO_INSTALL_DIR || process.cwd();
@@ -130,15 +163,32 @@ class UpdateAgent {
     this.#environment = new EnvironmentFile(path.join(this.#installDir, ".env"));
     this.#releases = new ReleaseResolver();
     this.#commands = new CommandRunner(this.#installDir, path.join(this.#statusDir, "update.log"));
+    this.#heartbeat = new UpdaterHeartbeat(this.#statusDir);
   }
 
   async watch() {
     await Promise.all([mkdir(this.#requestDir, { recursive: true }), mkdir(this.#statusDir, { recursive: true })]);
-    while (true) {
-      const request = await this.#takeRequest();
-      if (request) await this.#process(request);
-      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await this.#heartbeat.record();
+    const heartbeatTimer = setInterval(() => { void this.#heartbeat.record().catch(() => undefined); }, 5_000);
+    try {
+      while (true) {
+        const request = await this.#takeRequest();
+        if (request) await this.#process(request);
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+      }
+    } finally {
+      clearInterval(heartbeatTimer);
     }
+  }
+
+  async doctor() {
+    await Promise.all([mkdir(this.#requestDir, { recursive: true }), mkdir(this.#statusDir, { recursive: true })]);
+    await Promise.all([
+      access(this.#installDir, constants.R_OK | constants.W_OK),
+      access("/var/run/docker.sock", constants.R_OK | constants.W_OK),
+      this.#docker.check(),
+    ]);
+    await this.#heartbeat.record();
   }
 
   async enqueue(version = null) {
@@ -215,7 +265,7 @@ class UpdateAgent {
   }
 
   async #status(request, stage, message, startedAt, completedAt = null, failureStage = null, metadata = {}) {
-    await JsonFile.write(this.#statusFile, { id: request.id, stage, targetVersion: request.targetVersion, message, requestedAt: request.requestedAt, startedAt, completedAt, failureStage, ...metadata });
+    await JsonFile.write(this.#statusFile, { id: request.id, stage, targetVersion: request.targetVersion, message, requestedAt: request.requestedAt, startedAt, completedAt, failureStage, ...metadata }, 0o644);
   }
 }
 
@@ -260,7 +310,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const command = process.argv[2] || "watch";
   if (command === "watch") await agent.watch();
   else if (command === "enqueue") await agent.enqueue(process.argv[3] || null);
-  else if (command === "check") { await access(process.env.CHRONO_INSTALL_DIR || process.cwd(), constants.R_OK | constants.W_OK); }
+  else if (command === "doctor" || command === "check") await agent.doctor();
   else throw new Error(`Unknown updater command: ${command}`);
 }
 

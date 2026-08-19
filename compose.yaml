@@ -105,10 +105,7 @@ services:
 
   updater:
     image: ${CHRONO_UPDATER_REF:-${CHRONO_UPDATER_IMAGE:-ghcr.io/bitwave-md/chrono-updater}:${CHRONO_VERSION:-latest}}
-    profiles: ["updates"]
     command: ["node", "/opt/chrono/scripts/updater.mjs", "watch"]
-    group_add:
-      - ${CHRONO_DOCKER_GID:-0}
     environment:
       CHRONO_INSTALL_DIR: ${CHRONO_INSTALL_DIR:-/installation}
       CHRONO_RELEASE_REPOSITORY: ${CHRONO_RELEASE_REPOSITORY:-bitwave-md/chrono}
@@ -116,6 +113,12 @@ services:
       CHRONO_AGENT_STATUS_DIR: /var/lib/chrono
       CHRONO_AGENT_REQUEST_DIR: /var/lib/chrono-update
     working_dir: ${CHRONO_INSTALL_DIR:-/installation}
+    healthcheck:
+      test: ["CMD", "node", "/opt/chrono/scripts/updater.mjs", "doctor"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
     volumes:
       - ${CHRONO_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock

@@ -8,10 +8,17 @@ import { UpdateControlStore } from "./update-control-store.ts";
 
 test("UpdateControlStore exposes source, manual, and automatic modes", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "chrono-update-store-"));
+  const status = path.join(root, "status.json");
+  const heartbeat = path.join(root, "updater-heartbeat.json");
+  const now = Date.parse("2026-08-19T10:00:00.000Z");
   try {
-    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "source" }, root).mode(), "source");
-    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "image" }, path.join(root, "missing")).mode(), "manual");
-    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "image" }, root).mode(), "automatic");
+    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "source" }, root, status, heartbeat, () => now).mode(), "source");
+    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "image" }, path.join(root, "missing"), status, heartbeat, () => now).mode(), "manual");
+    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "image" }, root, status, heartbeat, () => now).mode(), "manual");
+    await writeFile(heartbeat, JSON.stringify({ updatedAt: "2026-08-19T09:59:50.000Z" }));
+    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "image" }, root, status, heartbeat, () => now).mode(), "automatic");
+    await writeFile(heartbeat, JSON.stringify({ updatedAt: "2026-08-19T09:59:30.000Z" }));
+    assert.equal(await new UpdateControlStore({ CHRONO_INSTALL_MODE: "image" }, root, status, heartbeat, () => now).mode(), "manual");
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
