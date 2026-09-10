@@ -1,27 +1,32 @@
 import { ValidationError } from "@/modules/shared/application/application-error";
-
-const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
-const longDateFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-  year: "numeric",
-});
+import { type ReportLocale, reportMessages } from "@/modules/time-tracking/domain/report-locale";
 
 export class ReportCalendar {
   readonly timeZone?: string;
+  readonly locale: ReportLocale;
+  readonly #shortDateFormatter: Intl.DateTimeFormat;
+  readonly #longDateFormatter: Intl.DateTimeFormat;
   readonly #dateKeyFormatter?: Intl.DateTimeFormat;
   readonly #timeFormatter?: Intl.DateTimeFormat;
 
-  constructor(timeZone?: string) {
+  constructor(timeZone?: string, locale: ReportLocale = "en") {
     const normalized = timeZone?.trim() || undefined;
     if (normalized && normalized.length > 100) {
       throw new ValidationError("timeZone must be at most 100 characters.");
     }
+
+    const intlLocale = reportMessages[locale].intlLocale;
+    this.#shortDateFormatter = new Intl.DateTimeFormat(intlLocale, {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    });
+    this.#longDateFormatter = new Intl.DateTimeFormat(intlLocale, {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+      year: "numeric",
+    });
 
     try {
       this.#dateKeyFormatter = normalized ? new Intl.DateTimeFormat("en-US", {
@@ -41,6 +46,7 @@ export class ReportCalendar {
     }
 
     this.timeZone = normalized;
+    this.locale = locale;
   }
 
   dateKey(date: Date): string {
@@ -76,11 +82,11 @@ export class ReportCalendar {
   }
 
   shortLabel(key: string): string {
-    return shortDateFormatter.format(dateFromKey(key));
+    return this.#shortDateFormatter.format(dateFromKey(key));
   }
 
   longLabel(key: string): string {
-    return longDateFormatter.format(dateFromKey(key));
+    return this.#longDateFormatter.format(dateFromKey(key));
   }
 
   dateTimeLabel(date: Date): string {

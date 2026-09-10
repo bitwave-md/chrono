@@ -31,3 +31,8 @@ test("ReportCalendar enumerates every day across a daylight-saving change", () =
 test("ReportCalendar rejects invalid IANA timezones", () => {
   assert.throws(() => new ReportCalendar("Chrono/Invalid"), /valid IANA timezone/i);
 });
+
+test("ReportCalendar localizes month labels for the selected locale", () => {
+  assert.equal(new ReportCalendar(undefined, "en").longLabel("2026-08-01"), "Aug 1, 2026");
+  assert.equal(new ReportCalendar(undefined, "ro").longLabel("2026-08-01"), "1 aug. 2026");
+});

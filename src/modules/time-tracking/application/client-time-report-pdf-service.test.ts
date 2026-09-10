@@ -14,6 +14,15 @@ test("PDF service renders a landscape A4 report with Unicode content", async () 
   assert.match(pdf.toString("latin1"), /\/MediaBox \[0 0 841\.89 595\.28\]/);
 });
 
+test("PDF service renders a Romanian report", async () => {
+  const range = { from: new Date("2026-07-01T00:00:00.000Z"), to: new Date("2026-08-01T00:00:00.000Z") };
+  const report = aggregateTimeReport([entry()], range);
+  const pdf = await new ClientTimeReportPdfService().generate({ subjectName: "Proiect Chișinău", subjectType: "Project", scope: "client", range, report, generatedAt: new Date("2026-08-01T10:00:00.000Z"), locale: "ro" });
+  assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
+  assert.ok(pdf.length > 10_000);
+  assert.match(pdf.toString("latin1"), /\/MediaBox \[0 0 841\.89 595\.28\]/);
+});
+
 function entry(): TimeLogRecord {
   return {
     id: "entry", source: "manual", issueId: "issue", identifier: "CHR-1", issueTitle: "Raport lunar",

@@ -4,6 +4,7 @@ import path from "node:path";
 import PDFDocument from "pdfkit";
 
 import { TimeReportDocument, type TimeReportDocumentInput } from "@/modules/time-tracking/domain/time-report-document";
+import type { ReportMessages } from "@/modules/time-tracking/domain/report-locale";
 
 const palette = {
   ink: "#171717",
@@ -19,7 +20,7 @@ export class ClientTimeReportPdfService {
     const document = new TimeReportDocument(input);
     const regularFont = fontPath("NotoSans-Regular.ttf");
     const boldFont = fontPath("NotoSans-Bold.ttf");
-    const pdf = new PDFDocument({ size: "A4", layout: "landscape", margin: 36, font: regularFont, info: { Title: `Time report - ${document.subjectName}`, Author: "Chrono" } });
+    const pdf = new PDFDocument({ size: "A4", layout: "landscape", margin: 36, font: regularFont, info: { Title: document.messages.documentTitle(document.subjectName), Author: "Chrono" } });
     pdf.registerFont("Noto", regularFont);
     pdf.registerFont("Noto-Bold", boldFont);
     const chunks: Buffer[] = [];
@@ -37,12 +38,14 @@ export class ClientTimeReportPdfService {
 class TimeReportPdfRenderer {
   readonly #pdf: PDFKit.PDFDocument;
   readonly #report: TimeReportDocument;
+  readonly #messages: ReportMessages;
   readonly #layout: PdfLayout;
 
   constructor(pdf: PDFKit.PDFDocument, report: TimeReportDocument) {
     this.#pdf = pdf;
     this.#report = report;
-    this.#layout = new PdfLayout(pdf);
+    this.#messages = report.messages;
+    this.#layout = new PdfLayout(pdf, report.messages);
   }
 
   render(): void {
@@ -50,32 +53,36 @@ class TimeReportPdfRenderer {
     this.#summary();
     this.#dailyCharts();
     this.#categoryChart();
-    this.#breakdown("By project", this.#report.projects.map((row) => ({ label: row.name, hours: row.hours, detail: `${row.entryCount} entries` })));
+    this.#breakdown(this.#messages.byProject, this.#report.projects.map((row) => ({ label: row.name, hours: row.hours, detail: this.#messages.entriesCount(row.entryCount) })));
     this.#tasks();
+  }
+
+  #hours(value: number): string {
+    return this.#messages.hoursUnit(value);
   }
 
   #header(): void {
     const { pdf, report, layout } = this;
-    pdf.font("Noto-Bold").fontSize(9).fillColor(palette.accent).text("CHRONO TIME REPORT", layout.left, layout.y, { characterSpacing: 1.2 });
+    pdf.font("Noto-Bold").fontSize(9).fillColor(palette.accent).text(this.#messages.kicker, layout.left, layout.y, { characterSpacing: 1.2 });
     layout.y += 22;
     pdf.font("Noto-Bold").fontSize(24).fillColor(palette.ink).text(report.subjectName, layout.left, layout.y, { width: layout.width });
     layout.y = pdf.y + 4;
-    pdf.font("Noto").fontSize(9).fillColor(palette.muted).text(`${report.subjectType} | ${report.periodLabel} | ${report.scopeLabel}`, layout.left, layout.y);
+    pdf.font("Noto").fontSize(9).fillColor(palette.muted).text(`${report.subjectTypeLabel} | ${report.periodLabel} | ${report.scopeLabel}`, layout.left, layout.y);
     layout.y = pdf.y + 4;
-    pdf.text(`Generated ${report.generatedLabel}. Durations are rounded to the nearest whole hour; 30 minutes rounds up.`, layout.left, layout.y);
+    pdf.text(this.#messages.generatedLine(report.generatedLabel), layout.left, layout.y);
     layout.y = pdf.y + 10;
     if (report.truncated) {
-      pdf.font("Noto-Bold").fontSize(7.5).fillColor(palette.accent).text("This report contains the newest 1,000 matching entries. Narrow the period for a complete reconciliation.", layout.left, layout.y);
+      pdf.font("Noto-Bold").fontSize(7.5).fillColor(palette.accent).text(this.#messages.truncationNotice, layout.left, layout.y);
       layout.y = pdf.y + 12;
     } else layout.y += 6;
   }
 
   #summary(): void {
     const cards = [
-      { label: "Total time", value: hours(this.#report.totalHours) },
-      { label: "Billable", value: hours(this.#report.billableHours) },
-      { label: "Projects", value: String(this.#report.projectCount) },
-      { label: "Contributors", value: String(this.#report.contributorCount) },
+      { label: this.#messages.cardTotalTime, value: this.#hours(this.#report.totalHours) },
+      { label: this.#messages.cardBillable, value: this.#hours(this.#report.billableHours) },
+      { label: this.#messages.cardProjects, value: String(this.#report.projectCount) },
+      { label: this.#messages.cardContributors, value: String(this.#report.contributorCount) },
     ];
     const gap = 10;
     const width = (this.#layout.width - gap * 3) / 4;
@@ -92,9 +99,9 @@ class TimeReportPdfRenderer {
   #dailyCharts(): void {
     const segments = chunk(this.#report.daily, 31);
     segments.forEach((rows, index) => {
-      const suffix = segments.length > 1 ? ` (${index + 1} of ${segments.length})` : "";
+      const suffix = this.#messages.segmentSuffix(index + 1, segments.length);
       this.#layout.ensure(184);
-      this.#layout.section(`Time over period${suffix}`);
+      this.#layout.section(`${this.#messages.timeOverPeriod}${suffix}`);
       const chartTop = this.#layout.y + 8;
       const chartHeight = 86;
       const baseline = chartTop + chartHeight;
@@ -109,14 +116,14 @@ class TimeReportPdfRenderer {
         this.#pdf.font("Noto-Bold").fontSize(6.5).fillColor(palette.ink).text(String(row.hours), this.#layout.left + itemIndex * slot, baseline + 7, { align: "center", width: slot });
         this.#pdf.font("Noto").fontSize(5.8).fillColor(palette.muted).text(row.label, this.#layout.left + itemIndex * slot, baseline + 18, { align: "center", width: slot });
       });
-      this.#pdf.font("Noto").fontSize(6.5).fillColor(palette.muted).text("Rounded hours are shown below every day.", this.#layout.left, baseline + 34);
+      this.#pdf.font("Noto").fontSize(6.5).fillColor(palette.muted).text(this.#messages.dailyHint, this.#layout.left, baseline + 34);
       this.#layout.y = baseline + 52;
     });
   }
 
   #categoryChart(): void {
     this.#layout.ensure(199);
-    this.#layout.section("By time entry type");
+    this.#layout.section(this.#messages.byEntryType);
     const centerX = this.#layout.left + 82;
     const centerY = this.#layout.y + 72;
     const radius = 58;
@@ -127,8 +134,8 @@ class TimeReportPdfRenderer {
       this.#pdf.save().path(pieSlicePath(centerX, centerY, radius, start, Math.min(end, start + 359.99))).fill(row.color).restore();
       start = end;
     }
-    this.#pdf.font("Noto-Bold").fontSize(14).fillColor(palette.ink).text(hours(this.#report.totalHours), centerX - 40, centerY - 7, { align: "center", width: 80 });
-    this.#pdf.font("Noto").fontSize(7).fillColor(palette.muted).text("total", centerX - 40, centerY + 10, { align: "center", width: 80 });
+    this.#pdf.font("Noto-Bold").fontSize(14).fillColor(palette.ink).text(this.#hours(this.#report.totalHours), centerX - 40, centerY - 7, { align: "center", width: 80 });
+    this.#pdf.font("Noto").fontSize(7).fillColor(palette.muted).text(this.#messages.totalLabel, centerX - 40, centerY + 10, { align: "center", width: 80 });
     const legendX = this.#layout.left + 180;
     const columns = 2;
     const columnWidth = (this.#layout.width - 180) / columns;
@@ -139,7 +146,7 @@ class TimeReportPdfRenderer {
       const y = this.#layout.y + line * 18 + 8;
       this.#pdf.circle(x + 4, y + 4, 3.5).fill(row.color);
       this.#pdf.font("Noto").fontSize(8).fillColor(palette.muted).text(row.name, x + 14, y, { ellipsis: true, width: columnWidth - 78 });
-      this.#pdf.font("Noto-Bold").fillColor(palette.ink).text(hours(row.hours), x + columnWidth - 62, y, { align: "right", width: 56 });
+      this.#pdf.font("Noto-Bold").fillColor(palette.ink).text(this.#hours(row.hours), x + columnWidth - 62, y, { align: "right", width: 56 });
     });
     this.#layout.y += Math.max(150, Math.ceil(this.#report.categories.length / columns) * 18 + 16);
   }
@@ -151,7 +158,7 @@ class TimeReportPdfRenderer {
       this.#layout.ensure(24);
       this.#pdf.font("Noto").fontSize(8).fillColor(palette.ink).text(row.label, this.#layout.left, this.#layout.y + 5, { ellipsis: true, width: this.#layout.width - 180 });
       this.#pdf.fillColor(palette.muted).text(row.detail, this.#layout.right - 170, this.#layout.y + 5, { align: "right", width: 100 });
-      this.#pdf.font("Noto-Bold").fillColor(palette.ink).text(hours(row.hours), this.#layout.right - 65, this.#layout.y + 5, { align: "right", width: 65 });
+      this.#pdf.font("Noto-Bold").fillColor(palette.ink).text(this.#hours(row.hours), this.#layout.right - 65, this.#layout.y + 5, { align: "right", width: 65 });
       this.#pdf.strokeColor(palette.line).moveTo(this.#layout.left, this.#layout.y + 22).lineTo(this.#layout.right, this.#layout.y + 22).stroke();
       this.#layout.y += 23;
     }
@@ -159,7 +166,7 @@ class TimeReportPdfRenderer {
 
   #tasks(): void {
     this.#layout.ensure(98);
-    this.#layout.section("Time entries grouped by task");
+    this.#layout.section(this.#messages.tasksSection);
     for (const task of this.#report.tasks) {
       this.#layout.ensure(64);
       const title = `${task.identifier}  ${task.title}`;
@@ -168,7 +175,7 @@ class TimeReportPdfRenderer {
       this.#pdf.roundedRect(this.#layout.left, this.#layout.y, this.#layout.width, headerHeight, 4).fill(palette.surface);
       this.#pdf.font("Noto-Bold").fontSize(9).fillColor(palette.ink).text(title, this.#layout.left + 10, this.#layout.y + 8, { width: this.#layout.width - 190 });
       this.#pdf.font("Noto").fontSize(7).fillColor(palette.muted).text(task.project, this.#layout.right - 175, this.#layout.y + 8, { align: "right", ellipsis: true, width: 105 });
-      this.#pdf.font("Noto-Bold").fontSize(9).fillColor(palette.ink).text(hours(task.hours), this.#layout.right - 60, this.#layout.y + 8, { align: "right", width: 50 });
+      this.#pdf.font("Noto-Bold").fontSize(9).fillColor(palette.ink).text(this.#hours(task.hours), this.#layout.right - 60, this.#layout.y + 8, { align: "right", width: 50 });
       this.#layout.y += headerHeight;
       this.#entryColumns();
       for (const entry of task.entries) this.#entry(entry, task.identifier);
@@ -179,21 +186,21 @@ class TimeReportPdfRenderer {
   #entryColumns(): void {
     this.#layout.ensure(20);
     this.#pdf.font("Noto-Bold").fontSize(6.5).fillColor(palette.muted);
-    for (const column of entryColumns(this.#layout.left)) this.#pdf.text(column.label, column.x, this.#layout.y + 5, { width: column.width });
+    for (const column of entryColumns(this.#layout.left, this.#messages)) this.#pdf.text(column.label, column.x, this.#layout.y + 5, { width: column.width });
     this.#layout.y += 19;
   }
 
   #entry(entry: TimeReportDocument["tasks"][number]["entries"][number], taskIdentifier: string): void {
-    const columns = entryColumns(this.#layout.left);
+    const columns = entryColumns(this.#layout.left, this.#messages);
     this.#pdf.font("Noto").fontSize(7.3);
     const noteHeight = this.#pdf.heightOfString(entry.note, { width: columns[3].width - 8 });
     const rowHeight = Math.max(25, noteHeight + 10);
     if (this.#layout.ensure(rowHeight)) {
-      this.#pdf.font("Noto-Bold").fontSize(8).fillColor(palette.muted).text(`${taskIdentifier} continued`, this.#layout.left, this.#layout.y);
+      this.#pdf.font("Noto-Bold").fontSize(8).fillColor(palette.muted).text(this.#messages.taskContinued(taskIdentifier), this.#layout.left, this.#layout.y);
       this.#layout.y += 16;
       this.#entryColumns();
     }
-    const values = [entry.date, entry.person, entry.type, entry.note, entry.billable ? "Yes" : "No", hours(entry.hours)];
+    const values = [entry.date, entry.person, entry.type, entry.note, entry.billable ? this.#messages.yes : this.#messages.no, this.#hours(entry.hours)];
     values.forEach((value, index) => this.#pdf.font(index === 5 ? "Noto-Bold" : "Noto").fontSize(7.3).fillColor(index === 4 && entry.billable ? palette.billable : palette.ink).text(value, columns[index].x, this.#layout.y + 6, { align: index === 5 ? "right" : "left", width: columns[index].width - 8 }));
     this.#pdf.strokeColor(palette.line).lineWidth(0.4).moveTo(this.#layout.left, this.#layout.y + rowHeight).lineTo(this.#layout.right, this.#layout.y + rowHeight).stroke();
     this.#layout.y += rowHeight;
@@ -206,11 +213,13 @@ class TimeReportPdfRenderer {
 
 class PdfLayout {
   readonly #pdf: PDFKit.PDFDocument;
+  readonly #messages: ReportMessages;
   pageNumber = 1;
   y = 36;
 
-  constructor(pdf: PDFKit.PDFDocument) {
+  constructor(pdf: PDFKit.PDFDocument, messages: ReportMessages) {
     this.#pdf = pdf;
+    this.#messages = messages;
     this.#footer();
   }
 
@@ -234,18 +243,17 @@ class PdfLayout {
   }
 
   #footer(): void {
-    this.#pdf.font("Noto").fontSize(6.5).fillColor(palette.muted).text(`Chrono | Page ${this.pageNumber}`, this.left, this.#pdf.page.height - 47, { align: "right", width: this.width });
+    this.#pdf.font("Noto").fontSize(6.5).fillColor(palette.muted).text(this.#messages.footer(this.pageNumber), this.left, this.#pdf.page.height - 47, { align: "right", width: this.width });
   }
 }
 
-function entryColumns(left: number) {
+function entryColumns(left: number, messages: ReportMessages) {
   const widths = [76, 130, 105, 330, 55, 60];
-  const labels = ["DATE", "PERSON", "TYPE", "NOTE", "BILLABLE", "ROUNDED"];
+  const labels = messages.entryColumns;
   let x = left;
   return widths.map((width, index) => { const column = { x, width, label: labels[index] }; x += width; return column; });
 }
 
-function hours(value: number): string { return `${value} h`; }
 function chunk<T>(values: T[], size: number): T[][] { return Array.from({ length: Math.ceil(values.length / size) }, (_, index) => values.slice(index * size, (index + 1) * size)); }
 
 function pieSlicePath(centerX: number, centerY: number, radius: number, start: number, end: number): string {
