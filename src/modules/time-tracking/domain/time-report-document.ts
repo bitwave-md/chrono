@@ -1,5 +1,6 @@
 import type { aggregateTimeReport } from "@/modules/time-tracking/domain/time-report-summary";
 import { ReportCalendar } from "@/modules/time-tracking/domain/report-calendar";
+import { type ReportLocale, type ReportMessages, reportMessages } from "@/modules/time-tracking/domain/report-locale";
 
 type TimeReportSummary = ReturnType<typeof aggregateTimeReport>;
 
@@ -11,11 +12,15 @@ export interface TimeReportDocumentInput {
   report: TimeReportSummary;
   truncated?: boolean;
   generatedAt?: Date;
+  locale?: ReportLocale;
 }
 
 export class TimeReportDocument {
+  readonly locale: ReportLocale;
+  readonly messages: ReportMessages;
   readonly subjectName: string;
   readonly subjectType: "Client" | "Project";
+  readonly subjectTypeLabel: string;
   readonly scopeLabel: string;
   readonly periodLabel: string;
   readonly generatedLabel: string;
@@ -38,11 +43,16 @@ export class TimeReportDocument {
   }>;
 
   constructor(input: TimeReportDocumentInput) {
-    const calendar = new ReportCalendar(input.range.timeZone);
+    const locale = input.locale ?? "en";
+    const messages = reportMessages[locale];
+    const calendar = new ReportCalendar(input.range.timeZone, locale);
     const totalCategorySeconds = input.report.categories.reduce((sum, row) => sum + row.seconds, 0);
+    this.locale = locale;
+    this.messages = messages;
     this.subjectName = input.subjectName;
     this.subjectType = input.subjectType;
-    this.scopeLabel = input.scope === "personal" ? "Personal visibility" : "Client-wide visibility";
+    this.subjectTypeLabel = messages.subjectType[input.subjectType];
+    this.scopeLabel = input.scope === "personal" ? messages.scopePersonal : messages.scopeClientWide;
     this.periodLabel = periodLabel(calendar, input);
     this.generatedLabel = calendar.dateTimeLabel(input.generatedAt ?? new Date());
     this.totalHours = roundHours(input.report.totalSeconds);
@@ -51,26 +61,31 @@ export class TimeReportDocument {
     this.contributorCount = input.report.contributors;
     this.projectCount = input.report.projects.filter((row) => row.id !== "no-project").length;
     this.truncated = Boolean(input.truncated);
-    this.daily = input.report.daily.map((row) => ({ date: row.date, label: row.label, hours: roundHours(row.seconds) }));
+    this.daily = input.report.daily.map((row) => ({ date: row.date, label: calendar.shortLabel(row.date), hours: roundHours(row.seconds) }));
     this.categories = input.report.categories.map((row) => ({
       id: row.id,
-      name: row.name,
+      name: row.id === "uncategorized" ? messages.uncategorized : row.name,
       color: normalizeColor(row.color),
       hours: roundHours(row.seconds),
       share: totalCategorySeconds ? row.seconds / totalCategorySeconds : 0,
     }));
-    this.projects = input.report.projects.map((row) => ({ id: row.id, name: row.name, hours: roundHours(row.seconds), entryCount: row.entryCount }));
+    this.projects = input.report.projects.map((row) => ({
+      id: row.id,
+      name: row.id === "no-project" ? messages.noProject : row.name,
+      hours: roundHours(row.seconds),
+      entryCount: row.entryCount,
+    }));
     this.tasks = input.report.tasks.map((task) => ({
       issueId: task.issueId,
       identifier: task.identifier,
       title: task.title,
-      project: task.projectName ? `${task.projectName}${task.branchName ? ` / ${task.branchName}` : ""}` : "Client work",
+      project: task.projectName ? `${task.projectName}${task.branchName ? ` / ${task.branchName}` : ""}` : messages.clientWork,
       hours: roundHours(task.totalSeconds),
       entries: task.entries.map((entry) => ({
         date: calendar.longLabel(calendar.dateKey(new Date(entry.endedAt))),
         person: entry.workerName ?? entry.workerEmail,
-        type: entry.categoryName ?? "Uncategorized",
-        note: entry.note ?? "No note",
+        type: entry.categoryName ?? messages.uncategorized,
+        note: entry.note ?? messages.noNote,
         billable: entry.billable,
         hours: roundHours(entry.durationSeconds),
       })),

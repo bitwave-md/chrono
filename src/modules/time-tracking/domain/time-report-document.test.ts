@@ -32,3 +32,22 @@ test("PDF document uses the selected timezone for the complete month", () => {
   assert.equal(document.daily.at(-1)?.date, "2026-08-31");
   assert.equal(document.periodLabel, "Aug 1, 2026 - Aug 31, 2026");
 });
+
+test("PDF document renders localized labels for the selected locale", () => {
+  const range = { from: new Date("2026-07-31T21:00:00.000Z"), to: new Date("2026-08-31T21:00:00.000Z"), timeZone: "Europe/Chisinau" };
+  const document = new TimeReportDocument({
+    subjectName: "Bitwave",
+    subjectType: "Client",
+    scope: "personal",
+    range,
+    report: aggregateTimeReport([], range),
+    generatedAt: new Date("2026-08-17T09:00:00.000Z"),
+    locale: "ro",
+  });
+
+  assert.equal(document.locale, "ro");
+  assert.equal(document.subjectTypeLabel, "Client");
+  assert.equal(document.scopeLabel, "Vizibilitate personală");
+  assert.equal(document.periodLabel, "1 aug. 2026 - 31 aug. 2026");
+  assert.equal(document.messages.cardBillable, "Facturabil");
+});

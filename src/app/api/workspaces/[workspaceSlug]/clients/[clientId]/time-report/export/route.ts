@@ -3,6 +3,7 @@ import { EntityId } from "@/modules/shared/domain/entity-id";
 import { ApiErrorResponse } from "@/modules/shared/infrastructure/api-error-response";
 import { ClientTimeReportPdfService } from "@/modules/time-tracking/application/client-time-report-pdf-service";
 import { ClientTimeReportService } from "@/modules/time-tracking/application/client-time-report-service";
+import { resolveReportLocale } from "@/modules/time-tracking/domain/report-locale";
 import { aggregateTimeReport } from "@/modules/time-tracking/domain/time-report-summary";
 import { ClientTimeReportRouteInput } from "@/modules/time-tracking/infrastructure/client-time-report-route-input";
 
@@ -22,6 +23,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     const principal = await principalResolver.requireWorkspace(workspaceSlug);
     const clientId = new EntityId(value, "clientId").value;
     const filters = new ClientTimeReportRouteInput(request.url).filters();
+    const locale = resolveReportLocale(new URL(request.url).searchParams.get("locale"));
     const result = await reportService.report(principal, clientId, filters);
     const summary = aggregateTimeReport(result.entries, filters);
     const project = filters.projectId ? result.entries.find((entry) => entry.projectId === filters.projectId) : null;
@@ -33,6 +35,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       range: filters,
       report: summary,
       truncated: result.truncated,
+      locale,
     });
     const firstDay = summary.daily[0]?.date ?? "from";
     const lastDay = summary.daily.at(-1)?.date ?? "to";

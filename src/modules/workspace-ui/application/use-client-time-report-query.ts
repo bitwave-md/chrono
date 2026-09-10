@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportLocale } from "@/modules/time-tracking/domain/report-locale";
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
 import { ClientTimeReportExportClient } from "@/modules/workspace-ui/infrastructure/client-time-report-export-client";
 import {
@@ -22,7 +23,10 @@ export function useClientTimeReportQuery(
 }
 
 export function useExportClientTimeReportMutation(workspaceSlug: string, clientId: string) {
-  return useMutation({ mutationFn: (filters: ClientTimeReportFilters) => new ClientTimeReportExportClient(workspaceSlug).download(clientId, filters) });
+  return useMutation({
+    mutationFn: ({ filters, locale }: { filters: ClientTimeReportFilters; locale: ReportLocale }) =>
+      new ClientTimeReportExportClient(workspaceSlug).download(clientId, filters, locale),
+  });
 }
 
 export function useUpdateTimeLogMutation(workspaceSlug: string) {
