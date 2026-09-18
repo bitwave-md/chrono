@@ -41,9 +41,14 @@ jobs:
 
   images:
     needs: checks
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform.runner }}
     strategy:
+      fail-fast: false
       matrix:
+        target: [runner, migrator, updater]
+        platform:
+          - { name: amd64, runner: ubuntu-latest }
+          - { name: arm64, runner: ubuntu-24.04-arm }
         include:
           - target: runner
             image: ghcr.io/bitwave-md/chrono
@@ -55,23 +60,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.checks.outputs.commit }}
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # Each platform builds natively on its own architecture's runner (no QEMU),
+      # and pushes by digest only. The merge job below assembles the per-arch
+      # digests for each image into one multi-arch manifest and tags that.
       - id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           target: ${{ matrix.target }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ matrix.image }}:${{ needs.checks.outputs.version }}
-            ${{ matrix.image }}:latest
+          platforms: linux/${{ matrix.platform.name }}
+          outputs: type=image,name=${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
             CHRONO_BUILD_VERSION=${{ needs.checks.outputs.version }}
             CHRONO_BUILD_COMMIT=${{ needs.checks.outputs.commit }}
@@ -79,11 +83,56 @@ jobs:
             org.opencontainers.image.source=https://github.com/bitwave-md/chrono
             org.opencontainers.image.revision=${{ needs.checks.outputs.commit }}
             org.opencontainers.image.version=${{ needs.checks.outputs.version }}
-          cache-from: type=gha,scope=${{ matrix.target }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+          cache-from: type=gha,scope=${{ matrix.target }}-${{ matrix.platform.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}-${{ matrix.platform.name }}
+      - run: |
+          mkdir -p digests
+          digest='${{ steps.build.outputs.digest }}'
+          touch "digests/${digest#sha256:}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.target }}-${{ matrix.platform.name }}
+          path: digests/*
+          retention-days: 1
+          if-no-files-found: error
+
+  merge:
+    needs: [checks, images]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: runner
+            image: ghcr.io/bitwave-md/chrono
+          - target: migrator
+            image: ghcr.io/bitwave-md/chrono-migrator
+          - target: updater
+            image: ghcr.io/bitwave-md/chrono-updater
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digests-${{ matrix.target }}-*
+          path: digests
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Combine the amd64 + arm64 digests built above into one multi-arch
+      # manifest list under the version and latest tags.
+      - working-directory: digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ matrix.image }}:${{ needs.checks.outputs.version }} \
+            -t ${{ matrix.image }}:latest \
+            $(printf '${{ matrix.image }}@sha256:%s ' *)
       - run: |
           mkdir -p digest
-          printf '%s\n' '${{ steps.build.outputs.digest }}' > "digest/${{ matrix.target }}"
+          docker buildx imagetools inspect ${{ matrix.image }}:${{ needs.checks.outputs.version }} --format '{{json .Manifest}}' \
+            | jq -r '.digest' > "digest/${{ matrix.target }}"
       - uses: actions/upload-artifact@v4
         with:
           name: digest-${{ matrix.target }}
@@ -91,7 +140,7 @@ jobs:
           retention-days: 1
 
   release:
-    needs: [checks, images]
+    needs: [checks, merge]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
