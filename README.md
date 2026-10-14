@@ -7,6 +7,8 @@ on them, and send clients a clear report when it's time to invoice.
 It runs on your own server, so your data stays with you. It's free to host
 yourself.
 
+![Chrono's time report: hours per day, by time-entry type, and by project](docs/images/time-report.png)
+
 ## What you can do with Chrono
 
 - **Organize work by client.** Each client has projects, and each project has
@@ -21,6 +23,16 @@ yourself.
   comments addressed to you.
 - **Move fast.** Chrono is built to be used from the keyboard, with a light
   and dark theme and a compact layout.
+
+## A quick look
+
+| Issues for a client, grouped by status | One issue, with its activity and a timer |
+| --- | --- |
+| ![A client's issues grouped by status](docs/images/issues.png) | ![An issue with activity, properties, and time tracking](docs/images/issue-detail.png) |
+
+The PDF report you can send to a client (shown here in Romanian):
+
+![A Chrono time report exported as a PDF, in Romanian](docs/images/pdf-report-ro.png)
 
 ## Install
 
