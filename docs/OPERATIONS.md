@@ -52,6 +52,28 @@ builds the same runner and migrator targets inside Docker. Source-mode installs
 record `CHRONO_INSTALL_MODE=source` and retain `compose.build.yaml` plus the
 source directory; they still require no host Node.js or PostgreSQL.
 
+## Manual Compose installation
+
+Experienced operators can skip the installer: download `compose.yaml`, copy
+`.env.example` to `.env`, replace every placeholder secret, and run:
+
+```sh
+docker compose pull
+docker compose up -d
+docker compose ps
+```
+
+From a source checkout, use the build overlay instead of GHCR:
+
+```sh
+docker compose -f compose.yaml -f compose.build.yaml up --build -d
+```
+
+PostgreSQL and MinIO are internal-only in production and persist in the
+`chrono_postgres_data` and `chrono_object_data` volumes. Never treat either
+volume as a backup; keep encrypted backup copies outside the Docker host and
+test restores.
+
 ## Authentication and bearer links
 
 The installer creates an `AUTH_SETUP_TOKEN`. Open `/auth/setup` after the first
