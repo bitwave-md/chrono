@@ -1,147 +1,125 @@
 # Chrono
 
-Chrono is Bitwave’s self-hosted, keyboard-first workspace for Clients,
-Projects, Issues, native timers, manual time entries, and reporting.
+Chrono is a self-hosted workspace for agencies and small teams that bill by the
+hour. Keep your clients, projects, and tasks in one place, track the time spent
+on them, and send clients a clear report when it's time to invoice.
 
-## Self-host in one command
+It runs on your own server, so your data stays with you. It's free to host
+yourself.
 
-Chrono’s supported appliance installation requires only Docker Engine (or
-Docker Desktop) with the Docker Compose plugin. Node.js, PostgreSQL, npm, and
-Email delivery is not required on the host; email addresses are unverified login identifiers.
+## What you can do with Chrono
+
+- **Organize work by client.** Each client has projects, and each project has
+  issues (tasks) with assignees, labels, comments, and file attachments.
+- **Track time.** Start a timer on any issue or add time by hand, with
+  billable and non-billable entries and your own time-entry types.
+- **Report and export.** Filter by project, person, and entry type to see where
+  the hours went, then export a PDF report for a client in English or Romanian.
+- **Work with your team and your clients.** Invite teammates as owners, admins,
+  or members, or give clients limited guest access to only what they should see.
+- **Stay in the loop.** An inbox shows assignments, status changes, and
+  comments addressed to you.
+- **Move fast.** Chrono is built to be used from the keyboard, with a light
+  and dark theme and a compact layout.
+
+## Install
+
+You need a computer or server that can run [Docker](https://docs.docker.com/get-docker/)
+(Docker Desktop works too). Nothing else needs to be installed.
+
+**1. Run the installer**
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/install.sh | sh
 ```
 
-The installer downloads `compose.yaml` into `~/chrono`, generates the database
-password, NextAuth secret, and high-entropy setup code, runs every migration, and starts
-Chrono at `http://localhost:3000`. It pins the latest official GitHub Release
-and its digest-addressed GHCR images. If no official release is available, it
-falls back to a Docker source build; neither path installs build tools on the
-host.
+It sets everything up in a `chrono` folder in your home directory, generates
+the passwords it needs, and starts Chrono at `http://localhost:3000`.
 
-Open `/auth/setup` and enter the setup code printed by the installer to claim the
-first owner. Choose the email and password used for later sign-ins. The code is
-also stored in `~/chrono/.env`, which is created with mode `0600`.
+**2. Create your account**
 
-### Domain and automatic HTTPS
+Open `http://localhost:3000/auth/setup` and enter the setup code the installer
+printed. (It's also saved in `~/chrono/.env` if you need it again.) Choose the
+email and password you'll use to sign in. You become the first owner.
 
-Pass an HTTPS public URL to enable the bundled Caddy profile. The domain must
-resolve to the Docker host, and ports 80 and 443 must be reachable.
+**3. Invite your team**
+
+Add teammates from the workspace settings. Chrono doesn't send emails, so
+invitation links are copied and shared by you directly.
+
+## Put it on your own domain
+
+To make Chrono available at an address like `https://chrono.example.com`, point
+that domain at your server and run the installer with your address. Chrono sets
+up and renews the HTTPS certificate automatically (ports 80 and 443 need to be
+open).
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/bitwave-md/chrono/main/scripts/install.sh |
   NEXTAUTH_URL=https://chrono.example.com sh
 ```
 
-Caddy obtains and renews the certificate automatically. Existing Nginx,
-Traefik, Caddy, Coolify, or hosting-panel users can leave the profile disabled,
-set `NEXTAUTH_URL`, and proxy to the configured local Chrono port.
+Already have a reverse proxy such as Nginx, Traefik, or Caddy? Skip the
+built-in HTTPS, set `NEXTAUTH_URL` to your address, and proxy to Chrono's local
+port.
 
-Invitations and password recovery use one-time bearer URLs that administrators
-copy manually. Chrono does not send email or verify email ownership.
+## Updates and backups
 
-## Manual Compose installation
+**Updating.** When a new version is available, Chrono tells whoever
+administers the installation. Open **Settings → Updates** and click one
+button: Chrono makes a backup, installs the new version, and checks that
+everything works. If something goes wrong, it rolls back to the version you
+had.
 
-Experienced operators can download `compose.yaml`, copy `.env.example` to
-`.env`, replace every placeholder secret, and run:
-
-```sh
-docker compose pull
-docker compose up -d
-docker compose ps
-```
-
-The default stack contains PostgreSQL, private MinIO object storage, one-shot
-database and bucket initialization jobs, and the standalone Next.js
-application. PostgreSQL and MinIO are internal-only in production and persist
-in `chrono_postgres_data` and `chrono_object_data`. The application starts only
-after both persistence services are ready.
-
-From a source checkout, use the build overlay instead of GHCR:
-
-```sh
-docker compose -f compose.yaml -f compose.build.yaml up --build -d
-```
-
-## Upgrade and backup
-
-The installer provides coordinated backup, restore, and update helpers. A
-backup contains the PostgreSQL dump, a byte-for-byte bucket mirror, manifest,
-and checksums:
+**Backing up.** Run this on your server whenever you like:
 
 ```sh
 cd ~/chrono
 ./backup.sh
 ```
 
-Restore only from a matching database-and-object snapshot:
+A backup includes your database and all uploaded files. Keep copies somewhere
+other than the server itself, and try a restore now and then so you know it
+works. Restoring is covered in the [operations guide](docs/OPERATIONS.md).
 
-```sh
-CHRONO_RESTORE_CONFIRM=restore ./restore.sh ~/chrono/backups/chrono-<timestamp>
-```
+## Good to know
 
-Image installations notify the instance operator when a newer official release
-exists. Settings → Updates can create a coordinated backup and install it with
-one button. The versionless host helper provides the same recovery path:
+- Chrono doesn't send email. Sign-in uses an email address and password, and
+  invitation and password-reset links are copied by an admin.
+- Your data lives in two places on your server: a PostgreSQL database and a
+  private file store. Both stay on your machine.
+- Settings → Storage and Updates (for the installation's administrator) show
+  the health of your installation.
 
-```sh
-./update.sh
-```
+## For advanced setups and developers
 
-Image installations always run the isolated updater and verify its heartbeat
-before enabling the button. The update opens a global progress surface with
-backup, download, migration, restart, reconnect, and health-check stages. If
-an older installation is missing the updater, the current host helper repairs
-the control plane before queueing the release.
+- Manual Docker Compose setup, external S3 storage, and recovery steps:
+  [docs/OPERATIONS.md](docs/OPERATIONS.md)
+- Running Chrono from source for development:
 
-Existing installations whose `docker compose ps` output has no updater need
-one host-side bootstrap.
-Download `bootstrap-update.sh` and `checksums.sha256` from the latest GitHub
-Release, verify the script's listed SHA-256 digest, then run it. See
-[Self-Hosted Operations](docs/OPERATIONS.md#missing-updater-recovery) for the
-exact commands.
+  ```sh
+  cp .env.example .env   # then replace the placeholder secrets
+  npm run stack:up
+  ```
 
-Never treat either Docker volume as a backup. Keep encrypted backup copies
-outside the Docker host and test restores. The operator-only Settings → Storage
-and Updates pages report health and guide these host commands; the web
-application never receives Docker socket access. Only the constrained updater
-container mounts it; Next.js can enqueue `install_latest` through a shared
-request directory and read progress from a separate status directory.
+  Chrono opens at `http://localhost:3000`. See
+  [docs/OPERATIONS.md](docs/OPERATIONS.md#local-development-stack) for details.
 
-## Source development
+More documentation:
 
-Copy `.env.example` to `.env`, replace the secrets, and start the source-built
-stack with PostgreSQL and private MinIO:
+- [Architecture](docs/ARCHITECTURE.md): how Chrono is put together
+- [Operations](docs/OPERATIONS.md): installing, updating, backing up, and recovering
+- [Releases](docs/RELEASES.md): how versions are published
+- [Security](docs/SECURITY.md): authentication and deployment notes
+- [API](docs/API.md): HTTP endpoints
+- [Performance](docs/PERFORMANCE.md): measured performance notes
+- [UX](docs/UX.md) and [UI standards](docs/UI_STANDARDS.md): interface conventions
+- [Roadmap](roadmap.md): what has been built so far
 
-```sh
-npm run stack:up
-```
+## License
 
-Open Chrono at `http://localhost:3000` and the development-only MinIO console at
-`http://localhost:9001`. The development
-override builds local Dockerfile targets and exposes persistence only on
-loopback.
-
-For a host-run Next.js process:
-
-```sh
-docker compose -f compose.yaml -f compose.dev.yaml up -d db storage storage-init
-npm ci
-npm run db:migrate
-npm run dev
-```
-
-For an empty database, open `/auth/setup` and use the setup code from `.env`.
-
-## Documentation
-
-- `docs/ARCHITECTURE.md` — system boundaries and data model
-- `docs/OPERATIONS.md` — installation, upgrades, backup, and recovery
-- `docs/RELEASES.md` — official versioning and production publication
-- `docs/SECURITY.md` — authentication and deployment requirements
-- `docs/API.md` — HTTP endpoints
-- `docs/PERFORMANCE.md` — measured performance notes
-- `docs/UX.md` — interaction and layout conventions
-- `docs/UI_STANDARDS.md` — canonical list and creation-dialog patterns
-- `roadmap.md` — completed implementation tracer bullets
+Chrono is made by [Bitwave Software](https://github.com/bitwave-md) and is free
+to use, read, and modify for non-commercial purposes, as long as you credit
+Bitwave Software. Commercial use, redistribution, and selling it need written
+permission. See [LICENSE](LICENSE) for the full terms, or contact
+daniil@btw.md for commercial licensing.
