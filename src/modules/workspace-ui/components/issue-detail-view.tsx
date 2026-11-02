@@ -30,6 +30,7 @@ import { IssuePriorityProperty, IssueStatusProperty } from "@/modules/workspace-
 import { IssueTimeCharts } from "@/modules/workspace-ui/components/issue-time-charts";
 import { LabelProperty } from "@/modules/workspace-ui/components/label-property";
 import { OptionProperty } from "@/modules/workspace-ui/components/option-property";
+import { ProjectIcon } from "@/modules/workspace-ui/components/project-icon";
 import { PropertyTrigger } from "@/modules/workspace-ui/components/property-trigger";
 import { favoriteFromIssue } from "@/modules/workspace-ui/domain/favorite-target";
 import { issueDetailPath } from "@/modules/workspace-ui/domain/issue-route";
@@ -79,7 +80,17 @@ function LoadedIssueDetail({ embedded, issue, workspaceSlug }: { embedded: boole
             href: `/app/${workspaceSlug}/clients/${issue.clientId}/overview`,
             icon: <ClientIcon className="size-6" client={{ name: issue.clientName, iconType: issue.clientIconType, iconKey: issue.clientIconKey, iconColor: issue.clientIconColor }} iconClassName={issue.clientIconType === "emoji" ? "text-xs" : "size-3.5"} />,
           },
-          { label: "Issues", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
+          ...(issue.projectId ? [
+            { label: "Projects", href: `/app/${workspaceSlug}/clients/${issue.clientId}/projects` },
+            {
+              label: project?.name ?? issue.projectName ?? "Project",
+              href: `/app/${workspaceSlug}/projects/${issue.projectId}/overview`,
+              icon: project ? <ProjectIcon className="size-6" iconClassName="size-3.5" project={project} /> : undefined,
+            },
+            { label: "Issues", href: `/app/${workspaceSlug}/projects/${issue.projectId}/issues` },
+          ] : [
+            { label: "Issues", href: `/app/${workspaceSlug}/clients/${issue.clientId}/issues` },
+          ]),
         ]}
         favoriteTarget={favoriteFromIssue(issue)}
         icon={<span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground"><CircleDot className="size-3.5" /></span>}
