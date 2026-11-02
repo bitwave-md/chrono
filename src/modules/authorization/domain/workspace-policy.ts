@@ -34,6 +34,14 @@ export class WorkspacePolicy {
     }
   }
 
+  assertCanDeleteTimeEntries(principal: Principal): void {
+    if (principal.role !== "owner" && principal.role !== "admin") {
+      throw new ForbiddenError(
+        "Only workspace owners and admins delete time entries.",
+      );
+    }
+  }
+
   assertCanViewTimeReports(principal: Principal): void {
     if (principal.role !== "owner" && principal.role !== "admin") {
       throw new ForbiddenError(

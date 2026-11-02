@@ -40,3 +40,22 @@ export async function PATCH(
     return ApiErrorResponse.from(error);
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: TimeLogRouteContext,
+): Promise<Response> {
+  try {
+    mutationOriginPolicy.assertTrusted(request);
+    const { workspaceSlug, timeLogId: value } = await context.params;
+    const principal = await principalResolver.requireWorkspace(workspaceSlug);
+    const log = await logService.delete(
+      principal,
+      new EntityId(value, "timeLogId").value,
+    );
+
+    return Response.json({ data: log });
+  } catch (error) {
+    return ApiErrorResponse.from(error);
+  }
+}

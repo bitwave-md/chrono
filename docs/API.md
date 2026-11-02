@@ -174,9 +174,11 @@ the affected scope returns `409 conflict` until it is stopped.
   or stops the current user's authoritative timer.
 - `GET|POST /api/workspaces/:workspaceSlug/time-logs` lists finalized logs or
   creates a manual entry.
-- `PATCH /api/workspaces/:workspaceSlug/time-logs/:timeLogId` updates a
+- `PATCH|DELETE /api/workspaces/:workspaceSlug/time-logs/:timeLogId` updates a
   finalized entry's duration, time-entry type, and note using
-  `expectedVersion` optimistic concurrency.
+  `expectedVersion` optimistic concurrency, or archives it. Deleting is limited
+  to workspace owners and admins; archived entries disappear from lists,
+  reports, and totals but the row is retained.
 - `GET|POST /api/workspaces/:workspaceSlug/time-categories` lists or manages
   reporting categories.
 - `GET /api/workspaces/:workspaceSlug/time-reports?groupBy=:dimension`

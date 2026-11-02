@@ -24,9 +24,17 @@ test("WorkspacePolicy keeps Guest time mutations and Workspace reports disabled"
     () => policy.assertCanManageTimeCategories(guest),
     () => policy.assertCanUseTimeTracking(guest),
     () => policy.assertCanViewTimeReports(guest),
+    () => policy.assertCanDeleteTimeEntries(guest),
   ];
 
   for (const operation of operations) {
     assert.throws(operation, ForbiddenError);
   }
+});
+
+test("WorkspacePolicy lets only owners and admins delete time entries", () => {
+  const policy = new WorkspacePolicy();
+  assert.doesNotThrow(() => policy.assertCanDeleteTimeEntries({ ...guest, role: "owner" }));
+  assert.doesNotThrow(() => policy.assertCanDeleteTimeEntries({ ...guest, role: "admin" }));
+  assert.throws(() => policy.assertCanDeleteTimeEntries({ ...guest, role: "member" }), /owners and admins delete time entries/);
 });

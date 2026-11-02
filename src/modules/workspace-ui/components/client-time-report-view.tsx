@@ -1,20 +1,22 @@
 "use client";
 
+import { addDays, format } from "date-fns";
 import { useSyncExternalStore } from "react";
-import { BriefcaseBusiness, Clock3, Download, LoaderCircle, ReceiptText, Users } from "lucide-react";
+import { BarChart3, Clock3, Download, LoaderCircle } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { REPORT_LOCALES, REPORT_LOCALE_LABELS, type ReportLocale, resolveReportLocale } from "@/modules/time-tracking/domain/report-locale";
 import { useClientTimeReportQuery, useExportClientTimeReportMutation } from "@/modules/workspace-ui/application/use-client-time-report-query";
 import { useMembersQuery, useProjectsQuery, useTimeCategoriesQuery } from "@/modules/workspace-ui/application/use-workspace-queries";
 import { ClientTimeEntryTable } from "@/modules/workspace-ui/components/client-time-entry-table";
+import { ClientTimeReportSummary } from "@/modules/workspace-ui/components/client-time-report-summary";
 import { ClientTimeReportCharts } from "@/modules/workspace-ui/components/client-time-report-charts";
 import { ClientTimeReportFilters } from "@/modules/workspace-ui/components/client-time-report-filters";
 import { EmptyView } from "@/modules/workspace-ui/components/empty-view";
+import { Reveal } from "@/modules/workspace-ui/components/report-reveal";
 import {
   aggregateClientTimeReport,
   parseClientReportRange,
@@ -24,7 +26,6 @@ import {
   type ClientReportRange,
   type ReportPreset,
 } from "@/modules/workspace-ui/domain/client-time-report";
-import { formatLoggedDuration } from "@/modules/workspace-ui/domain/issue-time-summary";
 import type { ClientRecord } from "@/modules/workspace-ui/domain/workspace-types";
 import { useWorkspaceIdentity } from "@/modules/workspace-ui/state/workspace-ui-provider";
 
@@ -121,8 +122,23 @@ export function ClientTimeReportView({
         onRangeChange={changeRange}
         onReset={() => update({ from: undefined, to: undefined, projectId: undefined, categoryId: undefined, workerUserId: undefined })}
       />
-      <div className="mx-auto grid w-full max-w-[1500px] gap-4 p-5 md:p-7">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Time report</h1><p className="mt-1 text-sm text-muted-foreground">{projectScope ? `Recorded work for ${projectScope.name}.` : reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}.` : `Recorded work across ${client.name} Projects and Issues.`}</p></div><div className="flex items-center gap-3">{reportQuery.isFetching ? <span className="text-xs text-muted-foreground">Updating…</span> : null}<Select value={reportLocale} onValueChange={(next) => changeReportLocale(resolveReportLocale(next))}><SelectTrigger className="h-8 w-[130px]" aria-label="PDF language"><SelectValue /></SelectTrigger><SelectContent>{REPORT_LOCALES.map((locale) => <SelectItem key={locale} value={locale}>{REPORT_LOCALE_LABELS[locale]}</SelectItem>)}</SelectContent></Select><Button disabled={!entries.length || exportReport.isPending} size="sm" type="button" variant="outline" onClick={exportPdf}>{exportReport.isPending ? <LoaderCircle className="animate-spin" /> : <Download />}Export PDF</Button></div></div>
+      <div className="mx-auto grid w-full max-w-[1500px] grid-cols-[minmax(0,1fr)] gap-4 p-4 sm:p-5 md:p-7">
+        <Reveal>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[var(--chart-2)] to-emerald-500 text-white shadow-lg shadow-[var(--chart-2)]/25"><BarChart3 className="size-5" /></span>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight">Time report</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">{projectScope ? `Recorded work for ${projectScope.name}` : reportQuery.data?.scope === "personal" ? `Your recorded work for ${client.name}` : `Recorded work across ${client.name} Projects and Issues`} · {formatRangeLabel(range)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {reportQuery.isFetching ? <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><LoaderCircle className="size-3 animate-spin" />Updating</span> : null}
+              <Select value={reportLocale} onValueChange={(next) => changeReportLocale(resolveReportLocale(next))}><SelectTrigger className="h-8 w-[130px]" aria-label="PDF language"><SelectValue /></SelectTrigger><SelectContent>{REPORT_LOCALES.map((locale) => <SelectItem key={locale} value={locale}>{REPORT_LOCALE_LABELS[locale]}</SelectItem>)}</SelectContent></Select>
+              <Button disabled={!entries.length || exportReport.isPending} size="sm" type="button" onClick={exportPdf}>{exportReport.isPending ? <LoaderCircle className="animate-spin" /> : <Download />}Export PDF</Button>
+            </div>
+          </div>
+        </Reveal>
         {reportQuery.error ? <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">{reportQuery.error.message}</div> : null}
         {!reportQuery.isLoading && !reportQuery.error && !entries.length ? (
           <EmptyView
@@ -134,34 +150,22 @@ export function ClientTimeReportView({
         ) : null}
         {entries.length ? (
           <>
-            <SummaryCards report={report} />
-            <ClientTimeReportCharts categories={report.categories} daily={report.daily} projects={report.projects} />
+            <ClientTimeReportSummary report={report} />
+            <ClientTimeReportCharts categories={report.categories} daily={report.daily} projects={report.projects} showProjects={!projectScope} workers={showPeople ? report.workers : undefined} />
             {reportQuery.data?.truncated ? <p className="rounded-lg border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">This view is limited to the newest 1,000 matching entries. Narrow the period for a complete reconciliation.</p> : null}
+            <Reveal delay={520}>
             <ClientTimeEntryTable
               canCreateTimeTypes={workspace.role === "owner" || workspace.role === "admin"}
+              canDeleteEntries={workspace.role === "owner" || workspace.role === "admin"}
               canEditEntries={workspace.role !== "guest"}
               categories={categoriesQuery.data ?? []}
               tasks={report.tasks}
               workspaceSlug={workspaceSlug}
             />
+            </Reveal>
           </>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function SummaryCards({ report }: { report: ReturnType<typeof aggregateClientTimeReport> }) {
-  const billablePercent = report.totalSeconds ? Math.round((report.billableSeconds / report.totalSeconds) * 100) : 0;
-  const cards = [
-    { label: "Total time", value: formatLoggedDuration(report.totalSeconds), detail: `${report.entryCount} entries`, icon: Clock3 },
-    { label: "Billable", value: formatLoggedDuration(report.billableSeconds), detail: `${billablePercent}% of total`, icon: ReceiptText },
-    { label: "Projects", value: String(report.projects.filter((row) => row.id !== "no-project").length), detail: `${report.projects.find((row) => row.id === "no-project")?.entryCount ?? 0} Client-level entries`, icon: BriefcaseBusiness },
-    { label: "Contributors", value: String(report.contributors), detail: `${report.categories.length} time entry types`, icon: Users },
-  ];
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => <Card key={card.label}><CardContent className="flex items-start gap-3 p-4"><span className="grid size-9 place-items-center rounded-lg bg-muted text-muted-foreground"><card.icon className="size-4" /></span><div><span className="text-xs text-muted-foreground">{card.label}</span><strong className="mt-0.5 block text-xl font-semibold">{card.value}</strong><span className="mt-1 block text-xs text-muted-foreground">{card.detail}</span></div></CardContent></Card>)}
     </div>
   );
 }
@@ -189,4 +193,8 @@ function subscribeReportLocale(callback: () => void): () => void {
 
 function optionalUuid(value: string | null): string | undefined {
   return value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : undefined;
+}
+
+function formatRangeLabel(range: ClientReportRange): string {
+  return `${format(range.from, "MMM d")} – ${format(addDays(range.to, -1), "MMM d, yyyy")}`;
 }

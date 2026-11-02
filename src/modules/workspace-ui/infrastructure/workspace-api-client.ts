@@ -107,6 +107,11 @@ export interface UpdateTimeLogRequest {
   note: string | null;
 }
 
+export interface DeleteTimeLogRequest {
+  timeLogId: string;
+  issueId: string;
+}
+
 export class WorkspaceApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -468,6 +473,9 @@ export class WorkspaceApiClient {
       method: "PATCH",
       body: JSON.stringify({ expectedVersion: input.expectedVersion, categoryId: input.categoryId, durationSeconds: input.durationSeconds, note: input.note }),
     });
+  }
+  deleteTimeLog(input: DeleteTimeLogRequest): Promise<unknown> {
+    return this.#request(`/time-logs/${encodeURIComponent(input.timeLogId)}`, { method: "DELETE" });
   }
   async #get<T>(path: string): Promise<T> {
     return this.#request<T>(path);
