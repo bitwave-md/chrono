@@ -320,6 +320,27 @@ export class TimeLogService {
     );
   }
 
+  /** Archives the entry so it drops out of lists, reports and totals while the row is kept. */
+  async delete(principal: Principal, timeLogId: string) {
+    this.#policy.assertCanDeleteTimeEntries(principal);
+    const [archived] = await db
+      .update(timeLogs)
+      .set({
+        archivedAt: new Date(),
+        version: sql`${timeLogs.version} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(timeLogs.id, timeLogId),
+        eq(timeLogs.workspaceId, principal.workspaceId),
+        isNull(timeLogs.archivedAt),
+      ))
+      .returning({ id: timeLogs.id, issueId: timeLogs.issueId });
+
+    if (!archived) throw new NotFoundError("Time entry not found.");
+    return archived;
+  }
+
   #visibleWorker(
     principal: Principal,
     requestedWorkerUserId?: string,

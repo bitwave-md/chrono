@@ -1,12 +1,13 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { ReportLocale } from "@/modules/time-tracking/domain/report-locale";
 import { workspaceQueryKeys } from "@/modules/workspace-ui/application/query-keys";
 import { ClientTimeReportExportClient } from "@/modules/workspace-ui/infrastructure/client-time-report-export-client";
 import {
   type ClientTimeReportFilters,
+  type DeleteTimeLogRequest,
   type UpdateTimeLogRequest,
   WorkspaceApiClient,
 } from "@/modules/workspace-ui/infrastructure/workspace-api-client";
@@ -35,18 +36,30 @@ export function useUpdateTimeLogMutation(workspaceSlug: string) {
   return useMutation({
     mutationFn: (input: UpdateTimeLogRequest) =>
       new WorkspaceApiClient(workspaceSlug).updateTimeLog(input),
-    onSuccess: async (_data, input) => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: workspaceQueryKeys.clientTimeReportsRoot(workspaceSlug),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: workspaceQueryKeys.issueTimeLogs(workspaceSlug, input.issueId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: workspaceQueryKeys.issueActivity(workspaceSlug, input.issueId),
-        }),
-      ]);
-    },
+    onSuccess: (_data, input) => invalidateTimeLogQueries(queryClient, workspaceSlug, input.issueId),
   });
+}
+
+export function useDeleteTimeLogMutation(workspaceSlug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: DeleteTimeLogRequest) =>
+      new WorkspaceApiClient(workspaceSlug).deleteTimeLog(input),
+    onSuccess: (_data, input) => invalidateTimeLogQueries(queryClient, workspaceSlug, input.issueId),
+  });
+}
+
+async function invalidateTimeLogQueries(queryClient: QueryClient, workspaceSlug: string, issueId: string) {
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: workspaceQueryKeys.clientTimeReportsRoot(workspaceSlug),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: workspaceQueryKeys.issueTimeLogs(workspaceSlug, issueId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: workspaceQueryKeys.issueActivity(workspaceSlug, issueId),
+    }),
+  ]);
 }
