@@ -20,6 +20,7 @@ export interface ReportMessages {
   readonly truncationNotice: string;
   readonly cardTotalTime: string;
   readonly cardBillable: string;
+  readonly cardEntries: string;
   readonly cardProjects: string;
   readonly cardContributors: string;
   readonly timeOverPeriod: string;
@@ -68,11 +69,12 @@ const en: ReportMessages = {
     "This report contains the newest 1,000 matching entries. Narrow the period for a complete reconciliation.",
   cardTotalTime: "Total time",
   cardBillable: "Billable",
+  cardEntries: "Entries",
   cardProjects: "Projects",
   cardContributors: "Contributors",
   timeOverPeriod: "Time over period",
   segmentSuffix: (index, count) => segmentSuffix(index, count, "of"),
-  dailyHint: "Rounded hours are shown below every day.",
+  dailyHint: "Rounded hours are shown above every day.",
   byEntryType: "By time entry type",
   totalLabel: "total",
   byProject: "By project",
@@ -103,11 +105,12 @@ const ro: ReportMessages = {
     "Acest raport conține cele mai recente 1.000 de înregistrări care corespund. Restrângeți perioada pentru o reconciliere completă.",
   cardTotalTime: "Timp total",
   cardBillable: "Facturabil",
+  cardEntries: "Înregistrări",
   cardProjects: "Proiecte",
   cardContributors: "Contribuitori",
   timeOverPeriod: "Timp pe perioadă",
   segmentSuffix: (index, count) => segmentSuffix(index, count, "din"),
-  dailyHint: "Orele rotunjite sunt afișate sub fiecare zi.",
+  dailyHint: "Orele rotunjite sunt afișate deasupra fiecărei zile.",
   byEntryType: "După tipul înregistrării de timp",
   totalLabel: "total",
   byProject: "După proiect",

@@ -26,6 +26,8 @@ export class TimeReportDocument {
   readonly generatedLabel: string;
   readonly totalHours: number;
   readonly billableHours: number;
+  /** Billable share of the exact (unrounded) total, from 0 to 1. */
+  readonly billableShare: number;
   readonly entryCount: number;
   readonly contributorCount: number;
   readonly projectCount: number;
@@ -39,7 +41,7 @@ export class TimeReportDocument {
     title: string;
     project: string;
     hours: number;
-    entries: Array<{ date: string; person: string; type: string; note: string; billable: boolean; hours: number }>;
+    entries: Array<{ date: string; person: string; type: string; typeColor: string; note: string; billable: boolean; hours: number }>;
   }>;
 
   constructor(input: TimeReportDocumentInput) {
@@ -57,6 +59,7 @@ export class TimeReportDocument {
     this.generatedLabel = calendar.dateTimeLabel(input.generatedAt ?? new Date());
     this.totalHours = roundHours(input.report.totalSeconds);
     this.billableHours = roundHours(input.report.billableSeconds);
+    this.billableShare = input.report.totalSeconds ? input.report.billableSeconds / input.report.totalSeconds : 0;
     this.entryCount = input.report.entryCount;
     this.contributorCount = input.report.contributors;
     this.projectCount = input.report.projects.filter((row) => row.id !== "no-project").length;
@@ -85,6 +88,7 @@ export class TimeReportDocument {
         date: calendar.longLabel(calendar.dateKey(new Date(entry.endedAt))),
         person: entry.workerName ?? entry.workerEmail,
         type: entry.categoryName ?? messages.uncategorized,
+        typeColor: normalizeColor(entry.categoryColor ?? undefined),
         note: entry.note ?? messages.noNote,
         billable: entry.billable,
         hours: roundHours(entry.durationSeconds),
